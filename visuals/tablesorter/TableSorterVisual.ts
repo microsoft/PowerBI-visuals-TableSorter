@@ -476,8 +476,25 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
                     var values = newObjs[section];
                     if (section === "selection" && values) {
                         const oldSelection = oldSettings.selection;
+<<<<<<< 63ab51756aec508b710d601374d172c597eca2c0
                         updatedSettings.selection.singleSelect = !values.multiSelect;
                         updatedSettings.selection.multiSelect = values.multiSelect;
+=======
+                        
+                        // User changed singleSelect setting
+                        if (values.singleSelect && values.singleSelect !== oldSelection.singleSelect) {
+                            values.multiSelect = false;
+                        
+                        // User changed the multi select setting
+                        } else if (values.multiSelect && values.multiSelect !== oldSelection.multiSelect) {
+                            values.singleSelect = false;
+                        }
+                        
+                        // Nothing is selected, select multiple
+                        if (!values.multiSelect && !values.singleSelect) {
+                            values.multiSelect = true;
+                        }
+>>>>>>> Comment update
                         updatePBISettings = true;
                     }
                     for (var prop in values) {
