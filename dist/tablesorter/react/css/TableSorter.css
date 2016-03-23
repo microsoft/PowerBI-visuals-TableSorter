@@ -202,7 +202,15 @@ html, body {
 .lu-popup .selectionTable {
   background: white;
   overflow-x: auto;
-  overflow-y: scroll; }
+  overflow-y: auto;
+  width: 100%;
+  margin-top: 5px;
+  margin-bottom: 5px;
+  max-height: 300px; }
+  .lu-popup .selectionTable td {
+    vertical-align: middle; }
+  .lu-popup .selectionTable td.checkmark {
+    vertical-align: bottom; }
 
 .lu-popup .selectionTable table {
   width: 95%;
