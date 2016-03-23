@@ -475,7 +475,6 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
 
             // Copy over new values
             var newObjs = $.extend(true, {}, <ITableSorterVisualSettings>this.dataView.metadata.objects);
-            var userSelection;
             var updatePBISettings = false;
             if (newObjs) {
                 for (var section in newObjs) {
