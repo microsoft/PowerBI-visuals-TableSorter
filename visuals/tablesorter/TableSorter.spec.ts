@@ -206,9 +206,13 @@ describe('TableSorter', () => {
     });
 
     describe("settings", () => {
-        it("should be true by default", () => {
+        it("multiSelect should be true by default", () => {
             let { instance } = createInstance();
-            expect(instance.settings.selection.multiSelect).to.be.true;
+            expect(instance.settings.selection.multiSelect).to.be.false;
+        });
+        it("singleSelect should be true by default", () => {
+            let { instance } = createInstance();
+            expect(instance.settings.selection.singleSelect).to.be.true;
         });
     });
 
@@ -322,9 +326,13 @@ describe('TableSorter', () => {
                 });
 
                 it("should select multiple rows", () => {
-                    let { instance, element } = createInstance();
+                    let { instance, element } = loadInstanceWithSettings({
+                        selection: {
+                            singleSelect: false,
+                            multiSelect: true
+                        }
+                    });
                     let { data } = createFakeData();
-
                     let providerInfo = createProvider(createFakeData().data);
                     instance.dataProvider = providerInfo.provider;
                     return providerInfo.dataLoaded.then(() => {

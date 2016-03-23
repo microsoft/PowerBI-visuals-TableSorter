@@ -104,8 +104,8 @@ export class TableSorter {
      */
     public static DEFAULT_SETTINGS: ITableSorterSettings = {
         selection: {
-            singleSelect: false,
-            multiSelect: true
+            singleSelect: true,
+            multiSelect: false
         },
         presentation: {
             columnColors: <any>d3.scale.category20(),

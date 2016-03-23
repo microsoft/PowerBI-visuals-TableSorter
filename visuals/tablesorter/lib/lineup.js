@@ -1237,7 +1237,8 @@
           var popupWidth = 400;
         options = $.extend({}, options, {
           x: +(container.node().clientWidth) / 2 - (popupWidth / 2),
-          y: 100,
+        //   y: 100,
+          y: 0,
           width: popupWidth/*,
           height: 200*/
         });
@@ -1534,7 +1535,8 @@
               "class": "lu-popup"
             }).style({
               left: +(this.$container.node().clientWidth) / 2 - 100 + "px",
-              top: 100 + "px",
+            //   top: 100 + "px",
+              top: "0px",
               width: (height - 50) + "px",
               height: height + "px"
             })
@@ -1636,7 +1638,8 @@
 
         function renameStackedColumn(col) {
           var x = +(this.$container.node().clientWidth) / 2 - 100;
-          var y = +100;
+        //   var y = +100;
+          var y = 0;
 
           // ATS: Was d3.select('body').appe...
           var popupBG = this.$container.append('div')
@@ -1750,7 +1753,7 @@
               'class': 'lu-popup'
             }).style({
               left: +(this.$container.node().clientWidth) / 2 - 100,
-              top: 100 + 'px',
+              top: "0px",
               width: (400) + 'px',
               height: (300) + 'px'
             })
@@ -1846,7 +1849,8 @@
         // // pos.top += column.offsetY;
         var pos = {
           left: column.offsetX,
-          top: column.offsetY
+          top: 0
+        //   top: column.offsetY
         };
         var bak = column.filter || '';
 
