@@ -118,11 +118,6 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
             selection: {
                 displayName: "Selection",
                 properties: {
-                    singleSelect: {
-                        displayName: "Single Select",
-                        description: "If true, when a row is selected, other data is filtered",
-                        type: { bool: true }
-                    },
                     multiSelect: {
                         displayName: "Multi Select",
                         description: "If true, multiple rows can be selected",
@@ -481,20 +476,8 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
                     var values = newObjs[section];
                     if (section === "selection" && values) {
                         const oldSelection = oldSettings.selection;
-                        
-                        // User changed singleSelect setting
-                        if (values.singleSelect && values.singleSelect !== oldSelection.singleSelect) {
-                            values.multiSelect = false;
-                        
-                        // User changed the multi select setting
-                        } else if (values.multiSelect && values.multiSelect !== oldSelection.multiSelect) {
-                            values.singleSelect = false;
-                        }
-                        
-                        // Nothing is selected, select multiple
-                        if (!values.multiSelect && !values.singleSelect) {
-                            values.multiSelect = true;
-                        }
+                        updatedSettings.selection.singleSelect = !values.multiSelect;
+                        updatedSettings.selection.multiSelect = values.multiSelect;
                         updatePBISettings = true;
                     }
                     for (var prop in values) {
