@@ -492,7 +492,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
                             values.singleSelect = false;
                         }
                         
-                        // Nothing is selected, select single
+                        // Nothing is selected, select multiple
                         if (!values.multiSelect && !values.singleSelect) {
                             values.multiSelect = true;
                         }
