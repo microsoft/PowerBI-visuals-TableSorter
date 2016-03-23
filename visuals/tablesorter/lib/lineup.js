@@ -1234,11 +1234,12 @@
        * @returns {{popup: *, table: *, remove: remove, onOK: onOK}}
        */
       function createPopup(container, title, label, options) {
+          var popupWidth = 400;
         options = $.extend({}, options, {
-          x: +(container.node().clientWidth) / 2 - 100,
+          x: +(container.node().clientWidth) / 2 - (popupWidth / 2),
           y: 100,
-          width: 400,
-          height: 200
+          width: popupWidth/*,
+          height: 200*/
         });
         // ATS: Was d3.select('body').appe...
         var popupBG = container.append('div')
@@ -1252,8 +1253,8 @@
             }).style({
               left: options.x + "px",
               top: options.y + "px",
-              width: options.width + "px",
-              height: options.height + "px"
+              width: options.width + "px"/*,
+              height: options.height + "px"*/
             })
             .html(
                 '<span style="font-weight: bold">' + title + '</span>' +
@@ -1263,10 +1264,10 @@
                 '<button class="ok"><i class="fa fa-check"></i> ok</button>'
             );
 
-        var theTable = popup.select(".selectionTable").style({
+        var theTable = popup.select(".selectionTable")/*.style({
           width: (options.width - 10) + "px",
           height: (options.height - 40) + "px"
-        }).append("table");
+        })*/.append("table");
 
         popup.select(".cancel").on("click", function () {
           popupBG.remove();
