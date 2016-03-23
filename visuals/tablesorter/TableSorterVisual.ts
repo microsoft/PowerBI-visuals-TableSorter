@@ -475,9 +475,29 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
 
             // Copy over new values
             var newObjs = $.extend(true, {}, <ITableSorterVisualSettings>this.dataView.metadata.objects);
+            var userSelection;
+            var updatePBISettings = false;
             if (newObjs) {
                 for (var section in newObjs) {
                     var values = newObjs[section];
+                    if (section === "selection" && values) {
+                        const oldSelection = oldSettings.selection;
+                        
+                        // User changed singleSelect setting
+                        if (values.singleSelect && values.singleSelect !== oldSelection.singleSelect) {
+                            values.multiSelect = false;
+                        
+                        // User changed the multi select setting
+                        } else if (values.multiSelect && values.multiSelect !== oldSelection.multiSelect) {
+                            values.singleSelect = false;
+                        }
+                        
+                        // Nothing is selected, select single
+                        if (!values.multiSelect && !values.singleSelect) {
+                            values.multiSelect = true;
+                        }
+                        updatePBISettings = true;
+                    }
                     for (var prop in values) {
                         if (updatedSettings[section] && typeof(updatedSettings[section][prop]) !== "undefined") {
                             updatedSettings[section][prop] = values[prop];
@@ -485,6 +505,22 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
                     }
                 }
             }
+            
+            if (updatePBISettings) {
+                this.host.persistProperties({
+                    merge: [
+                        <powerbi.VisualObjectInstance>{
+                            objectName: "selection",
+                            selector: undefined,
+                            properties: {
+                                "singleSelect": updatedSettings.selection.singleSelect,
+                                "multiSelect": updatedSettings.selection.multiSelect
+                            }
+                        }
+                    ]
+                });
+            }
+            
             this.tableSorter.settings = updatedSettings;
         }
     }
