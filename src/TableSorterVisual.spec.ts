@@ -1,4 +1,4 @@
-import { Utils as SpecUtils } from "../../base/spec/visualHelpers";
+import { Utils as SpecUtils } from "../base/spec/visualHelpers";
 import { expect } from "chai";
 import { TableSorter } from "./TableSorter";
 import { ITableSorterSettings, ITableSorterRow, ITableSorterColumn } from "./models";

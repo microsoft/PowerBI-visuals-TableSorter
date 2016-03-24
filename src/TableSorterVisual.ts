@@ -1,6 +1,6 @@
-/// <reference path="../../base/references.d.ts"/>
-import { ExternalCssResource, VisualBase } from "../../base/VisualBase";
-import { default as Utils, Visual } from "../../base/Utils";
+/// <reference path="../base/references.d.ts"/>
+import { ExternalCssResource, VisualBase } from "../base/VisualBase";
+import { default as Utils, Visual } from "../base/Utils";
 import { TableSorter  } from "./TableSorter";
 import { ITableSorterRow, ITableSorterSettings, ITableSorterColumn, ITableSorterConfiguration, IQueryOptions, IQueryResult, ITableSorterSort, ITableSorterFilter } from "./models";
 import { JSONDataProvider } from "./providers/JSONDataProvider";
@@ -20,7 +20,7 @@ import SelectionId = powerbi.visuals.SelectionId;
 import SelectionManager = powerbi.visuals.utility.SelectionManager;
 import VisualDataRoleKind = powerbi.VisualDataRoleKind;
 
-const colors = require("../../base/powerbi/colors");
+const colors = require("../base/powerbi/colors");
 
 @Visual(require("./build.js").output.PowerBI)
 export default class TableSorterVisual extends VisualBase implements IVisual {

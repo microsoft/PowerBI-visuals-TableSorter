@@ -1,4 +1,4 @@
-require("../../../base/testSetup");
+require("../../base/testSetup");
 
 import { expect, use } from "chai";
 import { JSONDataProvider } from "./JSONDataProvider";
