@@ -65,6 +65,20 @@ describe('TableSorterVisual', () => {
         expect(instance.tableSorter.configuration.columns.length).to.be.equal(1);
     });
 
+    it('should load the data into the tablesorter if only columns changed', () => {
+        let { instance } = createVisual();
+
+        // Load initial data
+        instance.update(SpecUtils.createUpdateOptionsWithData());
+        expect(instance.tableSorter.configuration.columns.length).to.be.equal(2);
+        
+        instance.tableSorter = <any>{};
+        instance.update(SpecUtils.createUpdateOptionsWithSmallData());
+        
+        // TODO: Assume the data is legit for now
+        expect(instance.tableSorter.dataProvider).to.not.be.undefined;
+    });
+
     it('should remove sort from TableSorter.configuration if columns are removed from PBI', () => {
         let { instance } = createVisual();
 

@@ -34,7 +34,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
     private loadingData : boolean;
 
     // Stores our current set of data.
-    private _data : ITableSorterVisualRow[];
+    private _data : { data: ITableSorterVisualRow[], cols: string[] };
 
     // used to keep track of `persistProperties` calls
     private persistPropertiesTimeout : number;
@@ -399,8 +399,10 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
      */
     private static converter(view: DataView, config: ITableSorterConfiguration, selectedIds: any) {
         var data : ITableSorterVisualRow[] = [];
+        var cols : string[];
         if (view && view.table) {
             var table = view.table;
+            cols = table.columns.map(n => n.displayName);
             table.rows.forEach((row, rowIndex) => {
                 let identity;
                 let newId;
@@ -426,7 +428,10 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
                 data.push(result);
             });
         }
-        return data;
+        return {
+            data,
+            cols
+        };
     }
 
     /**
@@ -436,14 +441,18 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
         if (this.dataViewTable) {
             let config = this.getConfigFromDataView();
             let newData = TableSorterVisual.converter(this.dataView, config, this.selectionManager.getSelectionIds());
-            let selectedRows = newData.filter(n => n.selected);
+            let selectedRows = newData.data.filter(n => n.selected);
 
             this.tableSorter.configuration = config;
-            if (Utils.hasDataChanged(newData, this._data, (a, b) => a.identity.equals(b.identity))) {
+            // Basically, have any of the columns changed, or have any data values changed.
+            if (!this._data ||
+                (this._data.cols.length !== newData.cols.length) ||
+                (this._data.cols.filter(n => newData.cols.indexOf(n) < 0).length > 0) ||
+                Utils.hasDataChanged(newData.data, this._data.data, (a, b) => a.identity.equals(b.identity))) {
                 this._data = newData;
-                this.tableSorter.count = this._data.length;
+                this.tableSorter.count = this._data.data.length;
                 this.tableSorter.dataProvider = new MyDataProvider(
-                    newData,
+                    newData.data,
                     () => !!this.dataView.metadata.segment,
                     () => {
                         this.waitingForMoreData = true;
