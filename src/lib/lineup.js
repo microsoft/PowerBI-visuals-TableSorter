@@ -3691,7 +3691,7 @@
               'class': 'singleColumnDelete',
               text: '\uf014',
               filter: function (d) {
-                return (d instanceof LineUp.LayoutStackedColumn || d instanceof LineUp.LayoutEmptyColumn || d instanceof LineUp.LayoutActionColumn) ? [] : [d];
+                return (/* ATS: Added this one */d instanceof LineUp.LayoutRankColumn || d instanceof LineUp.LayoutStackedColumn || d instanceof LineUp.LayoutEmptyColumn || d instanceof LineUp.LayoutActionColumn) ? [] : [d];
               },
               action: function (d) {
                 that.storage.removeColumn(d);
