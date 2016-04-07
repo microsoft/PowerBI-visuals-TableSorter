@@ -5,6 +5,8 @@ import { TableSorter as TableSorterImpl } from "./TableSorter";
 import { ITableSorterRow, ITableSorterColumn, ITableSorterSettings, ITableSorterConfiguration, IDataProvider, IQueryOptions, IQueryResult } from "./models";
 import { JSONDataProvider } from "./providers/JSONDataProvider";
 
+require("./css/TableSorter.scss");
+
 export interface TableSorterProps {
     cols: ITableSorterColumn[],
     provider: IDataProvider;
