@@ -4,6 +4,7 @@ import { expect } from "chai";
 import { TableSorter } from "./TableSorter";
 import { ITableSorterSettings, ITableSorterRow, ITableSorterColumn, IDataProvider } from "./models";
 import * as $ from "jquery";
+import { Promise } from "es6-promise";
 
 describe('TableSorter', () => {
     var parentEle;

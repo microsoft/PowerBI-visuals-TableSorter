@@ -1,3 +1,4 @@
+import { Promise } from "es6-promise";
 import { IDataProvider, IQueryOptions, IQueryResult, ITableSorterColumn, ITableSorterSort } from "../models";
 
 /**
@@ -13,14 +14,14 @@ export class JSONDataProvider implements IDataProvider {
     /**
      * Determines if the dataset can be queried again
      */
-    public canQuery(options: IQueryOptions) : Promise<boolean>{
+    public canQuery(options: IQueryOptions) : PromiseLike<boolean>{
         return new Promise<boolean>((resolve) => resolve(options.offset < this.data.length));
     }
 
     /**
      * Runs a query against the server
      */
-    public query(options: IQueryOptions) : Promise<IQueryResult> {
+    public query(options: IQueryOptions) : PromiseLike<IQueryResult> {
         return new Promise<IQueryResult>((resolve, reject) => {
             var final = this.getFilteredData(options);
             var newData = final.slice(options.offset, options.offset + options.count);
@@ -36,7 +37,7 @@ export class JSONDataProvider implements IDataProvider {
     /**
      * Generates a histogram for this data set
      */
-    public generateHistogram(column: ITableSorterColumn, options: IQueryOptions) : Promise<number[]> {
+    public generateHistogram(column: ITableSorterColumn, options: IQueryOptions) : PromiseLike<number[]> {
         return new Promise<number[]>((resolve) => {
             let final = this.getFilteredData(options);
             let values : number[] = final.map(n => n[column.column]);

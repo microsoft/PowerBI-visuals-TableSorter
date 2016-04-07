@@ -1,9 +1,10 @@
-/// <reference path="../base/references.d.ts"/>
-import { ExternalCssResource, VisualBase } from "../base/VisualBase";
-import { default as Utils, Visual } from "../base/Utils";
+/// <reference path="../base/powerbi/references.d.ts"/>
+import { ExternalCssResource, VisualBase } from "../base/powerbi/VisualBase";
+import { default as Utils, Visual } from "../base/powerbi/Utils";
 import { TableSorter  } from "./TableSorter";
 import { ITableSorterRow, ITableSorterSettings, ITableSorterColumn, ITableSorterConfiguration, IQueryOptions, IQueryResult, ITableSorterSort, ITableSorterFilter } from "./models";
 import { JSONDataProvider } from "./providers/JSONDataProvider";
+import { Promise } from "es6-promise";
 
 
 import IVisual = powerbi.IVisual;
@@ -22,7 +23,7 @@ import VisualDataRoleKind = powerbi.VisualDataRoleKind;
 
 const colors = require("../base/powerbi/colors");
 
-@Visual(require("./build.js").output.PowerBI)
+@Visual(require("./build").output.PowerBI)
 export default class TableSorterVisual extends VisualBase implements IVisual {
     private dataViewTable: DataViewTable;
     private dataView: powerbi.DataView;
@@ -677,7 +678,7 @@ class MyDataProvider extends JSONDataProvider {
     /**
      * Determines if the dataset can be queried again
      */
-    public canQuery(options: IQueryOptions): Promise<boolean> {
+    public canQuery(options: IQueryOptions): PromiseLike<boolean> {
         // We are either loading our initial set, which of course you can query it, otherwise, see if there is more data available
         const canLoad = options.offset === 0 || this.hasMoreData();
         return new Promise<boolean>((resolve) => resolve(canLoad));
@@ -686,7 +687,7 @@ class MyDataProvider extends JSONDataProvider {
     /**
      * Runs a query against the server
      */
-    public query(options: IQueryOptions): Promise<IQueryResult> {
+    public query(options: IQueryOptions): PromiseLike<IQueryResult> {
         // If the sort/filter changes, don't do anything, allow our users to respond
         if (options.offset > 0 || this.sortChanged || this.filterChanged) {
             if (this.onLoadMoreData && options.offset > 0) {

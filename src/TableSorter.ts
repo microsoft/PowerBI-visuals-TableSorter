@@ -1,5 +1,5 @@
 import { default as EventEmitter } from "../base/EventEmitter";
-import { default as Utils } from "../base/Utils";
+import { default as Utils } from "../base/powerbi/Utils"; // TODO: Separate out concerns, its using non PBI
 import { JSONDataProvider } from "./providers/JSONDataProvider";
 import * as _  from "lodash";
 import * as d3 from "d3";
