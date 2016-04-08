@@ -7,7 +7,7 @@ export interface ITableSorterRow {
      * Data for each column in the row
      */
     [columnName: string]: any;
-    
+
     /**
      * Some unique ID column
      */
@@ -84,7 +84,7 @@ export interface ITableSorterColumn {
     /**
      * The domain of the column, only for number based columns
      */
-    domain?: [number, number]
+    domain?: [number, number];
 }
 
 /**
@@ -129,7 +129,7 @@ export interface ITableSorterSettings {
         multiSelect?: boolean;
     };
     presentation?: {
-        
+
         /**
          * Provides a mapping from column index to colors
          */
@@ -166,11 +166,11 @@ export interface ITableSorterSettings {
  * Provides the data provider interface for table sorter
  */
 export interface IDataProvider {
-
     /**
-     * Returns true if the data provider can be queried with the given set of options, this allows for data sources which don't know their total counts to query
+     * Returns true if the data provider can be queried with the given set of options, 
+     * this allows for data sources which don't know their total counts to query
      */
-    canQuery(options: IQueryOptions) : PromiseLike<boolean>;
+    canQuery(options: IQueryOptions): PromiseLike<boolean>;
 
     /**
      * Asks the data provider to load more data
@@ -180,12 +180,13 @@ export interface IDataProvider {
     /**
      * Generates a histogram for the values, each value must be between 0-1
      */
-    generateHistogram(column: ITableSorterColumn, options: IQueryOptions) : PromiseLike<number[]>;
+    generateHistogram(column: ITableSorterColumn, options: IQueryOptions): PromiseLike<number[]>;
 
     /**
      * Called when the data should be sorted
-     */
+     *//* tslint:disable */
     sort?: (sort: ITableSorterSort) => void;
+    /* tslint:enable */
 
     /**
      * Called when the data is filtered

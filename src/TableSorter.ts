@@ -1,11 +1,21 @@
 import { default as EventEmitter } from "../base/EventEmitter";
-import { default as Utils } from "../base/powerbi/Utils"; // TODO: Separate out concerns, its using non PBI
 import { JSONDataProvider } from "./providers/JSONDataProvider";
 import * as _  from "lodash";
 import * as d3 from "d3";
-import { IQueryOptions, IQueryResult, IDataProvider, ITableSorterColumn, ITableSorterRow, ITableSorterSettings, ITableSorterConfiguration, ITableSorterSort } from "./models";
-const $ = require("jquery");
+import {
+    IQueryOptions,
+    IDataProvider,
+    ITableSorterColumn,
+    ITableSorterRow,
+    ITableSorterSettings,
+    ITableSorterConfiguration,
+    ITableSorterSort,
+    ITableSorterFilter,
+} from "./models";
+import * as $ from "jquery";
+/* tslint:disable */
 const LineUpLib = require("./lib/lineup");
+/* tslint:enable */
 
 /**
  * Thin wrapper around the lineup library
@@ -20,21 +30,6 @@ export class TableSorter {
     };
 
     /**
-     * The default count amount
-     */
-    private static DEFAULT_COUNT = 100;
-
-    /**
-     * My lineup instance
-     */
-    public lineupImpl: any;
-    
-    /**
-     * The dimensions
-     */
-    private _dimensions: { width: number; height: number };
-
-    /**
      * The list of events that we expose
      */
     public static EVENTS = {
@@ -43,21 +38,59 @@ export class TableSorter {
         CONFIG_CHANGED: "configurationChanged",
         SELECTION_CHANGED: "selectionChanged",
         LOAD_MORE_DATA: "loadMoreData",
-        CLEAR_SELECTION: "clearSelection"
+        CLEAR_SELECTION: "clearSelection",
     };
+
+    /**
+     * Represents the settings
+     */
+    public static DEFAULT_SETTINGS: ITableSorterSettings = {
+        selection: {
+            singleSelect: true,
+            multiSelect: false,
+        },
+        presentation: {
+            columnColors: <any>d3.scale.category20(),
+            stacked: true,
+            values: false,
+            histograms: true,
+            animation: true,
+            tooltips: false,
+        },
+    };
+
+    /**
+     * Returns true if the given object is numeric
+     */
+    private static isNumeric = (obj: any) => (obj - parseFloat(obj) + 1) >= 0;
+
+    /**
+     * The default count amount
+     */
+    private static DEFAULT_COUNT = 100;
+
+    /**
+     * My lineup instance
+     */
+    public lineupImpl: any;
+
+    /**
+     * The dimensions
+     */
+    private _dimensions: { width: number; height: number; };
 
     /**
      * The set of options used to query for new data
      */
-    private queryOptions : IQueryOptions = {
+    private queryOptions: IQueryOptions = {
         offset: 0,
-        count: TableSorter.DEFAULT_COUNT
+        count: TableSorter.DEFAULT_COUNT,
     };
 
     /**
      * Represents the last query that we performed
      */
-    private lastQuery : IQueryOptions;
+    private lastQuery: IQueryOptions;
 
     /**
      * My element
@@ -70,19 +103,9 @@ export class TableSorter {
     private _data: ITableSorterRow[];
 
     /**
-     * The list of columns
-     */
-    private columns: ITableSorterColumn[];
-
-    /**
      * The current configuration of the LineUp instance
      */
     private _configuration: ITableSorterConfiguration;
-
-    /**
-     * The list of rows
-     */
-    private rows: ITableSorterRow[];
 
     /**
      * Whether or not we are currently saving the configuration
@@ -98,24 +121,6 @@ export class TableSorter {
      * Gets the last scroll position
      */
     private lastScrollPos: number;
-
-    /**
-     * Represents the settings
-     */
-    public static DEFAULT_SETTINGS: ITableSorterSettings = {
-        selection: {
-            singleSelect: true,
-            multiSelect: false
-        },
-        presentation: {
-            columnColors: <any>d3.scale.category20(),
-            stacked: true,
-            values: false,
-            histograms: true,
-            animation: true,
-            tooltips: false
-        }
-    };
 
     /**
      * The template for the grid
@@ -181,9 +186,9 @@ export class TableSorter {
     /**
      * The configuration for the lineup viewer
      */
-    private lineUpConfig : ITableSorterSettings = <any>{
+    private lineUpConfig: ITableSorterSettings = <any>{
         svgLayout: {
-            mode: 'separate'
+            mode: "separate"
         },
         interaction: {
             multiselect: () => this.settings.selection.multiSelect
@@ -195,8 +200,8 @@ export class TableSorter {
             external: true
         },
         histograms: {
-            generator: (columnImpl, callback) => this.generateHistogram(columnImpl, callback)
-        }
+            generator: (columnImpl: any, callback: Function) => this.generateHistogram(columnImpl, callback)
+        },
     };
 
     /**
@@ -204,37 +209,37 @@ export class TableSorter {
      */
     constructor(element: JQuery) {
         this.element = $(this.template);
-        this.element.find('.clear-selection').on('click', () => {
+        this.element.find(".clear-selection").on("click", () => {
             this.lineupImpl.clearSelection();
             this.raiseClearSelection();
         });
-        this.element.find('.add-column').on('click', () => {
+        this.element.find(".add-column").on("click", () => {
             this.lineupImpl.addNewSingleColumnDialog();
         });
-        this.element.find('.add-stacked-column').on('click', () => {
+        this.element.find(".add-stacked-column").on("click", () => {
             this.lineupImpl.addNewStackedColumnDialog();
         });
         this._eventEmitter = new EventEmitter();
         element.append(this.element);
         this.loadingData = true;
     }
-    
+
     /**
      * getter for the dimensions
      */
     public get dimensions() {
         return this._dimensions;
     }
-    
+
     /**
      * Resizer function to update lineups rendering
      */
     private bodyUpdater = _.debounce(() => {
-        if(this.lineupImpl) {
+        if (this.lineupImpl) {
             this.lineupImpl.updateBody();
         }
     }, 100);
-    
+
     /**
      * setter for the dimensions
      */
@@ -243,18 +248,21 @@ export class TableSorter {
         const wrapper = this.element.find(".lu-wrapper");
         const header = this.element.find(".lu-header");
         const nav = this.element.find(".nav");
-        
+
         this.bodyUpdater();
-        
-        wrapper.css({ 
+
+        /* tslint:disable */
+        wrapper.css({
             width: value ? value.width : null, 
-            height: value ? value.height - header.height() - nav.height() : null });        
+            height: value ? value.height - header.height() - nav.height() : null 
+        });  
+        /* tslint:enable */
     }
 
     /**
      * The number of the results to return
      */
-    public get count(): number { return this.queryOptions.count || TableSorter.DEFAULT_COUNT };
+    public get count(): number { return this.queryOptions.count || TableSorter.DEFAULT_COUNT; };
     public set count(value: number) {
         this.queryOptions.count = value || TableSorter.DEFAULT_COUNT;
     }
@@ -262,7 +270,7 @@ export class TableSorter {
     /**
      * Gets the data provider
      */
-    private _dataProvider : IDataProvider;
+    private _dataProvider: IDataProvider;
     public get dataProvider() {
         return this._dataProvider;
     }
@@ -320,26 +328,23 @@ export class TableSorter {
      * Sets the settings
      */
     public set settings(value: ITableSorterSettings) {
-        var newSettings: ITableSorterSettings = $.extend(true, {}, TableSorter.DEFAULT_SETTINGS, value);
-
-        var singleSelect = newSettings.selection.singleSelect;
-        var multiSelect = newSettings.selection.multiSelect;
+        let newSettings: ITableSorterSettings = $.extend(true, {}, TableSorter.DEFAULT_SETTINGS, value);
 
         /** Apply the settings to lineup */
         if (this.lineupImpl) {
-            var presProps = newSettings.presentation;
-            for (var key in presProps) {
+            let presProps = newSettings.presentation;
+            for (let key in presProps) {
                 if (presProps.hasOwnProperty(key)) {
                     this.lineupImpl.changeRenderingOption(key, presProps[key]);
                 }
             }
             this.lineupImpl.changeInteractionOption("tooltips", newSettings.presentation.tooltips);
         }
-        
-        this.lineUpConfig['columnColors'] = newSettings.presentation.columnColors;
+
+        this.lineUpConfig["columnColors"] = newSettings.presentation.columnColors;
 
         // Sets the tooltips configuration
-        this.lineUpConfig['interaction'].tooltips = newSettings.presentation.tooltips;
+        this.lineUpConfig["interaction"].tooltips = newSettings.presentation.tooltips;
 
         this._settings = newSettings;
     }
@@ -389,9 +394,11 @@ export class TableSorter {
             }
         }
 
-        function isNumeric(v) {
+        function isNumeric(v: any) {
             // Assume that if null or undefined, it is numeric
+            /* tslint:disable */
             return v === 0 || v === null || v === undefined || TableSorter.isNumeric(v);
+            /* tslint:enable */
         }
 
         function analyzeColumn(columnName: string) {
@@ -404,60 +411,76 @@ export class TableSorter {
         }
 
         function createLineUpColumn(colName: string): ITableSorterColumn {
-            const result: ITableSorterColumn = { column: colName, type: 'string' };
+            const result: ITableSorterColumn = { column: colName, type: "string" };
             let { allNumeric, minMax } = analyzeColumn(colName);
 
             if (allNumeric) {
-                result.type = 'number';
+                result.type = "number";
                 result.domain = [minMax.min, minMax.max];
             }
 
             // If is a string, try to see if it is a category
-            if (result.type === 'string') {
-                var sset = d3.set(data.map((row) => row[colName]));
-                if (sset.size() <= Math.max(20, data.length * 0.2)) { //at most 20 percent unique values
-                    result.type = 'categorical';
+            if (result.type === "string") {
+                let sset = d3.set(data.map((row) => row[colName]));
+                if (sset.size() <= Math.max(20, data.length * 0.2)) { // at most 20 percent unique values
+                    result.type = "categorical";
                     result.categories = sset.values().sort();
                 }
             }
             return result;
         }
 
-        const dataColNames = getDataColumnNames();
         const columns: ITableSorterColumn[] = getDataColumnNames().map(createLineUpColumn);
         return {
             primaryKey: "id",
-            columns
+            columns,
         };
     }
 
     /**
      * Gets the sort from lineup
      */
-    public getSortFromLineUp() : ITableSorterSort {
+    public getSortFromLineUp(): ITableSorterSort {
         if (this.lineupImpl && this.lineupImpl.storage) {
-            var primary = this.lineupImpl.storage.config.columnBundles.primary;
-            var col = primary.sortedColumn;
+            let primary = this.lineupImpl.storage.config.columnBundles.primary;
+            let col = primary.sortedColumn;
             if (col) {
                 if (col.column) {
                     return {
                         column: col.column.column,
-                        asc: primary.sortingOrderAsc
+                        asc: primary.sortingOrderAsc,
                     };
                 }
                 let totalWidth = d3.sum(col.childrenWidths);
                 return {
                     stack: {
                         name: col.label,
-                        columns: col.children.map((a, i) => {
+                        columns: col.children.map((a: any, i: number) => {
                             return {
                                 column: a.column.column,
-                                weight: col.childrenWidths[i] / totalWidth
+                                weight: col.childrenWidths[i] / totalWidth,
                             };
-                        })
+                        }),
                     },
-                    asc: primary.sortingOrderAsc
+                    asc: primary.sortingOrderAsc,
                 };
+            }
+        }
+    }
+
+    /**
+     * Checks to see if more data should be loaded based on the viewport
+     */
+    protected checkLoadMoreData(scroll: boolean) {
+        // truthy this.dataView.metadata.segment means there is more data to be loaded
+        let scrollElement = $(this.lineupImpl.$container.node()).find("div.lu-wrapper")[0];
+        let scrollHeight = scrollElement.scrollHeight;
+        let top = scrollElement.scrollTop;
+        if (!scroll || this.lastScrollPos !== top) {
+            this.lastScrollPos = top;
+            let shouldScrollLoad = scrollHeight - (top + scrollElement.clientHeight) < 200 && scrollHeight >= 200;
+            if (shouldScrollLoad && !this.loadingData) {
+                this.runQuery(false);
             }
         }
     }
@@ -494,13 +517,13 @@ export class TableSorter {
                     // We've moved the offset
                     this.queryOptions.offset += r.count;
 
-                    //derive a description file
-                    var desc = this.configuration || TableSorter.createConfigurationFromData(this._data);
-                    
+                    // derive a description file
+                    let desc = this.configuration || TableSorter.createConfigurationFromData(this._data);
+
                     // Primary Key needs to always be ID
                     desc.primaryKey = "id";
-                    
-                    var spec: any = {};
+
+                    let spec: any = {};
                     // spec.name = name;
                     spec.dataspec = desc;
                     delete spec.dataspec.file;
@@ -511,10 +534,12 @@ export class TableSorter {
                     if (this.lineupImpl) {
                         this.lineupImpl.changeDataStorage(spec);
                     } else {
-                        var finalOptions = $.extend(true, this.lineUpConfig, { renderingOptions: $.extend(true, {}, this.settings.presentation) });
-                        this.lineupImpl = LineUpLib.create(spec, d3.select(this.element.find('.grid')[0]), finalOptions);
+                        let finalOptions = $.extend(true, this.lineUpConfig, {
+                            renderingOptions: $.extend(true, {}, this.settings.presentation)
+                        });
+                        this.lineupImpl = LineUpLib.create(spec, d3.select(this.element.find(".grid")[0]), finalOptions);
                         this.dimensions = this.dimensions;
-                        this.lineupImpl.listeners.on('change-sortcriteria.lineup', (ele, column, asc) => {
+                        this.lineupImpl.listeners.on("change-sortcriteria.lineup", (ele: JQuery, column: any, asc: boolean) => {
                             // This only works for single columns and not grouped columns
                             this.onLineUpSorted(column && column.column && column.column.id, asc);
                         });
@@ -527,16 +552,16 @@ export class TableSorter {
                         this.lineupImpl.listeners.on("selected.lineup", (row: ITableSorterRow) => {
                             if (this.settings.selection.singleSelect && !this.settings.selection.multiSelect) {
                                 this._selectedRows = this.updateRowSelection(row ? [row] : []);
-                                this.raiseSelectionChanged(this.selection)
+                                this.raiseSelectionChanged(this.selection);
                             }
                         });
-                        this.lineupImpl.listeners.on('columns-changed.lineup', () => this.onLineUpColumnsChanged());
-                        this.lineupImpl.listeners.on('change-filter.lineup', (x, column) => this.onLineUpFiltered(column));
-                        var scrolled = this.lineupImpl.scrolled;
-                        var me = this;
+                        this.lineupImpl.listeners.on("columns-changed.lineup", () => this.onLineUpColumnsChanged());
+                        this.lineupImpl.listeners.on("change-filter.lineup", (x: JQuery, column: any) => this.onLineUpFiltered(column));
+                        let scrolled = this.lineupImpl.scrolled;
+                        let me = this;
 
                         // The use of `function` here is intentional, we need to pass along the correct scope
-                        this.lineupImpl.scrolled = function(...args) {
+                        this.lineupImpl.scrolled = function(...args: any[]) {
                             me.checkLoadMoreData(true);
                             return scrolled.apply(this, args);
                         };
@@ -562,14 +587,14 @@ export class TableSorter {
     /**
      * Generates the histogram for lineup
      */
-    private generateHistogram(columnImpl, callback) {
-        var column = this.getColumnByName(columnImpl.column.column);
+    private generateHistogram(columnImpl: any, callback: Function) {
+        let column = this.getColumnByName(columnImpl.column.column);
         this.dataProvider.generateHistogram(column, this.queryOptions).then((h) => {
-            var perc = 1 / h.length;
-            var values = h.map((v, i) => ({
+            let perc = 1 / h.length;
+            let values = h.map((v, i) => ({
                 x: perc * i,
                 y: v,
-                dx: perc
+                dx: perc,
             }));
             callback(values);
         });
@@ -598,15 +623,15 @@ export class TableSorter {
     private saveConfiguration() {
         if (!this.savingConfiguration) {
             this.savingConfiguration = true;
-            //full spec
-            var s: ITableSorterConfiguration = $.extend({}, {}, this.lineupImpl.spec.dataspec);
-            //create current layout
-            var descs = this.lineupImpl.storage.getColumnLayout()
-                .map(((d) => d.description()));
+            // full spec
+            let s: ITableSorterConfiguration = $.extend({}, {}, this.lineupImpl.spec.dataspec);
+            // create current layout
+            let descs = this.lineupImpl.storage.getColumnLayout()
+                .map(((d: any) => d.description()));
             s.layout = _.groupBy(descs, (d: any) => d.columnBundle || "primary");
             s.sort = this.getSortFromLineUp();
             this.configuration = s;
-            delete s['data'];
+            delete s["data"];
             this.raiseConfigurationChanged(this.configuration);
             this.savingConfiguration = false;
         }
@@ -617,34 +642,12 @@ export class TableSorter {
      */
     private applyConfigurationToLineup() {
         if (this.lineupImpl) {
-            var currentSort = this.getSortFromLineUp();
+            let currentSort = this.getSortFromLineUp();
             if (this.configuration && this.configuration.sort && (!currentSort || !_.isEqual(currentSort, this.configuration.sort))) {
                 this.sortingFromConfig = true;
                 let sort = this.configuration.sort;
                 this.lineupImpl.sortBy(sort.stack ? sort.stack.name : sort.column, sort.asc);
                 this.sortingFromConfig = false;
-            }
-        }
-    }
-
-    /**
-     * Returns true if the given object is numeric
-     */
-    private static isNumeric = (obj) => (obj - parseFloat(obj) + 1) >= 0;
-
-    /**
-     * Checks to see if more data should be loaded based on the viewport
-     */
-    protected checkLoadMoreData(scroll: boolean) {
-        // truthy this.dataView.metadata.segment means there is more data to be loaded
-        var scrollElement = $(this.lineupImpl.$container.node()).find('div.lu-wrapper')[0];
-        var scrollHeight = scrollElement.scrollHeight;
-        var top = scrollElement.scrollTop;
-        if (!scroll || this.lastScrollPos !== top) {
-            this.lastScrollPos = top;
-            var shouldScrollLoad = scrollHeight - (top + scrollElement.clientHeight) < 200 && scrollHeight >= 200;
-            if (shouldScrollLoad && !this.loadingData) {
-                this.runQuery(false);
             }
         }
     }
@@ -680,22 +683,22 @@ export class TableSorter {
     /**
      * Listener for lineup being filtered
      */
-    private onLineUpFiltered(column) {
-        var colName = column.column && column.column.column;
-        var ourColumn = this.configuration.columns.filter(n => n.column === colName)[0];
-        var filter;
+    private onLineUpFiltered(column: any) {
+        let colName = column.column && column.column.column;
+        let ourColumn = this.configuration.columns.filter(n => n.column === colName)[0];
+        let filter: ITableSorterFilter;
         if (ourColumn.type === "number") {
             filter = {
                 column: colName,
                 value: {
                     domain: column.scale.domain(),
-                    range: column.scale.range()
-                }
+                    range: column.scale.range(),
+                },
             };
         } else {
             filter = {
                 column: colName,
-                value: column.filter
+                value: column.filter,
             };
         }
         this.saveConfiguration();

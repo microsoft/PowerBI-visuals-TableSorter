@@ -1,52 +1,49 @@
-require("../base/testSetup");
+import "../base/testSetup";
 
 import { expect } from "chai";
 import { TableSorter } from "./TableSorter";
-import { ITableSorterSettings, ITableSorterRow, ITableSorterColumn, IDataProvider } from "./models";
+import { ITableSorterSettings, ITableSorterRow, IDataProvider } from "./models";
 import * as $ from "jquery";
 import { Promise } from "es6-promise";
 
-describe('TableSorter', () => {
-    var parentEle;
+describe("TableSorter", () => {
+    let parentEle: JQuery;
     beforeEach(() => {
-        global['$'] = require("jquery");
-        global['d3'] = require("d3");
-        global['_'] = require("underscore");
-        parentEle = $('<div></div>');
+        parentEle = $("<div></div>");
     });
 
     afterEach(() => {
         if (parentEle) {
             parentEle.remove();
         }
-        parentEle = null;
+        parentEle = undefined;
     });
 
-    var createInstance = () => {
-        let ele = $('<div>');
+    let createInstance = () => {
+        let ele = $("<div>");
         parentEle.append(ele);
-        var result = {
+        let result = {
             instance: new TableSorter(ele),
-            element: ele
+            element: ele,
         };
         result.instance.settings = {
             presentation: {
                 animation: false
-            }
+            },
         };
         return result;
     };
 
-    var createFakeData = () => {
+    let createFakeData = () => {
         let rows: ITableSorterRow[] = [];
-        for (var i = 0; i < 100; i++) {
-            (function(myId) {
+        for (let i = 0; i < 100; i++) {
+            (function(myId: any) {
                 rows.push({
                     id: myId,
                     col1: myId,
                     col2: i * (Math.random() * 100),
                     selected: false,
-                    equals: (other) => (myId) === other['col1']
+                    equals: (other) => (myId) === other["col1"],
                 });
             })("FAKE_" + i);
         }
@@ -67,15 +64,14 @@ describe('TableSorter', () => {
                  * The type of column it is
                  * values: string|number
                  */
-                type: "string"
-            }]
+                type: "string",
+            }, ],
         };
     };
 
-    var createProvider = (data) => {
-        var firstCall = true;
-        var resolver;
-        var fakeProvider = <IDataProvider>{
+    let createProvider = (data: any[]) => {
+        let resolver: Function;
+        let fakeProvider = <IDataProvider>{
             canQuery(options: any) {
                 return Promise.resolve(true);
             },
@@ -86,36 +82,36 @@ describe('TableSorter', () => {
                 return new Promise((resolve2) => {
                     resolve2({
                         total: data.length,
-                        results: data
+                        results: data,
                     });
                     setTimeout(function() {
                         resolver();
                     }, 0);
                 });
-            }
+            },
         };
         return {
             dataLoaded : new Promise((resolve) => {
                 resolver = resolve;
             }),
-            provider: fakeProvider
-        }
+            provider: fakeProvider,
+        };
     };
 
-    var loadInstanceWithStackedColumns = () => {
+    let loadInstanceWithStackedColumns = () => {
         let { instance, element } = createInstance();
         let data = createFakeData();
         let providerInfo = createProvider(data.data);
         instance.dataProvider = providerInfo.provider;
         providerInfo.dataLoaded.then(() => {
-            var desc = {
+            let desc = {
                 label: "STACKED_COLUMN",
                 width: 10,
                 children: [
-                    { column: 'col2', type: 'number', weight: 100 }
-                ]
+                    { column: "col2", type: "number", weight: 100 }
+                ],
             };
-            var inst = instance.lineupImpl;
+            let inst = instance.lineupImpl;
             inst.storage.addStackedColumn(desc);
             inst.headerUpdateRequired = true;
             inst.updateAll();
@@ -124,27 +120,38 @@ describe('TableSorter', () => {
             instance,
             element,
             data,
-            dataLoaded: providerInfo.dataLoaded
+            dataLoaded: providerInfo.dataLoaded,
         };
     };
 
-    var loadInstanceWithStackedColumnsAndClick = () => {
+    const performClick = (e: JQuery) => {
+        if (typeof MouseEvent !== "undefined") {
+            /* tslint:disable */
+            var ev = new Event("click", {"bubbles":true, "cancelable":false});
+            e[0].dispatchEvent(ev);
+            /* tslint:enable */
+        } else {
+            e.click();
+        }
+     };
+
+    let loadInstanceWithStackedColumnsAndClick = () => {
         let { instance, element, data, dataLoaded } = loadInstanceWithStackedColumns();
 
         dataLoaded.then(() => {
             let headerEle = element.find(".header:contains('STACKED_COLUMN')").find(".labelBG");
-            headerEle.click();
+            performClick(headerEle);
         });
 
         return {
             instance,
             element,
             data,
-            dataLoaded
+            dataLoaded,
         };
     };
 
-    var loadInstanceWithSettings = (settings: ITableSorterSettings) => {
+    let loadInstanceWithSettings = (settings: ITableSorterSettings) => {
         let { instance, element } = createInstance();
         let { data } = createFakeData();
 
@@ -156,32 +163,32 @@ describe('TableSorter', () => {
         instance.settings = $.extend(true, {}, settings, {
             presentation: {
                 animation: false
-            } 
+            },
         });
-        
+
         return {
             instance,
             element,
-            dataLoaded
+            dataLoaded,
         };
-    }
+    };
 
-    it('should load', function() {
+    it("should load", function() {
         let { instance } = createInstance();
         expect(instance).to.not.be.undefined;
     });
 
     describe("settings", () => {
-        it('should load some default settings on create', () => {
+        it("should load some default settings on create", () => {
             let { instance } = createInstance();
             expect(instance.settings).to.not.be.undefined;
         });
-        it('should load some merge new settings', () => {
+        it("should load some merge new settings", () => {
             let { instance } = createInstance();
             let newSettings: ITableSorterSettings = {
                 presentation: {
                     histograms: false
-                }
+                },
             };
 
             // Set the new settings
@@ -193,11 +200,11 @@ describe('TableSorter', () => {
             // Make sure our new value is still there
             expect(instance.settings.presentation.histograms).to.eq(false);
         });
-        it('should pass rendering settings to lineupimpl', () => {
+        it("should pass rendering settings to lineupimpl", () => {
             let { instance, dataLoaded } = loadInstanceWithSettings({
                 presentation: {
                     histograms: false
-                }
+                },
             });
 
             return dataLoaded.then(() => {
@@ -223,7 +230,7 @@ describe('TableSorter', () => {
             it("should call the event when a column header is clicked", () => {
                 let { instance, element } = createInstance();
                 let called = false;
-                instance.events.on(TableSorter.EVENTS.SORT_CHANGED, (item) => {
+                instance.events.on(TableSorter.EVENTS.SORT_CHANGED, (item: any) => {
                     called = true;
                 });
                 let providerInfo = createProvider(createFakeData().data);
@@ -231,7 +238,7 @@ describe('TableSorter', () => {
                 return providerInfo.dataLoaded.then(() => {
                     // Click on de header
                     let headerEle = element.find(".header:contains('col1')").find(".labelBG");
-                    headerEle.click();
+                    performClick(headerEle);
 
                     expect(called).to.be.true;
                 });
@@ -239,7 +246,7 @@ describe('TableSorter', () => {
 
             it("should call the event with the correct params", () => {
                 let { instance, element } = createInstance();
-                instance.events.on(TableSorter.EVENTS.SORT_CHANGED, (colName) => {
+                instance.events.on(TableSorter.EVENTS.SORT_CHANGED, (colName: string) => {
                     expect(colName).to.equal("col1");
                 });
 
@@ -248,7 +255,7 @@ describe('TableSorter', () => {
                 return providerInfo.dataLoaded.then(() => {
                     // Click on de header
                     let headerEle = element.find(".header:contains('col1')").find(".labelBG");
-                    headerEle.click();
+                    performClick(headerEle);
                 });
             });
         });
@@ -257,17 +264,17 @@ describe('TableSorter', () => {
             it("should call the event when a row is clicked", () => {
                 let { instance, element } = createInstance();
                 let called = false;
-                instance.events.on(TableSorter.EVENTS.SELECTION_CHANGED, (selection) => {
+                instance.events.on(TableSorter.EVENTS.SELECTION_CHANGED, (selection: any) => {
                     called = true;
                     expect(selection.length).to.be.equal(1);
-                    expect(selection.col1).to.be.equal("FAKE_0"); // Very first row
+                    expect(selection[0].col1).to.be.equal("FAKE_0"); // Very first row
                 });
 
                 let providerInfo = createProvider(createFakeData().data);
                 instance.dataProvider = providerInfo.provider;
                 return providerInfo.dataLoaded.then(() => {
                     let row = element.find(".row").first();
-                    row.click();
+                    performClick(row);
                     expect(called).to.be.true;
                 });
 
@@ -279,15 +286,15 @@ describe('TableSorter', () => {
                 instance.dataProvider = providerInfo.provider;
                 return providerInfo.dataLoaded.then(() => {
                     let row = element.find(".row").first();
-                    row.click();
+                    performClick(row);
 
                     let called = false;
-                    instance.events.on(TableSorter.EVENTS.SELECTION_CHANGED, (selection) => {
+                    instance.events.on(TableSorter.EVENTS.SELECTION_CHANGED, (selection: any) => {
                         called = true;
                         expect(selection.length).to.be.equal(0);
                     });
 
-                    row.click();
+                    performClick(row);
 
                     expect(called).to.be.true;
                 });
@@ -305,9 +312,9 @@ describe('TableSorter', () => {
                     instance.dataProvider = providerInfo.provider;
                     return providerInfo.dataLoaded.then(() => {
                         let row = element.find(".row").first();
-                        row.click();
+                        performClick(row);
 
-                        expect(instance.selection[0]['col1']).to.be.equal(data[0]['col1']);
+                        expect(instance.selection[0]["col1"]).to.be.equal(data[0]["col1"]);
                     });
 
                 });
@@ -319,8 +326,8 @@ describe('TableSorter', () => {
                     instance.dataProvider = providerInfo.provider;
                     return providerInfo.dataLoaded.then(() => {
                         let row = element.find(".row").first();
-                        row.click();
-                        row.click();
+                        performClick(row);
+                        performClick(row);
 
                         expect(instance.selection.length).to.be.equal(0);
                     });
@@ -330,43 +337,43 @@ describe('TableSorter', () => {
                     let { instance, element } = loadInstanceWithSettings({
                         selection: {
                             singleSelect: false,
-                            multiSelect: true
-                        }
+                            multiSelect: true,
+                        },
                     });
                     let { data } = createFakeData();
                     let providerInfo = createProvider(createFakeData().data);
                     instance.dataProvider = providerInfo.provider;
                     return providerInfo.dataLoaded.then(() => {
                         let rows = element.find(".row");
-                        $(rows[0]).click();
-                        $(rows[1]).click();
+                        performClick($(rows[0]));
+                        performClick($(rows[1]));
 
                         expect(instance.selection.length).to.be.equal(2);
-                        expect(instance.selection.map((row) => row['col1'])).to.be.deep.equal(data.slice(0, 2).map((r) => r['col1']));
+                        expect(instance.selection.map((row) => row["col1"])).to.be.deep.equal(data.slice(0, 2).map((r) => r["col1"]));
                     });
 
                 });
 
-                it('should retain selection when set', () => {
-                    let { instance, element } = createInstance();
+                it("should retain selection when set", () => {
+                    let { instance } = createInstance();
                     let { data } = createFakeData();
 
                     let providerInfo = createProvider(createFakeData().data);
                     instance.dataProvider = providerInfo.provider;
                     return providerInfo.dataLoaded.then(() => {
                         instance.selection = [data[0]];
-                        expect(instance.selection[0]['col1']).to.be.equal(data[0]['col1']);
+                        expect(instance.selection[0]["col1"]).to.be.equal(data[0]["col1"]);
                     });
                 });
             });
 
             describe("single", () => {
-                var createInstanceWithSingleSelect = () => {
+                let createInstanceWithSingleSelect = () => {
                     return loadInstanceWithSettings({
                         selection: {
                             singleSelect: true,
-                            multiSelect: false
-                        }
+                            multiSelect: false,
+                        },
                     });
                 };
                 it("should update when a row is clicked on", () => {
@@ -377,9 +384,9 @@ describe('TableSorter', () => {
                     instance.dataProvider = providerInfo.provider;
                     return providerInfo.dataLoaded.then(() => {
                         let row = element.find(".row").first();
-                        row.click();
+                        performClick(row);
 
-                        expect(instance.selection[0]['col1']).to.be.equal(data[0]['col1']);
+                        expect(instance.selection[0]["col1"]).to.be.equal(data[0]["col1"]);
                     });
                 });
 
@@ -390,8 +397,8 @@ describe('TableSorter', () => {
                     instance.dataProvider = providerInfo.provider;
                     return providerInfo.dataLoaded.then(() => {
                         let row = element.find(".row").first();
-                        row.click();
-                        row.click();
+                        performClick(row);
+                        performClick(row);
 
                         expect(instance.selection.length).to.be.equal(0);
                     });
@@ -406,23 +413,23 @@ describe('TableSorter', () => {
                     return providerInfo.dataLoaded.then(() => {
 
                         let rows = element.find(".row");
-                        $(rows[0]).click();
-                        $(rows[1]).click();
+                        performClick($(rows[0]));
+                        performClick($(rows[1]));
 
                         expect(instance.selection.length).to.be.equal(1);
-                        expect(instance.selection[0]['col1']).to.be.deep.equal(data[1]['col1']);
+                        expect(instance.selection[0]["col1"]).to.be.deep.equal(data[1]["col1"]);
                     });
                 });
 
-                it('should retain selection when set', () => {
-                    let { instance, element } = createInstanceWithSingleSelect();
+                it("should retain selection when set", () => {
+                    let { instance } = createInstanceWithSingleSelect();
                     let { data } = createFakeData();
 
                     let providerInfo = createProvider(data);
                     instance.dataProvider = providerInfo.provider;
                     return providerInfo.dataLoaded.then(() => {
                         instance.selection = [data[0]];
-                        expect(instance.selection[0]['col1']).to.be.equal(data[0]['col1']);
+                        expect(instance.selection[0]["col1"]).to.be.equal(data[0]["col1"]);
                     });
                 });
             });
@@ -456,7 +463,7 @@ describe('TableSorter', () => {
                 });
             });
             it("saves the configuration when the column layout has been changed", () => {
-                let {instance, data, dataLoaded } = loadInstanceWithStackedColumns();
+                let {instance, dataLoaded } = loadInstanceWithStackedColumns();
                 return dataLoaded.then(() => {
                     let called = false;
                     instance.events.on(TableSorter.EVENTS.CONFIG_CHANGED, () => {
@@ -464,7 +471,7 @@ describe('TableSorter', () => {
                     });
 
                     // Ghetto: Manually say that the columns have changed, usually happens if you drag/drop add columns
-                    instance.lineupImpl.listeners['columns-changed']();
+                    instance.lineupImpl.listeners["columns-changed"]();
 
                     expect(called).to.be.true;
                 });
@@ -479,8 +486,8 @@ describe('TableSorter', () => {
                             stack: {
                                 name: "STACKED_COLUMN"
                             },
-                            asc: true
-                        }
+                            asc: true,
+                        },
                     };
                     let result = instance.getSortFromLineUp();
                     expect(result.stack.name).to.equal("STACKED_COLUMN");
