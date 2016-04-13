@@ -2712,17 +2712,28 @@ var LineUp;
       /**
        * returns a column by name
        * @param name
+       * @param all if true returns all matching columns
        * @returns {*}
        */
-      getColumnByName: function (name) {
-        var cols = this.getColumnLayout();
+      getColumnByName: function (name, all) {
+        var cols = this.getColumnLayout().slice(0);
+        var result = [];
         for (var i = cols.length - 1; i >= 0; --i) {
           var col = cols[i];
           if (col.getLabel() === name || (col.column && col.column.column === name)) {
-            return col;
+            if (!all) {
+              return col;
+            }
+            result.push(col);
+          }
+          else if (col.children) {
+            for (var j = 0; j < col.children.length; j++) {
+               cols.unshift(col.children[j]);
+               i++;
+            }
           }
         }
-        return null;
+        return !all ? null : result;
       }
     });
 }(LineUp || (LineUp = {}), d3, jQuery, _));
@@ -2864,13 +2875,23 @@ var LineUp;
             }).select('title').text(function(d) { return d.label; });
     }
 
-  function showStacked(config) {
+  function showStacked(config, lineup) {
     //if not enabled or values are shown
     if (!config.renderingOptions.stacked || config.renderingOptions.values) {
       return false;
     }
     //primary is a stacked one
     var current = config.columnBundles.primary.sortedColumn;
+    if (current) {
+        if (current && current.column && current.column.column) {
+            var matchingCols = lineup.storage.getColumnByName(current.column.column, true);
+            for (var i = 0; i < matchingCols.length; i++) {
+                if (matchingCols[i].parent instanceof LineUp.LayoutStackedColumn) {
+                    return false;
+                }
+            }
+        }
+    }
     return !(current && (current.parent instanceof LineUp.LayoutStackedColumn));
   }
 
@@ -2916,7 +2937,7 @@ var LineUp;
       });
   }
 
-  function updateStackBars(headers, allRows, _stackTransition, config) {
+  function updateStackBars(headers, allRows, _stackTransition, config, lineup) {
     // -- RENDER the stacked columns (update, exit, enter)
     var allStackedHeaders = headers.filter(function (d) {
       return (d instanceof LineUp.LayoutStackedColumn);
@@ -2945,7 +2966,7 @@ var LineUp;
     var allStackW = 0;
     var allStackRes = {};
 
-    var asStacked = showStacked(config);
+    var asStacked = showStacked(config, lineup);
 
     var allStack = stackRows.selectAll('rect').data(function (d) {
 
@@ -3157,7 +3178,7 @@ var LineUp;
         return  'translate(' + 0 + ',' + (value === null || typeof value === 'undefined' ? 0 : rowScale(value)) + ')';
       }
     });
-    var asStacked = showStacked(this.config);
+    var asStacked = showStacked(this.config, this);
 
     function createOverlays(row) {
       var textOverlays = [];
@@ -3354,7 +3375,7 @@ var LineUp;
     var allRows = allRowsSuper;
 
     updateSingleBars(headers, allRows, that.config);
-    updateStackBars(headers, allRows, this.config.renderingOptions.animation && stackTransition, that.config);
+    updateStackBars(headers, allRows, this.config.renderingOptions.animation && stackTransition, that.config, that);
     updateActionBars(headers, allRows, that.config);
 
     LineUp.updateClipPaths(allHeaders, this.$bodySVG, 'B', true);
@@ -3463,7 +3484,13 @@ var LineUp;
     LineUp.updateClipPaths(allHeaderData, this.$headerSVG, 'H', false, 'columnheader');
     //console.log(allHeaderData);
 
-
+    function isSortedColumn(sc, d) {
+      if (sc === d) {
+        return true;
+      }
+      return sc && d && sc.column && d.column && sc.column.column === d.column.column;    
+    }
+    
     // -- Handle the header groups (exit,enter, update)
 
     var allHeaders = svg.selectAll('.header').data(allHeaderData, function (d) {
@@ -3515,7 +3542,7 @@ var LineUp;
         var bundle = config.columnBundles[d.columnBundle];
         // TODO: adapt to comparison mode !!
         //same sorting swap order
-        if (bundle.sortedColumn !== null && (d === bundle.sortedColumn)) {
+        if (bundle.sortedColumn !== null && isSortedColumn(bundle.sortedColumn, d)) {
           bundle.sortingOrderAsc = !bundle.sortingOrderAsc;
         } else {
           bundle.sortingOrderAsc = d instanceof LineUp.LayoutStringColumn || d instanceof LineUp.LayoutCategoricalColumn || d instanceof LineUp.LayoutRankColumn;
@@ -3609,11 +3636,11 @@ var LineUp;
     
     //Get and set the clip source to be used for rendering overlays. Scoping context to a related DOM element.
     var clipSource = that.getClipSource.apply(this.$container[0][0]);
-
+    
     allHeaders.select('.headerLabel')
       .classed('sortedColumn', function (d) {
         var sc = config.columnBundles[d.columnBundle].sortedColumn;
-        return sc === d;
+        return isSortedColumn(sc, d);
       })
       .attr({
         y: function (d) {
@@ -3644,7 +3671,7 @@ var LineUp;
 
     allHeaders.select('.headerSort').text(function (d) {
       var sc = config.columnBundles[d.columnBundle].sortedColumn;
-      return ((sc === d) ?
+      return ((isSortedColumn(sc, d)) ?
         ((config.columnBundles[d.columnBundle].sortingOrderAsc) ? '\uf0de' : '\uf0dd')
         : '');
     })
