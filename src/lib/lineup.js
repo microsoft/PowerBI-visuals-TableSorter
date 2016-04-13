@@ -3199,7 +3199,8 @@ var LineUp;
     }
 
     function renderOverlays($row, textOverlays, clazz, clipPrefix, clipSource) {
-      $row.selectAll('text.' + clazz).data(textOverlays).enter().append('text').
+      var overlays = $row.selectAll('text.' + clazz);
+      overlays.data(textOverlays).enter().append('text').
         attr({
           'class': 'tableData ' + clazz,
           x: function (d) {
@@ -3211,6 +3212,18 @@ var LineUp;
           }
         }).text(function (d) {
           return d.label;
+        });
+
+      // update x on update
+      overlays
+        .attr({
+          x: function (d) {
+            return d.x;
+          },
+          y: that.config.svgLayout.rowHeight / 2,
+          'clip-path': function (d) {
+            return 'url(' + (clipSource || '') + '#clip-' + clipPrefix + d.id + ')';
+          }
         });
     }
 
