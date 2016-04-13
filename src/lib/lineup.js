@@ -3588,13 +3588,13 @@ var LineUp;
               return s(bin.x);
             },
             width: function(bin) {
-              return s(bin.dx);
+              return Math.max(s(bin.dx), 0);
             },
             y: function(bin) {
               return 1-bin.y;
             },
             height: function(bin) {
-              return bin.y;
+              return Math.max(bin.y, 0);
             }
           });
         });
