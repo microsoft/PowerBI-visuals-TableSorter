@@ -2767,6 +2767,10 @@ var LineUp;
           return shift ? d.offsetX : null;
         },
         width: function (d) {
+          // Empty columns are as wide as their parent
+          if (d instanceof LineUp.LayoutEmptyColumn) {
+              d = d.parent;
+          }
           return Math.max(d.getColumnWidth() - 5, 0);
         }
       });
@@ -3562,6 +3566,10 @@ var LineUp;
     allHeaders.select('.labelBG').attr({
       width: function (d) {
         // Uncharted (Dario): Added safety check to avoid negative values.
+        // Empty columns are as wide as their parent
+        if (d instanceof LineUp.LayoutEmptyColumn) {
+            d = d.parent;
+        }
         return Math.max(d.getColumnWidth() - 5, 0);
       },
       height: function (d) {
@@ -3740,6 +3748,9 @@ var LineUp;
           x: function (d) {
             return d.getColumnWidth() - config.htmlLayout.buttonRightPadding - (button.offset || 0);
           },
+          'clip-path': function (d) {
+            return 'url('+ clipSource +'#clip-H' + d.id + ')';
+          },
           y: config.htmlLayout.buttonTopPadding
         });
       });
@@ -3886,6 +3897,10 @@ var LineUp;
       dragHeaderEnter.append('rect').attr({
         class: 'labelBG',
         width: function (d) {
+          // Empty columns are as wide as their parent
+          if (d instanceof LineUp.LayoutEmptyColumn) {
+              d = d.parent;
+          }
           return d.getColumnWidth();
         },
         height: function (d) {
