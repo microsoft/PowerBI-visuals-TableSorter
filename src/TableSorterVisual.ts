@@ -79,7 +79,6 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
                 },
             },
             layout: {
-                displayName: "Layout",
                 properties: {
                     // formatString: {
                     //     type: {
@@ -92,7 +91,6 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
                     //     type: { bool: true }
                     // },
                     layout: {
-                        displayName: "JSON Configuration",
                         type: { text: {} },
                     },
                 },
@@ -415,14 +413,8 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
             objectName: options.objectName,
             properties: {},
         }, ];
-        if (options.objectName === "layout") {
-            $.extend(true, instances[0].properties, {
-                layout: JSON.stringify(this.tableSorter.configuration)
-            });
-        } else {
-            $.extend(true, instances[0].properties, this.tableSorter.settings[options.objectName]);
-        }
-        return instances;
+        $.extend(true, instances[0].properties, this.tableSorter.settings[options.objectName]);
+        return options.objectName === "layout" ? <any>{} : instances;
     }
 
     /**
