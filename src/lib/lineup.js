@@ -597,7 +597,17 @@ var LineUp;
       return new LayoutColumn(this.description());
     },
     isFiltered: function () {
-      return typeof this.filter !== 'undefined';
+      if (this instanceof LayoutNumberColumn) {
+        var oMapping = this.originalMapping();
+        var oScale = this.scale;
+        if (oMapping && oScale) {
+          var oldDomain = oMapping.domain();
+          var domain = oScale.domain();
+          return domain[0] !== oldDomain[0] || domain[1] !== oldDomain[1];      
+        }
+        return false;
+      }
+      return typeof this.filter !== 'undefined' && this.filter !== '' && this.filter !== null;
     },
     filterBy: function (/*row*/) {
       return true;
@@ -3787,7 +3797,9 @@ var LineUp;
         var $button = allHeaders.selectAll('.' + button.class).data(button.filter);
         $button.exit().remove();
         $button.enter().append('text')
-          .attr('class', 'fontawe ' + button.class)
+          .attr('class', function(d) {
+            return 'fontawe ' + button.class + (d.isFiltered() ? ' filtered': '');
+          })
           .text(button.text)
           .on('click', button.action);
         $button.attr({
@@ -3796,6 +3808,9 @@ var LineUp;
           },
           'clip-path': function (d) {
             return 'url('+ clipSource +'#clip-H' + d.id + ')';
+          },
+          'class': function(d) {
+            return 'fontawe ' + button.class + (d.isFiltered() ? ' filtered': '');
           },
           y: config.htmlLayout.buttonTopPadding
         });

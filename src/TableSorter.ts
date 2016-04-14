@@ -362,6 +362,10 @@ export class TableSorter {
     public set configuration(value: ITableSorterConfiguration) {
         this._configuration = value;
 
+        if (this._configuration.sort) {
+            this.queryOptions.sort = [this._configuration.sort];
+        }
+
         this.applyConfigurationToLineup();
     }
 
@@ -518,7 +522,8 @@ export class TableSorter {
                     this.queryOptions.offset += r.count;
 
                     // derive a description file
-                    let desc = this.configuration || TableSorter.createConfigurationFromData(this._data);
+                    let desc = this.configuration ?
+                        $.extend(true, {}, this.configuration) : TableSorter.createConfigurationFromData(this._data);
 
                     // Primary Key needs to always be ID
                     desc.primaryKey = "id";
@@ -618,20 +623,56 @@ export class TableSorter {
     }
 
     /**
+     * Gets the current list of filters from lineup
+     */
+    private getFiltersFromLineup() {
+        let descs = this.lineupImpl.storage.getColumnLayout()
+            .map(((d: any) => d.description()));
+        let filters: ITableSorterFilter[] = [];
+        descs.forEach((n: any) => {
+            if (n.filter) {
+                filters.push({
+                    column: n.column,
+                    value: n.filter,
+                });
+            } else if (n.domain) {
+                filters.push({
+                    column: n.column,
+                    value: {
+                        domain: n.domain,
+                        range: n.range,
+                    },
+                });
+            }
+        });
+        return filters;
+    }
+
+    /**
+     * Returns a configuration based on lineup settings
+     */
+    private getConfigurationFromLineup() {
+        // full spec
+        let dataSpec: any = this.lineupImpl.spec.dataspec;
+        let s: ITableSorterConfiguration = $.extend(true, {}, {
+            columns: dataSpec.columns,
+            primaryKey: dataSpec.primaryKey,
+        });
+        // create current layout
+        let descs = this.lineupImpl.storage.getColumnLayout()
+            .map(((d: any) => d.description()));
+        s.layout = _.groupBy(descs, (d: any) => d.columnBundle || "primary");
+        s.sort = this.getSortFromLineUp();
+        return s;
+    }
+
+    /**
      * Saves the current layout
      */
     private saveConfiguration() {
         if (!this.savingConfiguration) {
             this.savingConfiguration = true;
-            // full spec
-            let s: ITableSorterConfiguration = $.extend({}, {}, this.lineupImpl.spec.dataspec);
-            // create current layout
-            let descs = this.lineupImpl.storage.getColumnLayout()
-                .map(((d: any) => d.description()));
-            s.layout = _.groupBy(descs, (d: any) => d.columnBundle || "primary");
-            s.sort = this.getSortFromLineUp();
-            this.configuration = s;
-            delete s["data"];
+            this.configuration = this.getConfigurationFromLineup();
             this.raiseConfigurationChanged(this.configuration);
             this.savingConfiguration = false;
         }
@@ -705,8 +746,7 @@ export class TableSorter {
         this.raiseFilterChanged(filter);
 
         // Set the new filter value
-        console.error("This should support multiple filters");
-        this.queryOptions.query = filter ? [filter] : undefined;
+        this.queryOptions.query = this.getFiltersFromLineup();
 
         if (this.dataProvider && this.dataProvider.filter) {
             this.dataProvider.filter(filter);
