@@ -1,4 +1,4 @@
-/*! LineUpJS - v0.1.0 - 2016-04-13
+/*! LineUpJS - v0.1.0 - 2016-04-14
 * https://github.com/Caleydo/lineup.js
 * Copyright (c) 2016 ; Licensed BSD */
 (function() {
@@ -1568,7 +1568,7 @@ var LineUp;
       width: height - 50,
       height: height - 50
     };
-    var editor = LineUp.mappingEditor(bak, original.domain(), that.storage.rawdata, access, editorOptions);
+    var editor = LineUp.mappingEditor(bak, original.domain(), that.storage.rawdata, access, editorOptions, this);
     popup.select('.mappingArea').call(editor);
 
     function isSame(a, b) {
@@ -1589,7 +1589,7 @@ var LineUp;
     popup.select('.reset').on('click', function () {
       act = bak = original;
       applyMapping(original);
-      editor = LineUp.mappingEditor(bak, original.domain(), that.storage.rawdata, access, editorOptions);
+      editor = LineUp.mappingEditor(bak, original.domain(), that.storage.rawdata, access, editorOptions, that);
       popup.selectAll('.mappingArea *').remove();
       popup.select('.mappingArea').call(editor);
     });
@@ -2059,11 +2059,13 @@ var LineUp;
       x1 : x1, y1 : y1, x2 : x2, y2: y2, 'class' : clazz
     });
   }
-  function addText($svg, x, y, text, dy, clazz) {
+  function addText($svg, x, y, text, dy, clazz, clipSource, name, anchor) {
     dy = dy || null;
     clazz = clazz || null;
     return $svg.append("text").attr({
-      x : x, y : y, dy : dy, 'class' : clazz
+      x : x, y : y, dy : dy, 'class' : clazz,
+      'clip-path': 'url('+ clipSource +'#clip-H' + name + ')',
+      'text-anchor': anchor
     }).text(text);
   }
   function addCircle($svg, x, shift, y, radius) {
@@ -2078,7 +2080,25 @@ var LineUp;
         transform : 'translate('+shift+',0)'
       });
   }
-  LineUp.mappingEditor = function (scale, dataDomain, data, data_accessor, options) {
+      
+  function prettyPrintNumber(num) {
+    if (typeof num !== "undefined" && num !== null) {
+      if ((num + "").length <= 5) {
+        return num;
+      } else if (num.toExponential) {
+        return num.toExponential(1);
+      } else if (num.substring) {
+        return num.substring(0, 3) + "...";
+      }
+      return num;
+    }
+    return "";
+  }
+
+  LineUp.mappingEditor = function (scale, dataDomain, data, data_accessor, options, lineup) {
+    //Get and set the clip source to be used for rendering overlays. Scoping context to a related DOM element.
+    var clipSource = lineup.getClipSource.apply(lineup.$container[0][0]);
+    
     options = $.extend({
       width: 400,
       height: 400,
@@ -2120,22 +2140,48 @@ var LineUp;
         .clamp(true)
         .domain(scale.domain())
         .range([lowerNormalized, upperNormalized]);
+      
+      var paths = [
+        { name: "score_min", x: lowerLimitX, y:scoreAxisY - 25, width: 40, height: 20 },
+        { name: "score_max", x: upperLimitX - 40 /* width */, y:scoreAxisY - 25, width: 40, height: 20 },
+        { name: "value_min", x: lowerLimitX, y:raw2pixelAxisY + 20, width: 45, height: 20 },
+        { name: "value_max", x: upperLimitX - 45 /* width */, y: raw2pixelAxisY + 20, width: 45, height: 20 }
+      ];
+      
+      $svg.append('defs');
+      
+      var textClipPath = $svg.select('defs').selectAll(function () {
+        return this.getElementsByTagName('clipPath');
+      }).data(paths, function(d) { return d.name; });
+      textClipPath.enter().append('clipPath')
+        .attr('id', function(d) { return 'clip-H' + d.name; })
+        .append('rect');
+        
+      textClipPath.exit().remove();
+      textClipPath.select('rect')
+        .attr({
+          x: function(d) { return d.x; },
+          y: function(d) { return d.y; },
+          width: function(d) { return d.width; },
+          height: function(d) { return d.height; } 
+      });
+      
       var $base = $svg.append('g');
       //upper axis for scored values
       addLine($base, lowerLimitX,scoreAxisY, upperLimitX, scoreAxisY, 'axis');
       //label for minimum scored value
-      addText($base, lowerLimitX, scoreAxisY - 25, 0, '.75em');
+      addText($base, lowerLimitX, scoreAxisY - 25, 0, '.75em', undefined, clipSource, "score_min", "start");
       //label for maximum scored value
-      addText($base, upperLimitX, scoreAxisY - 25, 1, '.75em');
-      addText($base, options.width/2, scoreAxisY -25, 'Score', '.75em','centered');
+      addText($base, upperLimitX, scoreAxisY - 25, 1, '.75em', undefined, clipSource, "score_max", "end");
+      addText($base, options.width/2, scoreAxisY -25, 'Score', '.75em','centered', clipSource, "score", "middle");
 
       //lower axis for raw2pixel values
       addLine($base, lowerLimitX,raw2pixelAxisY, upperLimitX, raw2pixelAxisY, 'axis');
       //label for minimum raw2pixel value
-      addText($base, lowerLimitX, raw2pixelAxisY + 20, dataDomain[0], '.75em');
+      addText($base, lowerLimitX, raw2pixelAxisY + 20, prettyPrintNumber(dataDomain[0]), '.75em', undefined, clipSource, "value_min", "start");
       //label for maximum raw2pixel value
-      addText($base, upperLimitX, raw2pixelAxisY + 20, dataDomain[1], '.75em');
-      addText($base, options.width/2, raw2pixelAxisY + 20, 'Raw', '.75em','centered');
+      addText($base, upperLimitX, raw2pixelAxisY + 20, prettyPrintNumber(dataDomain[1]), '.75em', undefined, clipSource, "value_max", "end");
+      addText($base, options.width/2, raw2pixelAxisY + 20, 'Raw', '.75em','centered', clipSource, "value", "middle");
       
       //lines that show mapping of individual data items
       var datalines = $svg.append('g').classed('data',true).selectAll('line').data(data);
