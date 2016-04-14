@@ -362,8 +362,12 @@ export class TableSorter {
     public set configuration(value: ITableSorterConfiguration) {
         this._configuration = value;
 
-        if (this._configuration.sort) {
-            this.queryOptions.sort = [this._configuration.sort];
+        if (value.sort) {
+            this.queryOptions.sort = [value.sort];
+        }
+
+        if (value.filters) {
+            this.queryOptions.query = value.filters;
         }
 
         this.applyConfigurationToLineup();
