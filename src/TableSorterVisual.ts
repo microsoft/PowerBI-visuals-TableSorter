@@ -79,7 +79,6 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
                 },
             },
             layout: {
-                displayName: "Layout",
                 properties: {
                     // formatString: {
                     //     type: {
@@ -92,8 +91,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
                     //     type: { bool: true }
                     // },
                     layout: {
-                        displayName: "JSON Configuration",
-                        type: { text: {} },
+                        type: { text: {} }
                     },
                 },
             },
@@ -308,7 +306,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
         let cols: string[];
         if (view && view.table) {
             let table = view.table;
-            cols = table.columns.map(n => n.displayName);
+            cols = table.columns.filter(n => !!n).map(n => n.displayName);
             table.rows.forEach((row, rowIndex) => {
                 let identity: any;
                 let newId: any;
@@ -415,14 +413,8 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
             objectName: options.objectName,
             properties: {},
         }, ];
-        if (options.objectName === "layout") {
-            $.extend(true, instances[0].properties, {
-                layout: JSON.stringify(this.tableSorter.configuration)
-            });
-        } else {
-            $.extend(true, instances[0].properties, this.tableSorter.settings[options.objectName]);
-        }
-        return instances;
+        $.extend(true, instances[0].properties, this.tableSorter.settings[options.objectName]);
+        return options.objectName === "layout" ? <any>{} : instances;
     }
 
     /**
@@ -437,7 +429,8 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
      * Gets a lineup config from the data view
      */
     private getConfigFromDataView(): ITableSorterConfiguration {
-        let newColArr: ITableSorterColumn[] = this.dataViewTable.columns.slice(0).map((c) => {
+        // Sometimes columns come in undefined
+        let newColArr: ITableSorterColumn[] = this.dataViewTable.columns.slice(0).filter(n => !!n).map((c) => {
             return {
                 label: c.displayName,
                 column: c.displayName,
@@ -618,7 +611,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
             let args: powerbi.CustomSortEventArgs = null;
             /* tslint:enable */
             if (sort) {
-                let pbiCol = this.dataViewTable.columns.filter((c) => c.displayName === sort.column)[0];
+                let pbiCol = this.dataViewTable.columns.filter((c) => !!c && c.displayName === sort.column)[0];
                 let sortDescriptors: powerbi.SortableFieldDescriptor[] = [{
                     queryName: pbiCol.queryName,
                     sortDirection: sort.asc ? powerbi.SortDirection.Ascending : powerbi.SortDirection.Descending,
