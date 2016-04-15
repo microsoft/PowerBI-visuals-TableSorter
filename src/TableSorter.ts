@@ -14,7 +14,7 @@ import {
 } from "./models";
 import * as $ from "jquery";
 /* tslint:disable */
-const LineUpLib = require("./lib/lineup");
+const LineUpLib = require("lineup-v1");
 /* tslint:enable */
 
 /**
