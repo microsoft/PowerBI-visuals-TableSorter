@@ -423,7 +423,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
     protected getCss(): string[] {
         const css = [
             require("!css!../node_modules/lineup-v1/css/style.css"),
-            require("!css!sass!./css/TableSorterVisual.scss")
+            require("!css!sass!./css/TableSorterVisual.scss"),
         ];
         return this.noCss ? [] : super.getCss().concat(css);
     }
