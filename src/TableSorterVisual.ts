@@ -43,6 +43,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
         dataRoles: [{
             name: "Values",
             kind: VisualDataRoleKind.GroupingOrMeasure,
+            displayName: powerbi.data.createDisplayNameGetter("Role_DisplayName_Values")
         }, ],
         dataViewMappings: [{
             table: {

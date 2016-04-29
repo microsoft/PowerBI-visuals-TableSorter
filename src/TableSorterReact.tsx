@@ -15,6 +15,8 @@ import "./css/TableSorter.scss";
 export interface TableSorterProps {
     cols: ITableSorterColumn[];
     provider: IDataProvider;
+    width?: number;
+    height?: number; 
     multiSelect?: boolean;
     count?: number;
     singleSelect?: boolean;
@@ -54,7 +56,7 @@ export class TableSorter extends React.Component<TableSorterProps, TableSorterSt
      * Renders this component
      */
     public render() {
-        return <div style={{width:"100%", height:"100%"}}></div>;
+        return <div class="tablesorter-react"></div>;
     }
 
     /**
@@ -90,6 +92,9 @@ export class TableSorter extends React.Component<TableSorterProps, TableSorterSt
             this.tableSorter.configuration = config;
         }
         this.tableSorter.dataProvider = props.provider;
+        if (props.width || props.height) {
+            this.tableSorter.dimensions = { width: props.width, height: props.height };
+        }
     }
 
     /**
