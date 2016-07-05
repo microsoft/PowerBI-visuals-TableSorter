@@ -1,3 +1,5 @@
+@import "./icons/icons";
+
 .lu .headerLabel {
     @extend .smallFontSize;
     @extend .regularFont;
@@ -372,5 +374,39 @@
         .load-spinner {
             display: block;
         }
+    }
+}
+
+.lu .fontawe {
+    font-family: "fa" !important;
+}
+
+// Taken from https://github.com/FortAwesome/Font-Awesome/blob/master/scss/_stacked.scss
+.fa-stack {
+  position: relative;
+  display: inline-block;
+  width: 2em;
+  height: 2em;
+  line-height: 2em;
+  vertical-align: middle;
+  padding-top: .2em;
+}
+.fa-stack-1x, .fa-stack-2x {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  text-align: center;
+  margin-left: -.2em;
+}
+.fa-stack-1x { line-height: inherit; }
+.fa-stack-2x { font-size: 2em; }
+
+.clear-selection .fa-check {
+    margin-top: .5em;
+}
+
+.add-column, .add-stacked-column {
+    .fa-plus-circle {
+        margin-top: 1em;
     }
 }

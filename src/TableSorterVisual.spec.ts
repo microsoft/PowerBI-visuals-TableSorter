@@ -1,4 +1,4 @@
-import { Utils as SpecUtils } from "../base/powerbi/spec/visualHelpers";
+import { Utils as SpecUtils } from "essex.powerbi.base/spec/visualHelpers";
 import { expect } from "chai";
 import { default as TableSorterVisual  } from "./TableSorterVisual";
 import * as $ from "jquery";

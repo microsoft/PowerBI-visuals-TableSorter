@@ -1,6 +1,5 @@
-/// <reference path="../base/powerbi/references.d.ts"/>
-import { VisualBase } from "../base/powerbi/VisualBase";
-import { default as Utils, Visual } from "../base/powerbi/Utils";
+import { VisualBase, Visual, logger } from "essex.powerbi.base";
+import { default as Utils } from "essex.powerbi.base/src/lib/Utils";
 import { TableSorter  } from "./TableSorter";
 import {
     ITableSorterRow,
@@ -30,7 +29,8 @@ import SelectionManager = powerbi.visuals.utility.SelectionManager;
 import VisualDataRoleKind = powerbi.VisualDataRoleKind;
 
 /* tslint:disable */
-const colors = require("../base/powerbi/colors");
+const log = logger("essex:widget:TableSorterVisual");
+const colors = require("essex.powerbi.base/src/colors");
 /* tslint:enable */
 
 @Visual(require("./build").output.PowerBI)
