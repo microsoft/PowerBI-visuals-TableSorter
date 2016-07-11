@@ -1,1 +1,1 @@
-export const LOAD_COUNT = 500;
+export const LOAD_COUNT = 1000;
