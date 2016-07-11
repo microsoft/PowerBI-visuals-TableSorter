@@ -377,7 +377,7 @@
     }
 }
 
-.lu .fontawe {
+.lu .fontawe, .lu text.headerSort {
     font-family: "fa" !important;
 }
 
@@ -408,5 +408,54 @@
 .add-column, .add-stacked-column {
     .fa-plus-circle {
         margin-top: 1em;
+    }
+}
+
+.mappingArea:after {
+    content: "Note: This only reflects the currently loaded data";
+    font-style: italic;
+    font-size: .75em;
+    text-align: center;
+    display: block;
+
+    // Normally 10, but the "OK" button is position: absolute;
+    margin-bottom: 20px;
+}
+
+.lu-popup {
+    // .reset, label, .cancel {
+    //     display: none;
+    // }
+    // .ok {
+    //     margin-top: -20px;
+    // }
+
+    .column-domain {
+        height: 22px;
+        clear: both;
+        .datalabel {
+            height: 16px;
+            margin-top: 4px;
+            margin-right: 2px;
+            float: left;
+        }
+        .max-container {
+            float: left;
+            height: 20px;
+            margin-top: 2px;
+            margin-left: 4px;
+
+            input {
+                width: 100px;
+            }
+        }
+        .min-container {
+            float: left;
+            height: 20px;
+            margin-top: 2px;
+            input {
+                width: 50px;
+            }
+        }
     }
 }

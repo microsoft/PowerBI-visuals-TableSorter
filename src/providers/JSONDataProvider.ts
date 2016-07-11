@@ -1,5 +1,8 @@
 import { Promise } from "es6-promise";
-import { IDataProvider, IQueryOptions, IQueryResult, ITableSorterColumn, ITableSorterSort } from "../models";
+import { IDataProvider, IQueryOptions, IQueryResult, ITableSorterColumn, ITableSorterSort, ITableSorterFilter } from "../models";
+import { logger } from "essex.powerbi.base";
+
+const log = logger("essex:widget:tablesorter:JSONDataProvider");
 
 /**
  * A Data provider for a simple json array
@@ -8,18 +11,21 @@ export class JSONDataProvider implements IDataProvider {
     protected data: any[];
     private handleSort = true;
     private handleFilter = true;
+    private count = 100;
+    private offset = 0;
 
-    constructor(data: any[], handleSort = true, handleFilter = true) {
+    constructor(data: any[], handleSort = true, handleFilter = true, count = 100) {
         this.data = data;
         this.handleSort = handleSort;
         this.handleFilter = handleFilter;
+        this.count = count;
     }
 
     /**
      * A filter for string values
      */
     private static checkStringFilter(data: { [key: string] : string }, filter: { column: string; value: string }) {
-        return data[filter.column].match(new RegExp(filter.value));
+        return (data[filter.column] || "").match(new RegExp(filter.value));
     }
 
     /**
@@ -34,7 +40,7 @@ export class JSONDataProvider implements IDataProvider {
      * Determines if the dataset can be queried again
      */
     public canQuery(options: IQueryOptions): PromiseLike<boolean> {
-        return new Promise<boolean>((resolve) => resolve(options.offset < this.data.length));
+        return new Promise<boolean>((resolve) => resolve(this.offset < this.data.length));
     }
 
     /**
@@ -42,16 +48,42 @@ export class JSONDataProvider implements IDataProvider {
      */
     public query(options: IQueryOptions): PromiseLike<IQueryResult> {
         return new Promise<IQueryResult>((resolve, reject) => {
-            let final = this.getFilteredData(options);
-            let newData = final.slice(options.offset, options.offset + options.count);
+            let newData: any[];
+            let replace = this.offset === 0;
+            try {
+                let final = this.getFilteredData(options);
+                newData = final.slice(this.offset, this.offset + this.count);
+                this.offset += this.count;
+                log(`Returning ${newData.length} results from query`);
+            } catch (e) {
+                log(`Error Returning: ${e}`);
+            }
             setTimeout(() => {
                 resolve({
                     results: newData,
-                    count: newData.length,
+                    replace: replace
                 });
             }, 0);
         });
     };
+
+    /**
+     * Called when the data should be sorted
+     */
+    public sort(sort?: ITableSorterSort) {
+        if (this.handleSort) {
+            this.offset = 0;
+        }
+    }
+
+    /**
+     * Called when the data is filtered
+     */
+    public filter(filter?: ITableSorterFilter) {
+        if (this.handleFilter) {
+            this.offset = 0;
+        }
+    }
 
     /**
      * Generates a histogram for this data set
@@ -103,7 +135,7 @@ export class JSONDataProvider implements IDataProvider {
             const calcStackedValue = (item: any, sortToCheck: ITableSorterSort, minMax: { [col: string] : { min: number, max: number}}) => {
                 let columns = sortToCheck.stack.columns;
                 if (columns) {
-                    return columns.reduce((a, v) => {
+                    let sortVal = columns.reduce((a, v) => {
                         /**
                          * This calculates the percent that this guy is of the max value
                          */
@@ -116,6 +148,7 @@ export class JSONDataProvider implements IDataProvider {
                         }
                         return a + (value * v.weight);
                     }, 0);
+                    return sortVal;
                 }
                 return 0;
             };

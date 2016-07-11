@@ -16,7 +16,7 @@ export interface TableSorterProps {
     cols: ITableSorterColumn[];
     provider: IDataProvider;
     width?: number;
-    height?: number; 
+    height?: number;
     multiSelect?: boolean;
     count?: number;
     singleSelect?: boolean;
@@ -82,7 +82,7 @@ export class TableSorter extends React.Component<TableSorterProps, TableSorterSt
         props = props || this.props;
 
         this.tableSorter.settings = this.getSettingsFromProps(props);
-        this.tableSorter.count = props.count || 100;
+        // this.tableSorter.count = props.count || 100;
         if (props.provider && props.cols) {
             let config: ITableSorterConfiguration = this.tableSorter.configuration || {
                 primaryKey: props.cols[0].column,

@@ -204,24 +204,15 @@ export interface IDataProvider {
  */
 export interface ITableSorterFilter {
     column: string;
-    value: string | {
-        domain: [number, number];
-        range: [number, number];
-    };
+    value: string | INumericalFilter;
+}
+
+export interface INumericalFilter {
+    domain: [number, number];
+    range: [number, number];
 }
 
 export interface IQueryOptions {
-
-    /**
-     * The offset into the dataset to retrieve
-     */
-    offset: number;
-
-    /**
-     * The number of objects to return
-     */
-    count: number;
-
     /**
      * The query to run
      */
@@ -238,12 +229,12 @@ export interface IQueryOptions {
  */
 export interface IQueryResult {
     /**
-     * The number of returned results
-     */
-    count: number;
-
-    /**
      * The matching results
      */
     results: ITableSorterRow[];
+
+    /**
+     * Whether or not the results should replace the current dataset, otherwise it will be appended
+     */
+    replace?: boolean;
 }

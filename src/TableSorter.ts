@@ -1,9 +1,11 @@
 import { default as EventEmitter } from "../base/EventEmitter";
+import { logger } from "essex.powerbi.base";
 import { JSONDataProvider } from "./providers/JSONDataProvider";
 import * as _  from "lodash";
 import * as d3 from "d3";
 import {
     IQueryOptions,
+    IQueryResult,
     IDataProvider,
     ITableSorterColumn,
     ITableSorterRow,
@@ -15,6 +17,7 @@ import {
 import * as $ from "jquery";
 /* tslint:disable */
 const LineUpLib = require("lineup-v1");
+const log = logger("essex:widget:tablesorter:TableSorter");
 /* tslint:enable */
 
 /**
@@ -65,11 +68,6 @@ export class TableSorter {
     private static isNumeric = (obj: any) => (obj - parseFloat(obj) + 1) >= 0;
 
     /**
-     * The default count amount
-     */
-    private static DEFAULT_COUNT = 100;
-
-    /**
      * My lineup instance
      */
     public lineupImpl: any;
@@ -80,12 +78,14 @@ export class TableSorter {
     private _dimensions: { width: number; height: number; };
 
     /**
+     * The currently loading promise
+     */
+    private loadingPromise: PromiseLike<any>;
+
+    /**
      * The set of options used to query for new data
      */
-    private queryOptions: IQueryOptions = {
-        offset: 0,
-        count: TableSorter.DEFAULT_COUNT,
-    };
+    private queryOptions: IQueryOptions = { };
 
     /**
      * Represents the last query that we performed
@@ -116,11 +116,6 @@ export class TableSorter {
      * True if we are currently sorting lineup per the grid
      */
     private sortingFromConfig: boolean;
-
-    /**
-     * Gets the last scroll position
-     */
-    private lastScrollPos: number;
 
     /**
      * The template for the grid
@@ -174,9 +169,13 @@ export class TableSorter {
     /**
      * Setter for if we are loading data
      */
+    private _toggleClass = _.debounce(() => this.element.toggleClass("loading", this.loadingData), 100);
     private set loadingData(value: boolean) {
-        this.element.toggleClass("loading", !!value);
         this._loadingData = value;
+        if (value) {
+            this.element.addClass("loading");
+        }
+        this._toggleClass();
     }
 
     private _selectedRows: ITableSorterRow[] = [];
@@ -245,26 +244,7 @@ export class TableSorter {
      */
     public set dimensions(value) {
         this._dimensions = value;
-        const wrapper = this.element.find(".lu-wrapper");
-        const header = this.element.find(".lu-header");
-        const nav = this.element.find(".nav");
-
         this.bodyUpdater();
-
-        /* tslint:disable */
-        wrapper.css({
-            width: value ? value.width : null, 
-            height: value ? value.height - header.height() - nav.height() : null 
-        });  
-        /* tslint:enable */
-    }
-
-    /**
-     * The number of the results to return
-     */
-    public get count(): number { return this.queryOptions.count || TableSorter.DEFAULT_COUNT; };
-    public set count(value: number) {
-        this.queryOptions.count = value || TableSorter.DEFAULT_COUNT;
     }
 
     /**
@@ -280,7 +260,6 @@ export class TableSorter {
      */
     public set dataProvider(dataProvider: IDataProvider) {
         // Reset query vars
-        this.queryOptions.offset = 0;
         this.loadingData = false;
         this.lastQuery = undefined;
 
@@ -480,16 +459,14 @@ export class TableSorter {
      * Checks to see if more data should be loaded based on the viewport
      */
     protected checkLoadMoreData(scroll: boolean) {
-        // truthy this.dataView.metadata.segment means there is more data to be loaded
-        let scrollElement = $(this.lineupImpl.$container.node()).find("div.lu-wrapper")[0];
-        let scrollHeight = scrollElement.scrollHeight;
-        let top = scrollElement.scrollTop;
-        if (!scroll || this.lastScrollPos !== top) {
-            this.lastScrollPos = top;
-            let shouldScrollLoad = scrollHeight - (top + scrollElement.clientHeight) < 200 && scrollHeight >= 200;
-            if (shouldScrollLoad && !this.loadingData) {
-                this.runQuery(false);
-            }
+        const scrollElement = $(this.lineupImpl.$container.node()).find("div.lu-wrapper")[0];
+        const sizeProp = "Height";
+        const posProp = "Top";
+        const scrollSize = scrollElement["scroll" + sizeProp];
+        const scrollPos = scrollElement["scroll" + posProp];
+        const shouldScrollLoad = scrollSize - (scrollPos + scrollElement["client" + sizeProp]) < 200;
+        if (shouldScrollLoad && !this.loadingData) {
+            return this.runQuery(false);
         }
     }
 
@@ -497,100 +474,112 @@ export class TableSorter {
      * Runs the current query against the data provider
      */
     private runQuery(newQuery: boolean) {
-        if (newQuery) {
-            this.queryOptions.offset = 0;
+        // If there is already a thing goin, stop it
+        if (newQuery && this.loadingPromise) {
+            this.loadingPromise["cancel"] = true;
         }
+
         if (!this.dataProvider) {
             return;
         }
-
-        // No need to requery, if we have already performed this query
-        if (_.isEqual(this.queryOptions, this.lastQuery)) {
-            return;
-        }
-
-        this.lastQuery = <any>_.assign({}, this.queryOptions);
 
         // Let everyone know we are loading more data
         this.raiseLoadMoreData();
 
         // We should only attempt to load more data, if we don't already have data loaded, or there is more to be loaded
-        this.dataProvider.canQuery(this.queryOptions).then((value) => {
+        return this.dataProvider.canQuery(this.queryOptions).then((value) => {
             if (value) {
                 this.loadingData = true;
-                return this.dataProvider.query(this.queryOptions).then(r => {
-                    this._data = this._data || [];
-                    this._data = newQuery ? r.results : this._data.concat(r.results);
+                let promise = this.loadingPromise = this.dataProvider.query(this.queryOptions).then(r => {
+                    // if this promise hasn't been cancelled
+                    if (!promise || !promise["cancel"]) {
+                        this.loadingPromise = undefined;
+                        this.loadDataFromQueryResult(r);
 
-                    // We've moved the offset
-                    this.queryOptions.offset += r.count;
+                        this.loadingData = false;
 
-                    // derive a description file
-                    let desc = this.configuration ?
-                        $.extend(true, {}, this.configuration) : TableSorter.createConfigurationFromData(this._data);
-
-                    // Primary Key needs to always be ID
-                    desc.primaryKey = "id";
-
-                    let spec: any = {};
-                    // spec.name = name;
-                    spec.dataspec = desc;
-                    delete spec.dataspec.file;
-                    delete spec.dataspec.separator;
-                    spec.dataspec.data = this._data;
-                    spec.storage = LineUpLib.createLocalStorage(this._data, desc.columns, desc.layout, desc.primaryKey);
-
-                    if (this.lineupImpl) {
-                        this.lineupImpl.changeDataStorage(spec);
-                    } else {
-                        let finalOptions = $.extend(true, this.lineUpConfig, {
-                            renderingOptions: $.extend(true, {}, this.settings.presentation)
-                        });
-                        this.lineupImpl = LineUpLib.create(spec, d3.select(this.element.find(".grid")[0]), finalOptions);
-                        this.dimensions = this.dimensions;
-                        this.lineupImpl.listeners.on("change-sortcriteria.lineup", (ele: JQuery, column: any, asc: boolean) => {
-                            // This only works for single columns and not grouped columns
-                            this.onLineUpSorted(column && column.column && column.column.id, asc);
-                        });
-                        this.lineupImpl.listeners.on("multiselected.lineup", (rows: ITableSorterRow[]) => {
-                            if (this.settings.selection.multiSelect) {
-                                this._selectedRows = this.updateRowSelection(rows);
-                                this.raiseSelectionChanged(rows);
+                        // make sure we don't need to load more after this, in case it doesn't all fit on the screen
+                        setTimeout(() => {
+                            this.checkLoadMoreData(false);
+                            if (!this.loadingPromise) {
+                                this.loadingData = false;
                             }
-                        });
-                        this.lineupImpl.listeners.on("selected.lineup", (row: ITableSorterRow) => {
-                            if (this.settings.selection.singleSelect && !this.settings.selection.multiSelect) {
-                                this._selectedRows = this.updateRowSelection(row ? [row] : []);
-                                this.raiseSelectionChanged(this.selection);
-                            }
-                        });
-                        this.lineupImpl.listeners.on("columns-changed.lineup", () => this.onLineUpColumnsChanged());
-                        this.lineupImpl.listeners.on("change-filter.lineup", (x: JQuery, column: any) => this.onLineUpFiltered(column));
-                        let scrolled = this.lineupImpl.scrolled;
-                        let me = this;
-
-                        // The use of `function` here is intentional, we need to pass along the correct scope
-                        this.lineupImpl.scrolled = function(...args: any[]) {
-                            me.checkLoadMoreData(true);
-                            return scrolled.apply(this, args);
-                        };
-
-                        this.settings = this.settings;
+                        }, 10);
                     }
-
-                    this.selection = this._data.filter((n) => n.selected);
-
-                    this.applyConfigurationToLineup();
-
-                    // Store the configuration after it was possibly changed by load data
-                    this.saveConfiguration();
-
-                    this.loadingData = false;
-
-                    setTimeout(() => this.checkLoadMoreData(false), 10);
                 }, () => this.loadingData = false);
+                return promise;
+            } else {
+                this.loadingData = false;
             }
         });
+    }
+
+    /**
+     * Loads data from a query result
+     */
+    private loadDataFromQueryResult(r: IQueryResult) {
+        this._data = this._data || [];
+        this._data = r.replace ? r.results : this._data.concat(r.results);
+
+        // derive a description file
+        let desc = this.configuration ?
+            $.extend(true, {}, this.configuration) : TableSorter.createConfigurationFromData(this._data);
+
+        // Primary Key needs to always be ID
+        desc.primaryKey = "id";
+
+        let spec: any = {};
+        // spec.name = name;
+        spec.dataspec = desc;
+        delete spec.dataspec.file;
+        delete spec.dataspec.separator;
+        spec.dataspec.data = this._data;
+        spec.storage = LineUpLib.createLocalStorage(this._data, desc.columns, desc.layout, desc.primaryKey);
+
+        if (this.lineupImpl) {
+            this.lineupImpl.changeDataStorage(spec);
+        } else {
+            let finalOptions = $.extend(true, this.lineUpConfig, {
+                renderingOptions: $.extend(true, {}, this.settings.presentation)
+            });
+            this.lineupImpl = LineUpLib.create(spec, d3.select(this.element.find(".grid")[0]), finalOptions);
+            this.dimensions = this.dimensions;
+            this.lineupImpl.listeners.on("change-sortcriteria.lineup", (ele: JQuery, column: any, asc: boolean) => {
+                // This only works for single columns and not grouped columns
+                this.onLineUpSorted(column && column.column && column.column.id, asc);
+            });
+            this.lineupImpl.listeners.on("multiselected.lineup", (rows: ITableSorterRow[]) => {
+                if (this.settings.selection.multiSelect) {
+                    this._selectedRows = this.updateRowSelection(rows);
+                    this.raiseSelectionChanged(rows);
+                }
+            });
+            this.lineupImpl.listeners.on("selected.lineup", (row: ITableSorterRow) => {
+                if (this.settings.selection.singleSelect && !this.settings.selection.multiSelect) {
+                    this._selectedRows = this.updateRowSelection(row ? [row] : []);
+                    this.raiseSelectionChanged(this.selection);
+                }
+            });
+            this.lineupImpl.listeners.on("columns-changed.lineup", () => this.onLineUpColumnsChanged());
+            this.lineupImpl.listeners.on("change-filter.lineup", (x: JQuery, column: any) => this.onLineUpFiltered(column));
+            let scrolled = this.lineupImpl.scrolled;
+            let me = this;
+
+            // The use of `function` here is intentional, we need to pass along the correct scope
+            this.lineupImpl.scrolled = function(...args: any[]) {
+                me.checkLoadMoreData(true);
+                return scrolled.apply(this, args);
+            };
+
+            this.settings = this.settings;
+        }
+
+        this.selection = this._data.filter((n) => n.selected);
+
+        this.applyConfigurationToLineup();
+
+        // Store the configuration after it was possibly changed by load data
+        this.saveConfiguration();
     }
 
     /**
@@ -629,9 +618,21 @@ export class TableSorter {
     /**
      * Gets the current list of filters from lineup
      */
-    private getFiltersFromLineup() {
+    private getFiltersFromLineup(filteredColumn: any) {
+        let fDesc = filteredColumn.description();
         let descs = this.lineupImpl.storage.getColumnLayout()
-            .map(((d: any) => d.description()));
+            .map(((d: any) => {
+                // Because of how we reload the data while filtering, the columns can get out of sync
+                let base = d.description();
+                if (fDesc.column === base.column) {
+                    base = fDesc;
+                    d = filteredColumn;
+                }
+                if (d.scale) {
+                    base.domain = d.scale.domain();
+                }
+                return base;
+            }));
         let filters: ITableSorterFilter[] = [];
         descs.forEach((n: any) => {
             if (n.filter) {
@@ -655,16 +656,34 @@ export class TableSorter {
     /**
      * Returns a configuration based on lineup settings
      */
-    private getConfigurationFromLineup() {
+    private getConfigurationFromLineup(filteredColumn?: any) {
+        // HACK: filteredColumn is ghetto fix, cause when we filter a column, we reload lineup with new data/columns
+        // but the UI remains open, and has a reference to an old column.
         // full spec
         let dataSpec: any = this.lineupImpl.spec.dataspec;
         let s: ITableSorterConfiguration = $.extend(true, {}, {
-            columns: dataSpec.columns,
+            columns: dataSpec.columns.map((n: any) => {
+                return _.merge({}, n, {
+                    // domain: [0, 40000]
+                });
+            }),
             primaryKey: dataSpec.primaryKey,
         });
         // create current layout
         let descs = this.lineupImpl.storage.getColumnLayout()
-            .map(((d: any) => d.description()));
+            .map((d: any) => {
+                let base = d.description();
+                if (filteredColumn) {
+                    const fDesc = filteredColumn.description();
+                    if (fDesc.column === base.column) {
+                        base = fDesc;
+                        d = filteredColumn;
+                    }
+                }
+                return _.merge({}, base, {
+                    domain: d.scale ? d.scale.domain() : undefined
+                });
+            });
         s.layout = _.groupBy(descs, (d: any) => d.columnBundle || "primary");
         s.sort = this.getSortFromLineUp();
         return s;
@@ -673,10 +692,10 @@ export class TableSorter {
     /**
      * Saves the current layout
      */
-    private saveConfiguration() {
+    private saveConfiguration(filteredColumn?: any) {
         if (!this.savingConfiguration) {
             this.savingConfiguration = true;
-            this.configuration = this.getConfigurationFromLineup();
+            this.configuration = this.getConfigurationFromLineup(filteredColumn);
             this.raiseConfigurationChanged(this.configuration);
             this.savingConfiguration = false;
         }
@@ -746,18 +765,22 @@ export class TableSorter {
                 value: column.filter,
             };
         }
-        this.saveConfiguration();
-        this.raiseFilterChanged(filter);
 
-        // Set the new filter value
-        this.queryOptions.query = this.getFiltersFromLineup();
+        const newFilters = this.getFiltersFromLineup(column);
+        if (!_.isEqual(newFilters, this.queryOptions.query)) {
+            this.saveConfiguration(column);
+            this.raiseFilterChanged(filter);
 
-        if (this.dataProvider && this.dataProvider.filter) {
-            this.dataProvider.filter(filter);
+            // Set the new filter value
+            this.queryOptions.query = this.getFiltersFromLineup(column);
+
+            if (this.dataProvider && this.dataProvider.filter) {
+                this.dataProvider.filter(filter);
+            }
+
+            // We are starting over since we filtered
+            this.runQuery(true);
         }
-
-        // We are starting over since we filtered
-        this.runQuery(true);
     }
 
     /**

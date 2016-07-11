@@ -62,8 +62,8 @@ describe("JSONDataProvider", () => {
         it("should sort correctly with a column with null values", (done) => {
             let { instance } = createInstance(TEST_DATA_WITH_ALL_NULLS);
             let result = instance.query({
-                offset: 0,
-                count: 100,
+                // offset: 0,
+                // count: 100,
                 sort: [{
                     asc: true,
                     stack: {
@@ -97,8 +97,8 @@ describe("JSONDataProvider", () => {
         it ("should sort TEST_CASE_1 correctly", () => {
             let { instance } = createInstance(TEST_CASE_ONE);
             let result = instance.query({
-                offset: 0,
-                count: 100,
+                // offset: 0,
+                // count: 100,
                 sort: [{
                     "stack": {
                     "name": "Stacked",
