@@ -638,7 +638,7 @@ export class TableSorter {
             if (n.filter) {
                 filters.push({
                     column: n.column,
-                    value: n.filter,
+                    value: n.filter || undefined,
                 });
             } else if (n.domain) {
                 filters.push({
@@ -680,9 +680,14 @@ export class TableSorter {
                         d = filteredColumn;
                     }
                 }
-                return _.merge({}, base, {
+                let result = _.merge({}, base, {
                     domain: d.scale ? d.scale.domain() : undefined
                 });
+                // If it is set to false or whatever, just remove it
+                if (!result.filter) {
+                    delete result.filter;
+                }
+                return result;
             });
         s.layout = _.groupBy(descs, (d: any) => d.columnBundle || "primary");
         s.sort = this.getSortFromLineUp();
@@ -762,7 +767,7 @@ export class TableSorter {
         } else {
             filter = {
                 column: colName,
-                value: column.filter,
+                value: column.filter || undefined,
             };
         }
 
