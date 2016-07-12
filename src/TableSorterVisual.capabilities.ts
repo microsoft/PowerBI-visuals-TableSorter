@@ -41,9 +41,9 @@ export default $.extend(true, {}, VisualBase.capabilities, {
                         },
                     },
                 },
-                selfFilter: {
-                    type: { filter: { selfFilter: true } }
-                },
+                // selfFilter: {
+                //     type: { filter: { selfFilter: true } }
+                // },
             },
         },
         layout: {
