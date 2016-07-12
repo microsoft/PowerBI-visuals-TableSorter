@@ -1,6 +1,5 @@
 import { LOAD_COUNT } from "./TableSorterVisual.defaults";
 import { VisualBase } from "essex.powerbi.base";
-
 import VisualDataRoleKind = powerbi.VisualDataRoleKind;
 
 export default $.extend(true, {}, VisualBase.capabilities, {

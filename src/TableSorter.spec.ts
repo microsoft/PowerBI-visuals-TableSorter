@@ -1,4 +1,7 @@
-import "../base/testSetup";
+/* tslint:disable */
+require("essex.powerbi.base/spec/visualHelpers");
+//import "../base/testSetup";
+/* tslint:enable */
 
 import { expect } from "chai";
 import { TableSorter } from "./TableSorter";
@@ -83,6 +86,7 @@ describe("TableSorter", () => {
                     resolve2({
                         total: data.length,
                         results: data,
+                        replace: true,
                     });
                     setTimeout(function() {
                         resolver();

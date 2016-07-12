@@ -1,4 +1,8 @@
+/* tslint:disable */
+require("essex.powerbi.base/spec/visualHelpers");
+/* tslint:enable */
 import { Utils as SpecUtils } from "essex.powerbi.base/spec/visualHelpers";
+import { UpdateType } from "essex.powerbi.base/src/lib/Utils";
 import { expect } from "chai";
 import { default as TableSorterVisual  } from "./TableSorterVisual";
 import * as $ from "jquery";
@@ -17,18 +21,19 @@ describe("TableSorterVisual", () => {
     });
 
     let createVisual = () => {
-        let instance = new TableSorterVisual(true, {
+        let currentUpdateType: UpdateType;
+        let instance: TableSorterVisual = new TableSorterVisual(true, {
             presentation: {
                 animation: false
             },
-        });
+        }, () => currentUpdateType);
         let initOptions = SpecUtils.createFakeInitOptions();
         parentEle.append(initOptions.element);
-
         instance.init(initOptions);
         return {
             instance,
             element: initOptions.element,
+            setUpdateType: (type: UpdateType) => currentUpdateType = type,
         };
     };
 
@@ -37,9 +42,10 @@ describe("TableSorterVisual", () => {
     });
 
     it("should remove columns from TableSorter.configuration if columns are removed from PBI", () => {
-        let { instance } = createVisual();
+        let { instance, setUpdateType } = createVisual();
 
         // Load initial data
+        setUpdateType(UpdateType.Data);
         instance.update(SpecUtils.createUpdateOptionsWithData());
         expect(instance.tableSorter.configuration.columns.length).to.be.equal(2);
 
@@ -55,6 +61,7 @@ describe("TableSorterVisual", () => {
         };
 
         // Run update again with new options
+        setUpdateType(UpdateType.Data);
         instance.update(newOptions);
 
         // Make sure it removed the extra column
@@ -62,13 +69,15 @@ describe("TableSorterVisual", () => {
     });
 
     it("should load the data into the tablesorter if only columns changed", () => {
-        let { instance } = createVisual();
+        let { instance, setUpdateType } = createVisual();
 
         // Load initial data
+        setUpdateType(UpdateType.Data);
         instance.update(SpecUtils.createUpdateOptionsWithData());
         expect(instance.tableSorter.configuration.columns.length).to.be.equal(2);
 
         instance.tableSorter = <any>{};
+        setUpdateType(UpdateType.Data);
         instance.update(SpecUtils.createUpdateOptionsWithSmallData());
 
         // TODO: Assume the data is legit for now
@@ -76,10 +85,11 @@ describe("TableSorterVisual", () => {
     });
 
     it("should remove sort from TableSorter.configuration if columns are removed from PBI", () => {
-        let { instance } = createVisual();
+        let { instance, setUpdateType } = createVisual();
 
         // Load initial data
         let data = SpecUtils.createUpdateOptionsWithData();
+        setUpdateType(UpdateType.Data);
         instance.update(data);
         expect(instance.tableSorter.configuration.columns.length).to.be.equal(2);
 
@@ -103,6 +113,7 @@ describe("TableSorterVisual", () => {
         };
 
         // Run update again with new options
+        setUpdateType(UpdateType.Data);
         instance.update(newOptions);
 
         // Make sure it removed the extra column

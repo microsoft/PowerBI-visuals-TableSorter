@@ -8,7 +8,7 @@ import {
     ITableSorterConfiguration,
     ITableSorterSort,
     ITableSorterFilter,
-    INumericalFilter
+    INumericalFilter,
 } from "./models";
 import { Promise } from "es6-promise";
 import capabilities from "./TableSorterVisual.capabilities";
@@ -16,7 +16,6 @@ import MyDataProvider from "./TableSorterVisual.dataProvider";
 // import domainsDialog from "./domains.dialog.tmpl";
 
 import * as _ from "lodash";
-
 import IVisual = powerbi.IVisual;
 import DataViewTable = powerbi.DataViewTable;
 import IVisualHostServices = powerbi.IVisualHostServices;
@@ -68,7 +67,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
     private waitingForMoreData: boolean;
     private waitingForSort: boolean;
     private loadingData: boolean;
-    private updateType = updateTypeGetter(this);
+    private updateType: () => UpdateType;
 
     // Stores our current set of data.
     private _data: { data: ITableSorterVisualRow[], cols: string[] };
@@ -175,10 +174,11 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
     /**
      * The constructor for the visual
      */
-    public constructor(noCss: boolean = false, initialSettings: ITableSorterSettings) {
+    public constructor(noCss: boolean = false, initialSettings?: ITableSorterSettings, updateTypeGetterOverride?: () => UpdateType) {
         super();
         this.noCss = noCss;
         this.initialSettings = initialSettings || {};
+        this.updateType = updateTypeGetterOverride ? updateTypeGetterOverride : updateTypeGetter(this);
     }
 
     /**
@@ -329,7 +329,6 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
     private hasLayoutChanged(updateType: UpdateType, options: VisualUpdateOptions) {
         if (updateType & UpdateType.Settings &&
             options.dataViews && options.dataViews.length) {
-            let newLayoutStr: string;
             if (this.dataView.metadata && this.dataView.metadata.objects && this.dataView.metadata.objects["layout"]) {
                 // Basically string compares the two layouts to see if anything has changed
                 const layoutChanged = this.dataView.metadata.objects["layout"]["layout"] !== JSON.stringify(this.tableSorter.configuration);
@@ -554,6 +553,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
     }
 
     private handleSort(rawSort: ITableSorterSort) {
+        /* tslint:disable */
         let args: powerbi.CustomSortEventArgs = null;
         /* tslint:enable */
         if (rawSort) {
@@ -563,7 +563,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
                     // TODO: Add Weighting Somehow
                     return {
                         column: n.column,
-                        asc: rawSort.asc
+                        asc: rawSort.asc,
                     };
                 });
             }
@@ -617,7 +617,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
                     properties: {
                         "selfFilter": filter
                     },
-                }
+                },
             ],
         };
     }

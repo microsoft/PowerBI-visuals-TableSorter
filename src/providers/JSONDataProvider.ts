@@ -61,7 +61,7 @@ export class JSONDataProvider implements IDataProvider {
             setTimeout(() => {
                 resolve({
                     results: newData,
-                    replace: replace
+                    replace: replace,
                 });
             }, 0);
         });
