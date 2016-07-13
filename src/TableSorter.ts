@@ -244,6 +244,13 @@ export class TableSorter {
      */
     public set dimensions(value) {
         this._dimensions = value;
+        if (this.lineupImpl && this.lineupImpl.$container) {
+            let wrapper = $(this.lineupImpl.$container.node()).find("div.lu-wrapper");
+            wrapper.css({
+                height: (value.height - wrapper.offset().top - 2) + "px",
+                width: "100%"
+            });
+        }
         this.bodyUpdater();
     }
 
