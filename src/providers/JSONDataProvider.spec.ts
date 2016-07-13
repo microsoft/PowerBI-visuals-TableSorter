@@ -31,6 +31,24 @@ describe("JSONDataProvider", () => {
         },
     ];
 
+    const NUMERIC_SAME_DOMAIN = [
+        {
+            "id": 1,
+            "num_hashtags": 3,
+            "num_mentions": 100,
+        },
+        {
+            "id": 2,
+            "num_hashtags": 3,
+            "num_mentions": 200,
+        },
+        {
+            "id": 3,
+            "num_hashtags": 3,
+            "num_mentions": 50,
+        },
+    ];
+
     /* tslint:disable */
     const TEST_DATA_WITH_ALL_NULLS = [{
         id: 1,
@@ -118,6 +136,30 @@ describe("JSONDataProvider", () => {
             return result.then((resp) => {
                 let ids = resp.results.map(n => n.id);
                 expect(ids).to.deep.equal([ 2, 4, 3, 1 ]);
+            });
+        });
+
+        it("should sort correctly when a numerical column's min === max", () => {
+            let { instance } = createInstance(NUMERIC_SAME_DOMAIN);
+            let result = instance.query({
+                // offset: 0,
+                // count: 100,
+                sort: [{
+                    "stack": {
+                    "name": "Stacked",
+                    "columns": [{
+                        "column": "num_hashtags",
+                        "weight": 1,
+                    }, {
+                        "column": "num_mentions",
+                        "weight": 1,
+                    }, ], },
+                    "asc": true,
+                }, ],
+            });
+            return result.then((resp) => {
+                let ids = resp.results.map(n => n.id);
+                expect(ids).to.deep.equal([ 3, 1, 2 ]);
             });
         });
     });

@@ -141,11 +141,11 @@ export class JSONDataProvider implements IDataProvider {
                          * This calculates the percent that this guy is of the max value
                          */
                         let value = item[v.column];
-                        if (value) {
+                        if (minMax[v.column].min !== minMax[v.column].max && value) {
                             value -= minMax[v.column].min;
                             value /= (minMax[v.column].max - minMax[v.column].min);
                         } else {
-                           value = 0;
+                            value = 0;
                         }
                         return a + (value * v.weight);
                     }, 0);
@@ -158,8 +158,8 @@ export class JSONDataProvider implements IDataProvider {
             if (sortItem.stack) {
                  maxValues = sortItem.stack.columns.reduce((a, b) => {
                     a[b.column] = {
-                        max: d3.max(final, (i) => i[b.column]),
-                        min: d3.min(final, (i) => i[b.column]),
+                        max: d3.max(this.data, (i) => i[b.column]),
+                        min: d3.min(this.data, (i) => i[b.column]),
                     };
                     return a;
                 }, <any>{});
