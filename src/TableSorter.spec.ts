@@ -5,7 +5,7 @@ require("essex.powerbi.base/spec/visualHelpers");
 
 import { expect } from "chai";
 import { TableSorter } from "./TableSorter";
-import { ITableSorterSettings, ITableSorterRow, IDataProvider } from "./models";
+import { ITableSorterSettings, ITableSorterRow, IDataProvider, ITableSorterConfiguration } from "./models";
 import * as $ from "jquery";
 import { Promise } from "es6-promise";
 
@@ -36,6 +36,21 @@ describe("TableSorter", () => {
         };
         return result;
     };
+    let fakeDataColumns = () => {
+        return [{
+            column: "col1",
+            label: "Column",
+            type: "string",
+        }, {
+            column: "col2",
+            label: "Column2",
+            type: "number",
+        }, {
+            column: "col3",
+            label: "Column3",
+            type: "number",
+        }, ];
+    };
 
     let createFakeData = () => {
         let rows: ITableSorterRow[] = [];
@@ -45,6 +60,7 @@ describe("TableSorter", () => {
                     id: myId,
                     col1: myId,
                     col2: i * (Math.random() * 100),
+                    col3: i,
                     selected: false,
                     equals: (other) => (myId) === other["col1"],
                 });
@@ -52,23 +68,7 @@ describe("TableSorter", () => {
         }
         return {
             data: rows,
-            columns: [{
-                /**
-                 * The field name of the column
-                 */
-                column: "col1",
-
-                /**
-                 * The displayName for the column
-                 */
-                label: "Column",
-
-                /**
-                 * The type of column it is
-                 * values: string|number
-                 */
-                type: "string",
-            }, ],
+            columns: fakeDataColumns(),
         };
     };
 
@@ -157,9 +157,9 @@ describe("TableSorter", () => {
 
     let loadInstanceWithSettings = (settings: ITableSorterSettings) => {
         let { instance, element } = createInstance();
-        let { data } = createFakeData();
+        let data = createFakeData();
 
-        let { provider, dataLoaded } = createProvider(data);
+        let { provider, dataLoaded } = createProvider(data.data);
 
         instance.dataProvider = provider;
 
@@ -174,6 +174,23 @@ describe("TableSorter", () => {
             instance,
             element,
             dataLoaded,
+            data,
+        };
+    };
+
+    let loadInstanceWithConfiguration = (config: ITableSorterConfiguration) => {
+        let { instance, element } = createInstance();
+        let data = createFakeData();
+        let { provider, dataLoaded } = createProvider(data.data);
+
+        instance.configuration = config;
+        instance.dataProvider = provider;
+
+        return {
+            instance,
+            element,
+            dataLoaded,
+            data,
         };
     };
 
@@ -497,6 +514,20 @@ describe("TableSorter", () => {
                     expect(result.stack.name).to.equal("STACKED_COLUMN");
                     expect(result.column).to.be.undefined;
                 });
+            });
+            it("loads lineup with a filtered numerical column if it intially is filtered", () => {
+                let { instance } = loadInstanceWithConfiguration({
+                    primaryKey: "primary",
+                    columns: fakeDataColumns(),
+                    layout: {
+                        primary: [{
+                            column: "col3",
+                            domain: [1, 1], // should just be a single column
+                        }, ],
+                    },
+                });
+                const q = instance.getQueryOptions().query;
+                expect(q).to.be.deep.equal([{ column: "col3", value: { domain: [1, 1], range: undefined }}]);
             });
         });
     });

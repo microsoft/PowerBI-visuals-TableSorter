@@ -9,6 +9,7 @@ const log = logger("essex:widget:tablesorter:JSONDataProvider");
  */
 export class JSONDataProvider implements IDataProvider {
     protected data: any[];
+    protected filteredData: any[];
     private handleSort = true;
     private handleFilter = true;
     private count = 100;
@@ -51,8 +52,8 @@ export class JSONDataProvider implements IDataProvider {
             let newData: any[];
             let replace = this.offset === 0;
             try {
-                let final = this.getFilteredData(options);
-                newData = final.slice(this.offset, this.offset + this.count);
+                this.filteredData = this.getFilteredData(options);
+                newData = this.filteredData.slice(this.offset, this.offset + this.count);
                 this.offset += this.count;
                 log(`Returning ${newData.length} results from query`);
             } catch (e) {
@@ -90,7 +91,7 @@ export class JSONDataProvider implements IDataProvider {
      */
     public generateHistogram(column: ITableSorterColumn, options: IQueryOptions): PromiseLike<number[]> {
         return new Promise<number[]>((resolve) => {
-            let final = this.getFilteredData(options);
+            let final = this.filteredData; // this.getFilteredData(options);
             let values: number[] = final.map(n => n[column.column]);
             let max = d3.max(values);
             let min = d3.min(values);

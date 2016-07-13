@@ -66,7 +66,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
     private selectionManager: SelectionManager;
     private waitingForMoreData: boolean;
     private waitingForSort: boolean;
-    private loadingData: boolean;
+    private handlingUpdate: boolean;
     private updateType: () => UpdateType;
 
     // Stores our current set of data.
@@ -96,7 +96,8 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
     /**
      * A simple debounced function to update the configuration
      */
-    private configurationUpdater = _.debounce((config: any) => {
+    private configurationUpdater = _.debounce(() => {
+        const config = this.tableSorter.configuration;
         const objects: powerbi.VisualObjectInstancesToPersist = {
             merge: [
                 <VisualObjectInstance>{
@@ -109,7 +110,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
             ],
         };
         log("Updating Config");
-        this.queuePropertyChanges(objects);
+        this.queuePropertyChanges(false, objects);
     }, 100);
 
     /**
@@ -117,58 +118,55 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
      */
     private onSelectionChanged = _.debounce((rows? : ITableSorterVisualRow[]) => {
         let filter: powerbi.data.SemanticFilter;
-        let { singleSelect, multiSelect } = this.tableSorter.settings.selection;
-        if (singleSelect || multiSelect) {
-            if (rows && rows.length) {
-                let expr = rows[0].filterExpr;
+        let { multiSelect } = this.tableSorter.settings.selection;
+        if (rows && rows.length) {
+            let expr = rows[0].filterExpr;
 
-                // If we are allowing multiSelect
-                if (rows.length > 0 && multiSelect) {
-                    rows.slice(1).forEach((r) => {
-                    expr = powerbi.data.SQExprBuilder.or(expr, r.filterExpr);
-                    });
-                }
-                filter = powerbi.data.SemanticFilter.fromSQExpr(expr);
-            }
-
-            let objects: powerbi.VisualObjectInstancesToPersist = { };
-            if (filter) {
-                $.extend(objects, {
-                    merge: [
-                        <powerbi.VisualObjectInstance>{
-                            objectName: "general",
-                            selector: undefined,
-                            properties: {
-                                "filter": filter
-                            },
-                        },
-                    ],
-                });
-            } else {
-                $.extend(objects, {
-                    remove: [
-                        <VisualObjectInstance>{
-                            objectName: "general",
-                            selector: undefined,
-                            properties: {
-                                "filter": filter
-                            },
-                        },
-                    ],
+            // If we are allowing multiSelect
+            if (rows.length > 0 && multiSelect) {
+                rows.slice(1).forEach((r) => {
+                expr = powerbi.data.SQExprBuilder.or(expr, r.filterExpr);
                 });
             }
-
-            // rows are what are currently selected in lineup
-            if (rows && rows.length) {
-                // HACK
-                this.selectionManager.clear();
-                rows.forEach((r) => this.selectionManager.select(r.identity, true));
-            } else {
-                this.selectionManager.clear();
-            }
-
-            this.queuePropertyChanges(objects);
+            filter = powerbi.data.SemanticFilter.fromSQExpr(expr);
         }
+
+        let objects: powerbi.VisualObjectInstancesToPersist = { };
+        if (filter) {
+            $.extend(objects, {
+                merge: [
+                    <powerbi.VisualObjectInstance>{
+                        objectName: "general",
+                        selector: undefined,
+                        properties: {
+                            "filter": filter
+                        },
+                    },
+                ],
+            });
+        } else {
+            $.extend(objects, {
+                remove: [
+                    <VisualObjectInstance>{
+                        objectName: "general",
+                        selector: undefined,
+                        properties: {
+                            "filter": filter
+                        },
+                    },
+                ],
+            });
+        }
+
+        // rows are what are currently selected in lineup
+        if (rows && rows.length) {
+            // HACK
+            this.selectionManager.clear();
+            rows.forEach((r) => this.selectionManager.select(r.identity, true));
+        } else {
+            this.selectionManager.clear();
+        }
+        this.queuePropertyChanges(true, objects);
     }, 100);
 
     /**
@@ -252,8 +250,8 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
         this.tableSorter.events.on("selectionChanged", (rows: ITableSorterVisualRow[]) => this.onSelectionChanged(rows));
         this.tableSorter.events.on(TableSorter.EVENTS.CLEAR_SELECTION, () => this.onSelectionChanged());
         this.tableSorter.events.on("configurationChanged", (config: any) => {
-            if (!this.loadingData) {
-                this.configurationUpdater(config);
+            if (!this.handlingUpdate) {
+                this.configurationUpdater();
             }
         });
 
@@ -263,7 +261,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
     /** Update is called for data updates, resizes & formatting changes */
     public update(options: VisualUpdateOptions) {
         const updateType = this.updateType();
-        this.loadingData = true;
+        this.handlingUpdate = true;
         this.dataView = options.dataViews && options.dataViews[0];
         this.dataViewTable = this.dataView && this.dataView.table;
         log("Update Type: ", updateType);
@@ -294,7 +292,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
             this.loadDataFromPowerBI();
         }
 
-        this.loadingData = false;
+        this.handlingUpdate = false;
     }
 
     /**
@@ -476,20 +474,32 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
     /**
      * Queues the given property changes
      */
-    private propsToUpdate: VisualObjectInstancesToPersist[] = [];
+    private propsToUpdate: { changes: VisualObjectInstancesToPersist[], completed: Function, selection: boolean }[] = [];
     private propUpdater = _.debounce(() => {
         if (this.propsToUpdate && this.propsToUpdate.length) {
             const toUpdate = this.propsToUpdate.slice(0);
             this.propsToUpdate.length = 0;
             const final: VisualObjectInstancesToPersist = {};
+            let isSelection: boolean;
             toUpdate.forEach(n => {
-                Object.keys(n).forEach(operation => {
-                    if (!final[operation]) {
-                        final[operation] = [];
-                    }
-                    final[operation].push(...n[operation]);
+                n.changes.forEach(m => {
+                    Object.keys(m).forEach(operation => {
+                        if (!final[operation]) {
+                            final[operation] = [];
+                        }
+                        final[operation].push(...m[operation]);
+                    });
                 });
+                if (n.selection) {
+                    isSelection = true;
+                }
+
             });
+
+            // SUPER important that these guys happen together, otherwise the selection does not update properly
+            if (isSelection) {
+                this.host.onSelect({ data: [] });
+            }
             this.host.persistProperties(final);
         }
     }, 100);
@@ -497,9 +507,15 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
     /**
      * Queues a set of property changes for the next update
      */
-    private queuePropertyChanges(...changes: VisualObjectInstancesToPersist[]) {
-        this.propsToUpdate.push(...changes);
-        this.propUpdater();
+    private queuePropertyChanges(selection: boolean, ...changes: VisualObjectInstancesToPersist[]) {
+        return new Promise((resolve, reject) => {
+            this.propsToUpdate.push({
+                completed: resolve,
+                changes,
+                selection
+            });
+            this.propUpdater();
+        });
     }
     /* tslint:enable */
 
@@ -534,7 +550,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
                         return new Promise((resolve, reject) => {
                             if (newQuery) {
                                 if (filterChanged) {
-                                    this.queuePropertyChanges(this.buildSelfFilter(options.query));
+                                    this.queuePropertyChanges(false, this.buildSelfFilter(options.query));
                                 }
                                 if (sortChanged) {
                                     this.handleSort(options.sort[0]);
@@ -633,16 +649,10 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
 
             // Copy over new values
             let newObjs = $.extend(true, {}, <ITableSorterSettings>this.dataView.metadata.objects);
-            let updatePBISettings = false;
             if (newObjs) {
                 for (let section in newObjs) {
                     if (newObjs.hasOwnProperty(section)) {
                         let values = newObjs[section];
-                        if (section === "selection" && values) {
-                            updatedSettings.selection.singleSelect = !values.multiSelect;
-                            updatedSettings.selection.multiSelect = values.multiSelect;
-                            updatePBISettings = true;
-                        }
                         for (let prop in values) {
                             if (updatedSettings[section] && typeof(updatedSettings[section][prop]) !== "undefined") {
                                 updatedSettings[section][prop] = values[prop];
@@ -650,21 +660,6 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
                         }
                     }
                 }
-            }
-
-            if (updatePBISettings) {
-                this.queuePropertyChanges({
-                    merge: [
-                        <powerbi.VisualObjectInstance>{
-                            objectName: "selection",
-                            selector: undefined,
-                            properties: {
-                                "singleSelect": updatedSettings.selection.singleSelect,
-                                "multiSelect": updatedSettings.selection.multiSelect,
-                            },
-                        },
-                    ],
-                });
             }
 
             this.tableSorter.settings = updatedSettings;

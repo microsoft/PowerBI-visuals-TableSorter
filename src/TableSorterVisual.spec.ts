@@ -119,4 +119,8 @@ describe("TableSorterVisual", () => {
         // Make sure it removed the extra column
         expect(instance.tableSorter.configuration.sort).to.be.undefined;
     });
+
+    it("should support loading numerical filters and the correct data after a page change");
+    it("should not get into an infinite loop when changing the sort quickly");
+    it("should not fail PBI (nested transactions issue) if adding/removing columns in PBI quickly");
 });

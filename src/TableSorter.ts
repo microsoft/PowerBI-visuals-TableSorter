@@ -308,6 +308,7 @@ export class TableSorter {
      */
     public set settings(value: ITableSorterSettings) {
         let newSettings: ITableSorterSettings = $.extend(true, {}, TableSorter.DEFAULT_SETTINGS, value);
+        newSettings.selection.singleSelect = !newSettings.selection.multiSelect;
 
         /** Apply the settings to lineup */
         if (this.lineupImpl) {
@@ -345,8 +346,9 @@ export class TableSorter {
             this.queryOptions.sort = [value.sort];
         }
 
-        if (value.filters) {
-            this.queryOptions.query = value.filters;
+        const primary = value && value.layout && value.layout.primary;
+        if (primary) {
+            this.queryOptions.query = this.getFiltersFromLayout(primary);
         }
 
         this.applyConfigurationToLineup();
@@ -456,6 +458,13 @@ export class TableSorter {
     }
 
     /**
+     * Gets the current set of query options
+     */
+    public getQueryOptions() {
+        return _.merge({}, this.queryOptions);
+    }
+
+    /**
      * Checks to see if more data should be loaded based on the viewport
      */
     protected checkLoadMoreData(scroll: boolean) {
@@ -555,7 +564,7 @@ export class TableSorter {
                 }
             });
             this.lineupImpl.listeners.on("selected.lineup", (row: ITableSorterRow) => {
-                if (this.settings.selection.singleSelect && !this.settings.selection.multiSelect) {
+                if (!this.settings.selection.multiSelect) {
                     this._selectedRows = this.updateRowSelection(row ? [row] : []);
                     this.raiseSelectionChanged(this.selection);
                 }
@@ -616,15 +625,41 @@ export class TableSorter {
     }
 
     /**
+     * Gets filters from a layout obj
+     */
+    private getFiltersFromLayout(layoutObj: any) {
+        if (layoutObj) {
+            let filters: ITableSorterFilter[] = [];
+            layoutObj.forEach((n: any) => {
+                if (n.filter) {
+                    filters.push({
+                        column: n.column,
+                        value: n.filter || undefined,
+                    });
+                } else if (n.domain) {
+                    filters.push({
+                        column: n.column,
+                        value: {
+                            domain: n.domain,
+                            range: n.range,
+                        },
+                    });
+                }
+            });
+            return filters;
+        }
+    }
+
+    /**
      * Gets the current list of filters from lineup
      */
-    private getFiltersFromLineup(filteredColumn: any) {
-        let fDesc = filteredColumn.description();
+    private getFiltersFromLineup(filteredColumn?: any) {
+        let fDesc = filteredColumn && filteredColumn.description();
         let descs = this.lineupImpl.storage.getColumnLayout()
             .map(((d: any) => {
                 // Because of how we reload the data while filtering, the columns can get out of sync
                 let base = d.description();
-                if (fDesc.column === base.column) {
+                if (fDesc && fDesc.column === base.column) {
                     base = fDesc;
                     d = filteredColumn;
                 }
@@ -689,6 +724,7 @@ export class TableSorter {
                 }
                 return result;
             });
+        // s.filters = this.getFiltersFromLineup();
         s.layout = _.groupBy(descs, (d: any) => d.columnBundle || "primary");
         s.sort = this.getSortFromLineUp();
         return s;

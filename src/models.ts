@@ -111,10 +111,10 @@ export interface ITableSorterConfiguration {
      */
     sort?: ITableSorterSort;
 
-    /**
-     * The filters of the table sorter
-     */
-    filters?: ITableSorterFilter[];
+    // /**
+    //  * The filters of the table sorter
+    //  */
+    // filters?: ITableSorterFilter[];
 }
 
 /**
