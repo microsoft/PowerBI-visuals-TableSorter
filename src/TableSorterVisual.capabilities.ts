@@ -1,6 +1,7 @@
 import { LOAD_COUNT } from "./TableSorterVisual.defaults";
 import { VisualBase } from "essex.powerbi.base";
 import VisualDataRoleKind = powerbi.VisualDataRoleKind;
+import StandardObjectProperties = powerbi.visuals.StandardObjectProperties;
 
 export default $.extend(true, {}, VisualBase.capabilities, {
     dataRoles: [{
@@ -100,6 +101,8 @@ export default $.extend(true, {}, VisualBase.capabilities, {
                     description: "Should the grid show tooltips on hover of a row",
                     type: { bool: true },
                 },
+                labelDisplayUnits: StandardObjectProperties.labelDisplayUnits,
+                labelPrecision: StandardObjectProperties.labelPrecision,
             },
         },
     },

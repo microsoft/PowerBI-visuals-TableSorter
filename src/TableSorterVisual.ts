@@ -29,6 +29,8 @@ import SelectionId = powerbi.visuals.SelectionId;
 import SelectionManager = powerbi.visuals.utility.SelectionManager;
 import SQExprBuilder = powerbi.data.SQExprBuilder;
 import VisualObjectInstancesToPersist = powerbi.VisualObjectInstancesToPersist;
+import valueFormatterFactory = powerbi.visuals.valueFormatter.create;
+import IValueFormatter = powerbi.visuals.IValueFormatter;
 
 /* tslint:disable */
 const log = logger("essex:widget:TableSorterVisual");
@@ -87,6 +89,21 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
      * The initial set of settings to use
      */
     private initialSettings: ITableSorterSettings;
+
+    /**
+     * The display units for the values
+     */
+    private labelDisplayUnits = 0;
+
+    /**
+     * The precision to use with the values
+     */
+    private labelPrecision: number;
+
+    /**
+     * The formatter to use for numbers
+     */
+    private numberFormatter: IValueFormatter;
 
     /**
      * The current load promise
@@ -175,7 +192,16 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
     public constructor(noCss: boolean = false, initialSettings?: ITableSorterSettings, updateTypeGetterOverride?: () => UpdateType) {
         super();
         this.noCss = noCss;
-        this.initialSettings = initialSettings || {};
+        this.initialSettings = initialSettings || {
+            presentation: {
+                numberFormatter: (d: number) => this.numberFormatter.format(d)
+            },
+        };
+        this.numberFormatter = valueFormatterFactory({
+            value: this.labelDisplayUnits,
+            format: "0",
+            precision: this.labelPrecision,
+        });
         this.updateType = updateTypeGetterOverride ? updateTypeGetterOverride : updateTypeGetter(this);
     }
 
@@ -307,6 +333,12 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
             properties: {},
         }, ];
         $.extend(true, instances[0].properties, this.tableSorter.settings[options.objectName]);
+        if (options.objectName === "presentation") {
+            $.extend(true, instances[0].properties, {
+                labelDisplayUnits: this.labelDisplayUnits,
+                labelPrecision: this.labelPrecision,
+            });
+        }
         return options.objectName === "layout" ? <any>{} : instances;
     }
 
@@ -649,6 +681,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
 
             // Copy over new values
             let newObjs = $.extend(true, {}, <ITableSorterSettings>this.dataView.metadata.objects);
+            const presObjs = newObjs && newObjs.presentation;
             if (newObjs) {
                 for (let section in newObjs) {
                     if (newObjs.hasOwnProperty(section)) {
@@ -660,6 +693,20 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
                         }
                     }
                 }
+            }
+
+            let newLabelPrecision = (presObjs && presObjs.labelPrecision) || 0;
+            let newLabelDisplayUnits = (presObjs && presObjs.labelDisplayUnits) || 0;
+            if (newLabelPrecision !== this.labelPrecision ||
+                newLabelDisplayUnits !== this.labelDisplayUnits) {
+                this.labelPrecision = newLabelPrecision;
+                this.labelDisplayUnits = newLabelDisplayUnits;
+                this.numberFormatter = valueFormatterFactory({
+                    value: this.labelDisplayUnits || 0,
+                    format: "0",
+                    precision: newLabelPrecision || undefined,
+                });
+                this.tableSorter.rerenderValues();
             }
 
             this.tableSorter.settings = updatedSettings;

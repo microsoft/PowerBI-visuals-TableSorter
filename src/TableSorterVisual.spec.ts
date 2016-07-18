@@ -1,5 +1,9 @@
 /* tslint:disable */
 require("essex.powerbi.base/spec/visualHelpers");
+global['powerbi'].visuals.StandardObjectProperties = {};
+global['powerbi'].visuals.valueFormatter = {
+    create: () => (() => 0)
+};
 /* tslint:enable */
 import { Utils as SpecUtils } from "essex.powerbi.base/spec/visualHelpers";
 import { UpdateType } from "essex.powerbi.base/src/lib/Utils";
@@ -123,4 +127,5 @@ describe("TableSorterVisual", () => {
     it("should support loading numerical filters and the correct data after a page change");
     it("should not get into an infinite loop when changing the sort quickly");
     it("should not fail PBI (nested transactions issue) if adding/removing columns in PBI quickly");
+    it("should rerender values when the value formatter columns change (precision, units)");
 });

@@ -164,6 +164,11 @@ export interface ITableSorterSettings {
          * Should tooltips be shown for each row
          */
         tooltips?: boolean;
+
+        /**
+         * Formatter for numbers
+         */
+        numberFormatter?: (num: number) => string;
     };
 }
 

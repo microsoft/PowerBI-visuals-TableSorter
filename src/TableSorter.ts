@@ -63,6 +63,11 @@ export class TableSorter {
     };
 
     /**
+     * The default numbering format to use when formatting numbers to display in lineup
+     */
+    public static DEFAULT_NUMBER_FORMATTER = d3.format(".3n");
+
+    /**
      * Returns true if the given object is numeric
      */
     private static isNumeric = (obj: any) => (obj - parseFloat(obj) + 1) >= 0;
@@ -181,13 +186,17 @@ export class TableSorter {
     private _selectedRows: ITableSorterRow[] = [];
     private _eventEmitter: EventEmitter;
     private _settings: ITableSorterSettings = $.extend(true, {}, TableSorter.DEFAULT_SETTINGS);
-
     /**
      * The configuration for the lineup viewer
      */
     private lineUpConfig: ITableSorterSettings = <any>{
         svgLayout: {
             mode: "separate"
+        },
+        numberformat: (d: number) => {
+            const formatter =
+                this.settings.presentation.numberFormatter || TableSorter.DEFAULT_NUMBER_FORMATTER;
+            return formatter(d);
         },
         interaction: {
             multiselect: () => this.settings.selection.multiSelect
@@ -244,11 +253,11 @@ export class TableSorter {
      */
     public set dimensions(value) {
         this._dimensions = value;
-        if (this.lineupImpl && this.lineupImpl.$container) {
-            let wrapper = $(this.lineupImpl.$container.node()).find("div.lu-wrapper");
+        if (this.lineupImpl && this.lineupImpl.$container && value) {
+            const wrapper = $(this.lineupImpl.$container.node()).find("div.lu-wrapper");
             wrapper.css({
                 height: (value.height - wrapper.offset().top - 2) + "px",
-                width: "100%"
+                width: "100%",
             });
         }
         this.bodyUpdater();
@@ -469,6 +478,18 @@ export class TableSorter {
      */
     public getQueryOptions() {
         return _.merge({}, this.queryOptions);
+    }
+
+    /**
+     * Rerenders the values of the rows
+     */
+    public rerenderValues() {
+        if (this.lineupImpl) {
+            // Sort of hacky, toggle the values to get it to rerender
+            const values = this.settings.presentation.values;
+            this.lineupImpl.changeRenderingOption("values", !values);
+            this.lineupImpl.changeRenderingOption("values", values);
+        }
     }
 
     /**
