@@ -1,11 +1,9 @@
 import { VisualBase, Visual, logger } from "essex.powerbi.base";
-import { default as Utils, updateTypeGetter, UpdateType } from "essex.powerbi.base/src/lib/Utils";
+import { updateTypeGetter, UpdateType, createPropertyPersister, PropertyPersister } from "essex.powerbi.base/src/lib/Utils";
 import { TableSorter  } from "../TableSorter";
 import {
     ITableSorterRow,
     ITableSorterSettings,
-    ITableSorterColumn,
-    ITableSorterConfiguration,
     ITableSorterSort,
     ITableSorterFilter,
     INumericalFilter,
@@ -13,7 +11,7 @@ import {
 import { Promise } from "es6-promise";
 import capabilities from "./TableSorterVisual.capabilities";
 import MyDataProvider from "./TableSorterVisual.dataProvider";
-// import domainsDialog from "./domains.dialog.tmpl";
+import buildConfig from "./ConfigBuilder";
 
 import * as _ from "lodash";
 import IVisual = powerbi.IVisual;
@@ -28,7 +26,6 @@ import DataView = powerbi.DataView;
 import SelectionId = powerbi.visuals.SelectionId;
 import SelectionManager = powerbi.visuals.utility.SelectionManager;
 import SQExprBuilder = powerbi.data.SQExprBuilder;
-import VisualObjectInstancesToPersist = powerbi.VisualObjectInstancesToPersist;
 import valueFormatterFactory = powerbi.visuals.valueFormatter.create;
 import IValueFormatter = powerbi.visuals.IValueFormatter;
 
@@ -70,6 +67,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
     private waitingForSort: boolean;
     private handlingUpdate: boolean;
     private updateType: () => UpdateType;
+    private propertyPersister: PropertyPersister;
 
     // Stores our current set of data.
     private _data: { data: ITableSorterVisualRow[], cols: string[] };
@@ -127,7 +125,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
             ],
         };
         log("Updating Config");
-        this.queuePropertyChanges(false, objects);
+        this.propertyPersister.persist(false, objects);
     }, 100);
 
     /**
@@ -148,33 +146,6 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
             filter = powerbi.data.SemanticFilter.fromSQExpr(expr);
         }
 
-        let objects: powerbi.VisualObjectInstancesToPersist = { };
-        if (filter) {
-            $.extend(objects, {
-                merge: [
-                    <powerbi.VisualObjectInstance>{
-                        objectName: "general",
-                        selector: undefined,
-                        properties: {
-                            "filter": filter
-                        },
-                    },
-                ],
-            });
-        } else {
-            $.extend(objects, {
-                remove: [
-                    <VisualObjectInstance>{
-                        objectName: "general",
-                        selector: undefined,
-                        properties: {
-                            "filter": filter
-                        },
-                    },
-                ],
-            });
-        }
-
         // rows are what are currently selected in lineup
         if (rows && rows.length) {
             // HACK
@@ -183,7 +154,23 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
         } else {
             this.selectionManager.clear();
         }
-        this.queuePropertyChanges(true, objects);
+
+        let operation = "merge";
+        if (!filter) {
+            operation = "remove";
+        }
+
+        this.propertyPersister.persist(true, {
+            [operation]: [
+                <powerbi.VisualObjectInstance>{
+                    objectName: "general",
+                    selector: undefined,
+                    properties: {
+                        "filter": filter
+                    },
+                },
+            ],
+        });
     }, 100);
 
     /**
@@ -268,6 +255,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
         super.init(options, this.template, true);
         this.host = options.host;
 
+        this.propertyPersister = createPropertyPersister(this.host, 100);
         this.selectionManager = new SelectionManager({
             hostServices: options.host
         });
@@ -372,192 +360,12 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
     }
 
     /**
-     * Gets a lineup config from the data view
-     */
-    private getConfigFromDataView(data: ITableSorterRow[]): ITableSorterConfiguration {
-        const calcDomain = (name: string) => {
-            let min: number;
-            let max: number;
-            data.forEach(m => {
-                const val = m[name];
-                if (typeof min === "undefined" || val < min) {
-                    min = val;
-                }
-                if (typeof max === "undefined" || val > max) {
-                    max = val;
-                }
-            });
-            return [min || 0, max || 0];
-        };
-        // Sometimes columns come in undefined
-        let newColArr: ITableSorterColumn[] = this.dataViewTable.columns.slice(0).filter(n => !!n).map((c) => {
-            const base = {
-                label: c.displayName,
-                column: c.displayName,
-                type: c.type.numeric ? "number" : "string",
-            };
-            if (c.type.numeric) {
-                _.merge(base, {
-                    domain: calcDomain(base.column)
-                });
-            }
-            return base;
-        });
-        let config: ITableSorterConfiguration;
-        if (this.dataView.metadata && this.dataView.metadata.objects && this.dataView.metadata.objects["layout"]) {
-            let configStr = this.dataView.metadata.objects["layout"]["layout"];
-            if (configStr) {
-                config = JSON.parse(configStr);
-            }
-        }
-        if (!config) {
-            config = {
-                primaryKey: newColArr[0].label,
-                columns: newColArr,
-            };
-        } else {
-            let newColNames = newColArr.map(c => c.column);
-
-            // Filter out any columns that don't exist anymore
-            config.columns = config.columns.filter(c =>
-                newColNames.indexOf(c.column) >= 0
-            );
-
-            // Override the domain, with the newest data
-            config.columns.forEach(n => {
-                let newCol = newColArr.filter(m => m.column === n.column)[0];
-                if (newCol.domain) {
-                    if (!n.domain) {
-                        n.domain = newCol.domain;
-                    } else {
-                        // Merge the two, using the max bounds between the two
-                        let lowerBound = Math.min(newCol.domain[0], n.domain[0]);
-                        let upperBound = Math.max(newCol.domain[1], n.domain[1]);
-                        n.domain = [lowerBound, upperBound];
-                    }
-                }
-            });
-
-            // Sort contains a missing column
-            if (config.sort && newColNames.indexOf(config.sort.column) < 0 && !config.sort.stack) {
-                config.sort = undefined;
-            }
-
-            if (config.layout && config.layout["primary"]) {
-                let removedColumnFilter = (c: { column: string, children: any[], domain: any[] }) => {
-                    // If this column exists in the new sets of columns, pass the filter
-                    if (newColNames.indexOf(c.column) >= 0) {
-
-                        // Bound the filted domain to the actual domain (in case they set a bad filter)
-                        let aCol = config.columns.filter(m => m.column === c.column)[0];
-                        if (c.domain) {
-                            let lowerBound = Math.max(aCol.domain[0], c.domain[0]);
-                            let upperBound = Math.min(aCol.domain[1], c.domain[1]);
-                            c.domain = [lowerBound, upperBound];
-                        }
-
-                        return true;
-                    }
-
-                    if (c.children) {
-                        c.children = c.children.filter(removedColumnFilter);
-                        return c.children.length > 0;
-                    }
-                    return false;
-                };
-                config.layout["primary"] = config.layout["primary"].filter(removedColumnFilter);
-            }
-
-            Utils.listDiff<ITableSorterColumn>(config.columns.slice(0), newColArr, {
-                /**
-                 * Returns true if item one equals item two
-                 */
-                equals: (one, two) => one.label === two.label,
-
-                /**
-                 * Gets called when the given item was removed
-                 */
-                onRemove: (item) => {
-                    for (let i = 0; i < config.columns.length; i++) {
-                        if (config.columns[i].label === item.label) {
-                            config.columns.splice(i, 1);
-                            break;
-                        }
-                    }
-                },
-
-                /**
-                 * Gets called when the given item was added
-                 */
-                onAdd: (item) => {
-                    config.columns.push(item);
-                    config.layout["primary"].push({
-                        width: 100,
-                        column: item.column,
-                        type: item.type,
-                    });
-                },
-            });
-        }
-        return config;
-    }
-
-    /* tslint:disable */
-    /**
-     * Queues the given property changes
-     */
-    private propsToUpdate: { changes: VisualObjectInstancesToPersist[], completed: Function, selection: boolean }[] = [];
-    private propUpdater = _.debounce(() => {
-        if (this.propsToUpdate && this.propsToUpdate.length) {
-            const toUpdate = this.propsToUpdate.slice(0);
-            this.propsToUpdate.length = 0;
-            const final: VisualObjectInstancesToPersist = {};
-            let isSelection: boolean;
-            toUpdate.forEach(n => {
-                n.changes.forEach(m => {
-                    Object.keys(m).forEach(operation => {
-                        if (!final[operation]) {
-                            final[operation] = [];
-                        }
-                        final[operation].push(...m[operation]);
-                    });
-                });
-                if (n.selection) {
-                    isSelection = true;
-                }
-
-            });
-
-            // SUPER important that these guys happen together, otherwise the selection does not update properly
-            if (isSelection) {
-                this.host.onSelect({ data: [] });
-            }
-            this.host.persistProperties(final);
-        }
-    }, 100);
-
-    /**
-     * Queues a set of property changes for the next update
-     */
-    private queuePropertyChanges(selection: boolean, ...changes: VisualObjectInstancesToPersist[]) {
-        return new Promise((resolve, reject) => {
-            this.propsToUpdate.push({
-                completed: resolve,
-                changes,
-                selection
-            });
-            this.propUpdater();
-        });
-    }
-    /* tslint:enable */
-
-    /**
      * Event listener for when the visual data's changes
      */
     private loadDataFromPowerBI() {
         if (this.dataViewTable) {
             let newData = TableSorterVisual.converter(this.dataView, this.selectionManager.getSelectionIds());
-            let config = this.getConfigFromDataView(newData.data);
+            let config = buildConfig(this.dataView, newData.data);
             let selectedRows = newData.data.filter(n => n.selected);
 
             this.tableSorter.configuration = config;
@@ -582,7 +390,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
                         return new Promise((resolve, reject) => {
                             if (newQuery) {
                                 if (filterChanged) {
-                                    this.queuePropertyChanges(false, this.buildSelfFilter(options.query));
+                                    this.propertyPersister.persist(false, this.buildSelfFilter(options.query));
                                 }
                                 if (sortChanged) {
                                     this.handleSort(options.sort[0]);
@@ -594,9 +402,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
                         });
                     });
             }
-        // }
-
-        this.tableSorter.selection = selectedRows;
+            this.tableSorter.selection = selectedRows;
         }
     }
 
