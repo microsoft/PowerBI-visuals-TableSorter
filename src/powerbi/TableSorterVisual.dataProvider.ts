@@ -1,5 +1,5 @@
-import { JSONDataProvider } from "./providers/JSONDataProvider";
-import { IQueryOptions, IQueryResult/*, ITableSorterSort, ITableSorterFilter*/} from "./models";
+import { JSONDataProvider } from "../providers/JSONDataProvider";
+import { IQueryOptions, IQueryResult/*, ITableSorterSort, ITableSorterFilter*/} from "../models";
 // import { Promise } from "es6-promise";
 import { LOAD_COUNT } from "./TableSorterVisual.defaults";
 

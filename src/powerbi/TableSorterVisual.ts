@@ -1,6 +1,6 @@
 import { VisualBase, Visual, logger } from "essex.powerbi.base";
 import { default as Utils, updateTypeGetter, UpdateType } from "essex.powerbi.base/src/lib/Utils";
-import { TableSorter  } from "./TableSorter";
+import { TableSorter  } from "../TableSorter";
 import {
     ITableSorterRow,
     ITableSorterSettings,
@@ -9,7 +9,7 @@ import {
     ITableSorterSort,
     ITableSorterFilter,
     INumericalFilter,
-} from "./models";
+} from "../models";
 import { Promise } from "es6-promise";
 import capabilities from "./TableSorterVisual.capabilities";
 import MyDataProvider from "./TableSorterVisual.dataProvider";
@@ -37,7 +37,7 @@ const log = logger("essex:widget:TableSorterVisual");
 const colors = require("essex.powerbi.base/src/colors");
 /* tslint:enable */
 
-@Visual(require("./build").output.PowerBI)
+@Visual(require("../build").output.PowerBI)
 export default class TableSorterVisual extends VisualBase implements IVisual {
 
     /**
@@ -347,7 +347,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
      */
     protected getCss(): string[] {
         const css = [
-            require("!css!../node_modules/lineup-v1/css/style.css"),
+            require("!css!../../node_modules/lineup-v1/css/style.css"),
             require("!css!sass!./css/TableSorterVisual.scss"),
         ];
         return this.noCss ? [] : super.getCss().concat(css);
@@ -712,13 +712,6 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
             this.tableSorter.settings = updatedSettings;
         }
     }
-}
-
-/**
- * Represents a setting with a value
- */
-interface IVisualBaseSettingWithValue<T> extends powerbi.data.DataViewObjectPropertyDescriptor {
-    value?: T;
 }
 
 /**

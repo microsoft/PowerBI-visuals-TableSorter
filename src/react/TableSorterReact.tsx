@@ -1,16 +1,16 @@
 import * as React from "react";
 import * as ReactDOM from "react-dom";
 import * as $ from "jquery";
-import { TableSorter as TableSorterImpl } from "./TableSorter";
+import { TableSorter as TableSorterImpl } from "../TableSorter";
 import {
     ITableSorterRow,
     ITableSorterColumn,
     ITableSorterSettings,
     ITableSorterConfiguration,
     IDataProvider,
-} from "./models";
+} from "../models";
 
-import "./css/TableSorter.scss";
+import "../css/TableSorter.scss";
 
 export interface TableSorterProps {
     cols: ITableSorterColumn[];
