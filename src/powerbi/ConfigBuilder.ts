@@ -1,5 +1,6 @@
 import { ITableSorterColumn, ITableSorterRow, ITableSorterConfiguration } from "../models";
 import { default as Utils } from "essex.powerbi.base/src/lib/Utils";
+import * as _ from "lodash";
 
 /**
  * Gets a lineup config from the data view

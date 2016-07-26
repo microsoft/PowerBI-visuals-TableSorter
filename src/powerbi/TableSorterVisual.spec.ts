@@ -124,8 +124,36 @@ describe("TableSorterVisual", () => {
         expect(instance.tableSorter.configuration.sort).to.be.undefined;
     });
 
-    it("should support loading numerical filters and the correct data after a page change");
-    it("should not get into an infinite loop when changing the sort quickly");
-    it("should not fail PBI (nested transactions issue) if adding/removing columns in PBI quickly");
-    it("should rerender values when the value formatter columns change (precision, units)");
+    describe("Integration", () => {
+
+
+        it("should allow for infinite scrolling");
+
+        it("should allow for infinite scrolling with a string filter");
+        it("should allow for infinite scrolling with a numerical filter");
+        it("should load a new set of data when a string column is filtered");
+        it("should load a new set of data when a numerical column is filtered");
+        it("should load a new set of data when a string column is sorted");
+        it("should load a new set of data when a numerical column is sorted");
+        it("should support stacked sorting");
+        it("should support persisting of state, so after you reload it returns to its original state");
+        it("should support persisting of state, so after you reload it returns to its original state: stacked");
+        it("should support persisting of state, so after you reload it returns to its original state: sort");
+        it("should support persisting of state, so after you reload it returns to its original state: filtering numerical");
+        it("should support persisting of state, so after you reload it returns to its original state: filtering string");
+        it("should support stacking columns, sorting them, then filtering another column");
+        it("should allow for you to change the range of a numerical field, without freezing");
+        it("should stack sort correctly asc");
+        it("should stack sort correctly desc");
+        it("should not go into an infinite loop if you just hit OK on a numerical filter without filtering.");
+        it("should have numerical filter UI that is aligned properly");
+        it("should have domains UI that is aligned properly"); // TSV
+        it("should do nothing if the domains dialog does not change ANY value"); // TSV
+        it("should update the configuration if the domains dialog changes ANY value"); // TSV
+
+        it("should support loading numerical filters and the correct data after a page change");
+        it("should not get into an infinite loop when changing the sort quickly");
+        it("should not fail PBI (nested transactions issue) if adding/removing columns in PBI quickly");
+        it("should rerender values when the value formatter columns change (precision, units)");
+    });
 });

@@ -1,9 +1,9 @@
 var myGlobal;
 if (typeof window === 'undefined' || typeof document === 'undefined') {
-    var jsdom = require("jsdom").jsdom;
-    var myDoc = jsdom('<html></html>', {});
-    global['window'] = myDoc.defaultView;
-    global['document'] = myDoc;
+    // var jsdom = require("jsdom").jsdom;
+    // var myDoc = jsdom('<html></html>', {});
+    // global['window'] = myDoc.defaultView;
+    // global['document'] = myDoc;
     myGlobal = global;
 } else {
     myGlobal = window;

@@ -1,26 +1,53 @@
 /* tslint:disable */
-require("essex.powerbi.base/spec/visualHelpers");
-//import "../base/testSetup";
+import "essex.powerbi.base/spec/visualHelpers";
+// import "../base/testSetup";
 /* tslint:enable */
 
 import { expect } from "chai";
 import { TableSorter } from "./TableSorter";
-import { ITableSorterSettings, ITableSorterRow, IDataProvider, ITableSorterConfiguration } from "./models";
+import {
+    ITableSorterSettings,
+    ITableSorterRow,
+    IDataProvider,
+    ITableSorterConfiguration,
+    IQueryResult,
+} from "./models";
 import * as $ from "jquery";
 import { Promise } from "es6-promise";
 
 describe("TableSorter", () => {
     let parentEle: JQuery;
+    let instances: TableSorter[] = [];
     beforeEach(() => {
         parentEle = $("<div></div>");
     });
 
     afterEach(() => {
-        if (parentEle) {
-            parentEle.remove();
-        }
+        instances.forEach(n => n.destroy());
+        instances.length = 0;
         parentEle = undefined;
     });
+
+    const getHeaders = () => {
+        return parentEle.find(".header").toArray().reverse();
+    };
+
+    const getHeader = (colName: string) => {
+        return $(getHeaders().filter((ele) => $(ele).is(`:contains('${colName}')`))[0]);
+    };
+
+    const getFilterEle = (colName: string) => {
+        return getHeader(colName).find(".singleColumnFilter");
+    };
+
+    const getColumnValues = (col: string) => {
+        const headerNames = getHeaders().map(n => $(n).find("title").text());
+        const colIdx = headerNames.indexOf(col); // Returns the index that this header is in the list of headers
+        // Find all the row values, and make sure they match
+        return parentEle.find(".row")
+            .map((i, ele) => $(ele).find(".text,.valueonly")[colIdx])
+            .map((i, ele) => $(ele).text()).toArray();
+    };
 
     let createInstance = () => {
         let ele = $("<div>");
@@ -29,14 +56,21 @@ describe("TableSorter", () => {
             instance: new TableSorter(ele),
             element: ele,
         };
+
+        // For cleaning up
+        instances.push(result.instance);
+
+        // result.instance.dimensions = { width: 800, height: 20000 };
         result.instance.settings = {
             presentation: {
-                animation: false
+                animation: false,
+                values: true,
+                numberFormatter: (n) => n + "",
             },
         };
         return result;
     };
-    let fakeDataColumns = () => {
+    let testColumns = () => {
         return [{
             column: "col1",
             label: "Column",
@@ -56,24 +90,28 @@ describe("TableSorter", () => {
         let rows: ITableSorterRow[] = [];
         for (let i = 0; i < 100; i++) {
             (function(myId: any) {
-                rows.push({
-                    id: myId,
+                rows.push(<any>{
+                    id: myId, // id is absolutely, positively necessary, otherwise it renders stupidly
                     col1: myId,
                     col2: i * (Math.random() * 100),
                     col3: i,
                     selected: false,
-                    equals: (other) => (myId) === other["col1"],
+                    equals: (other: any) => (myId) === other["col1"],
                 });
             })("FAKE_" + i);
         }
+        const cols = testColumns();
         return {
             data: rows,
-            columns: fakeDataColumns(),
+            columns: cols,
+            stringColumns: cols.filter(n => n.type === "string"),
+            numberColumns: cols.filter(n => n.type === "number"),
         };
     };
 
     let createProvider = (data: any[]) => {
         let resolver: Function;
+        let resolved = false;
         let fakeProvider = <IDataProvider>{
             canQuery(options: any) {
                 return Promise.resolve(true);
@@ -88,6 +126,7 @@ describe("TableSorter", () => {
                         results: data,
                         replace: true,
                     });
+                    resolved = true;
                     setTimeout(function() {
                         resolver();
                     }, 0);
@@ -95,7 +134,7 @@ describe("TableSorter", () => {
             },
         };
         return {
-            dataLoaded : new Promise((resolve) => {
+            instanceInitialized : new Promise((resolve) => {
                 resolver = resolve;
             }),
             provider: fakeProvider,
@@ -107,7 +146,7 @@ describe("TableSorter", () => {
         let data = createFakeData();
         let providerInfo = createProvider(data.data);
         instance.dataProvider = providerInfo.provider;
-        providerInfo.dataLoaded.then(() => {
+        providerInfo.instanceInitialized.then(() => {
             let desc = {
                 label: "STACKED_COLUMN",
                 width: 10,
@@ -124,11 +163,14 @@ describe("TableSorter", () => {
             instance,
             element,
             data,
-            dataLoaded: providerInfo.dataLoaded,
+            instanceInitialized: providerInfo.instanceInitialized,
         };
     };
 
     const performClick = (e: JQuery) => {
+        if (e.length === 0) {
+            expect.fail(1, 0, "No elements found to click");
+        }
         if (typeof MouseEvent !== "undefined") {
             /* tslint:disable */
             var ev = new Event("click", {"bubbles":true, "cancelable":false});
@@ -137,21 +179,61 @@ describe("TableSorter", () => {
         } else {
             e.click();
         }
-     };
+    };
+
+    const setStringFilter = (colName: string, value: string) => {
+        const filterEle = getFilterEle(colName);
+        performClick(filterEle); // Normal .click() will not work with d3
+        return new Promise((resolve, reject) => {
+            const popup = parentEle.find(".lu-popup2");
+            const inputEle = popup.find("input");
+            inputEle.val(value);
+            popup.find(".ok").click();
+            setTimeout(resolve, 100);
+        });
+    };
+
+    const setNumericalFilter = (colName: string, value: any) => {
+        const filterEle = getFilterEle(colName);
+        performClick(filterEle); // Normal .click() will not work with d3
+        return new Promise((resolve, reject) => {
+            const popup = parentEle.find(".lu-popup2");
+            const inputEle = popup.find("input");
+            inputEle.val(value);
+            popup.find(".ok").click();
+            setTimeout(resolve, 100);
+        });
+    };
+
+    let loadInstanceWithData = () => {
+        let { instance, element } = createInstance();
+        instance.dimensions = { width: 800, height: 1000 };
+        let data = createFakeData();
+        let providerInfo = createProvider(data.data);
+        instance.dataProvider = providerInfo.provider;
+        return {
+            instance,
+            element,
+            data,
+            provider: providerInfo.provider,
+            instanceInitialized: providerInfo.instanceInitialized,
+        };
+    };
 
     let loadInstanceWithStackedColumnsAndClick = () => {
-        let { instance, element, data, dataLoaded } = loadInstanceWithStackedColumns();
+        let { instance, element, data, instanceInitialized } = loadInstanceWithStackedColumns();
 
-        dataLoaded.then(() => {
+        instanceInitialized = instanceInitialized.then((result) => {
             let headerEle = element.find(".header:contains('STACKED_COLUMN')").find(".labelBG");
             performClick(headerEle);
+            return result;
         });
 
         return {
             instance,
             element,
             data,
-            dataLoaded,
+            instanceInitialized,
         };
     };
 
@@ -159,7 +241,7 @@ describe("TableSorter", () => {
         let { instance, element } = createInstance();
         let data = createFakeData();
 
-        let { provider, dataLoaded } = createProvider(data.data);
+        let { provider, instanceInitialized } = createProvider(data.data);
 
         instance.dataProvider = provider;
 
@@ -173,7 +255,7 @@ describe("TableSorter", () => {
         return {
             instance,
             element,
-            dataLoaded,
+            instanceInitialized,
             data,
         };
     };
@@ -181,7 +263,7 @@ describe("TableSorter", () => {
     let loadInstanceWithConfiguration = (config: ITableSorterConfiguration) => {
         let { instance, element } = createInstance();
         let data = createFakeData();
-        let { provider, dataLoaded } = createProvider(data.data);
+        let { provider, instanceInitialized } = createProvider(data.data);
 
         instance.configuration = config;
         instance.dataProvider = provider;
@@ -189,7 +271,7 @@ describe("TableSorter", () => {
         return {
             instance,
             element,
-            dataLoaded,
+            instanceInitialized,
             data,
         };
     };
@@ -222,13 +304,13 @@ describe("TableSorter", () => {
             expect(instance.settings.presentation.histograms).to.eq(false);
         });
         it("should pass rendering settings to lineupimpl", () => {
-            let { instance, dataLoaded } = loadInstanceWithSettings({
+            let { instance, instanceInitialized } = loadInstanceWithSettings({
                 presentation: {
                     histograms: false
                 },
             });
 
-            return dataLoaded.then(() => {
+            return instanceInitialized.then(() => {
                 expect(instance.lineupImpl.config.renderingOptions.histograms).to.be.false;
             });
         });
@@ -256,7 +338,7 @@ describe("TableSorter", () => {
                 });
                 let providerInfo = createProvider(createFakeData().data);
                 instance.dataProvider = providerInfo.provider;
-                return providerInfo.dataLoaded.then(() => {
+                return providerInfo.instanceInitialized.then(() => {
                     // Click on de header
                     let headerEle = element.find(".header:contains('col1')").find(".labelBG");
                     performClick(headerEle);
@@ -273,8 +355,8 @@ describe("TableSorter", () => {
 
                 let providerInfo = createProvider(createFakeData().data);
                 instance.dataProvider = providerInfo.provider;
-                return providerInfo.dataLoaded.then(() => {
-                    // Click on de header
+                return providerInfo.instanceInitialized.then(() => {
+                    // // Click on de header
                     let headerEle = element.find(".header:contains('col1')").find(".labelBG");
                     performClick(headerEle);
                 });
@@ -293,7 +375,7 @@ describe("TableSorter", () => {
 
                 let providerInfo = createProvider(createFakeData().data);
                 instance.dataProvider = providerInfo.provider;
-                return providerInfo.dataLoaded.then(() => {
+                return providerInfo.instanceInitialized.then(() => {
                     let row = element.find(".row").first();
                     performClick(row);
                     expect(called).to.be.true;
@@ -305,7 +387,7 @@ describe("TableSorter", () => {
 
                 let providerInfo = createProvider(createFakeData().data);
                 instance.dataProvider = providerInfo.provider;
-                return providerInfo.dataLoaded.then(() => {
+                return providerInfo.instanceInitialized.then(() => {
                     let row = element.find(".row").first();
                     performClick(row);
 
@@ -331,7 +413,7 @@ describe("TableSorter", () => {
 
                     let providerInfo = createProvider(createFakeData().data);
                     instance.dataProvider = providerInfo.provider;
-                    return providerInfo.dataLoaded.then(() => {
+                    return providerInfo.instanceInitialized.then(() => {
                         let row = element.find(".row").first();
                         performClick(row);
 
@@ -345,7 +427,7 @@ describe("TableSorter", () => {
 
                     let providerInfo = createProvider(createFakeData().data);
                     instance.dataProvider = providerInfo.provider;
-                    return providerInfo.dataLoaded.then(() => {
+                    return providerInfo.instanceInitialized.then(() => {
                         let row = element.find(".row").first();
                         performClick(row);
                         performClick(row);
@@ -362,9 +444,9 @@ describe("TableSorter", () => {
                         },
                     });
                     let { data } = createFakeData();
-                    let providerInfo = createProvider(createFakeData().data);
+                    let providerInfo = createProvider(data);
                     instance.dataProvider = providerInfo.provider;
-                    return providerInfo.dataLoaded.then(() => {
+                    return providerInfo.instanceInitialized.then(() => {
                         let rows = element.find(".row");
                         performClick($(rows[0]));
                         performClick($(rows[1]));
@@ -381,7 +463,7 @@ describe("TableSorter", () => {
 
                     let providerInfo = createProvider(createFakeData().data);
                     instance.dataProvider = providerInfo.provider;
-                    return providerInfo.dataLoaded.then(() => {
+                    return providerInfo.instanceInitialized.then(() => {
                         instance.selection = [data[0]];
                         expect(instance.selection[0]["col1"]).to.be.equal(data[0]["col1"]);
                     });
@@ -403,7 +485,7 @@ describe("TableSorter", () => {
 
                     let providerInfo = createProvider(createFakeData().data);
                     instance.dataProvider = providerInfo.provider;
-                    return providerInfo.dataLoaded.then(() => {
+                    return providerInfo.instanceInitialized.then(() => {
                         let row = element.find(".row").first();
                         performClick(row);
 
@@ -416,7 +498,7 @@ describe("TableSorter", () => {
 
                     let providerInfo = createProvider(createFakeData().data);
                     instance.dataProvider = providerInfo.provider;
-                    return providerInfo.dataLoaded.then(() => {
+                    return providerInfo.instanceInitialized.then(() => {
                         let row = element.find(".row").first();
                         performClick(row);
                         performClick(row);
@@ -431,7 +513,7 @@ describe("TableSorter", () => {
 
                     let providerInfo = createProvider(data);
                     instance.dataProvider = providerInfo.provider;
-                    return providerInfo.dataLoaded.then(() => {
+                    return providerInfo.instanceInitialized.then(() => {
 
                         let rows = element.find(".row");
                         performClick($(rows[0]));
@@ -448,7 +530,7 @@ describe("TableSorter", () => {
 
                     let providerInfo = createProvider(data);
                     instance.dataProvider = providerInfo.provider;
-                    return providerInfo.dataLoaded.then(() => {
+                    return providerInfo.instanceInitialized.then(() => {
                         instance.selection = [data[0]];
                         expect(instance.selection[0]["col1"]).to.be.equal(data[0]["col1"]);
                     });
@@ -458,15 +540,15 @@ describe("TableSorter", () => {
 
         describe("getSortFromLineUp", () => {
             it("does not crash when sorting a stacked column", () => {
-                let {instance, dataLoaded} = loadInstanceWithStackedColumnsAndClick();
-                return dataLoaded.then(() => {
+                let {instance, instanceInitialized} = loadInstanceWithStackedColumnsAndClick();
+                return instanceInitialized.then(() => {
                     expect(instance.getSortFromLineUp()).not.to.throw;
                 });
             });
 
             it("returns a 'stack' property when a stack is cliked on", () => {
-                let {instance, dataLoaded} = loadInstanceWithStackedColumnsAndClick();
-                return dataLoaded.then(() => {
+                let {instance, instanceInitialized} = loadInstanceWithStackedColumnsAndClick();
+                return instanceInitialized.then(() => {
                     let result = instance.getSortFromLineUp();
                     expect(result.stack.name).to.equal("STACKED_COLUMN");
                     expect(result.column).to.be.undefined;
@@ -476,16 +558,16 @@ describe("TableSorter", () => {
 
         describe("integration", () => {
             it("saves the configuration when a stacked column is sorted", () => {
-                let {instance, dataLoaded} = loadInstanceWithStackedColumnsAndClick();
-                return dataLoaded.then(() => {
+                let {instance, instanceInitialized} = loadInstanceWithStackedColumnsAndClick();
+                return instanceInitialized.then(() => {
                     expect(instance.configuration.sort).to.not.be.undefined;
                     expect(instance.configuration.sort.stack.name).to.be.equal("STACKED_COLUMN");
                     expect(instance.configuration.sort.column).to.be.undefined;
                 });
             });
             it("saves the configuration when the column layout has been changed", () => {
-                let {instance, dataLoaded } = loadInstanceWithStackedColumns();
-                return dataLoaded.then(() => {
+                let {instance, instanceInitialized } = loadInstanceWithStackedColumns();
+                return instanceInitialized.then(() => {
                     let called = false;
                     instance.events.on(TableSorter.EVENTS.CONFIG_CHANGED, () => {
                         called = true;
@@ -498,8 +580,8 @@ describe("TableSorter", () => {
                 });
             });
             it("loads lineup with a sorted stacked column", () => {
-                let {instance, data, dataLoaded } = loadInstanceWithStackedColumns();
-                return dataLoaded.then(() => {
+                let {instance, data, instanceInitialized } = loadInstanceWithStackedColumns();
+                return instanceInitialized.then(() => {
                     instance.configuration = {
                         primaryKey: "col1",
                         columns: data.columns,
@@ -518,7 +600,7 @@ describe("TableSorter", () => {
             it("loads lineup with a filtered numerical column if it intially is filtered", () => {
                 let { instance } = loadInstanceWithConfiguration({
                     primaryKey: "primary",
-                    columns: fakeDataColumns(),
+                    columns: testColumns(),
                     layout: {
                         primary: [{
                             column: "col3",
@@ -532,13 +614,196 @@ describe("TableSorter", () => {
         });
     });
 
+    it("should sort the data provider if the sort has changed in lineup", () => {
+        let { data, instanceInitialized, provider, element } = loadInstanceWithData();
+        const col = data.stringColumns[0];
+        const colName = col.column;
+        let called = false;
+        return instanceInitialized
+            .then(() => {
+                provider.sort = (sort) => {
+                    called = true;
+                    expect(sort.column).to.be.equal(colName);
+                    expect(sort.asc).to.be.true;
+                };
+
+                let headerEle = element.find(`.header:contains('${colName}')`).find(".labelBG");
+                performClick(headerEle);
+                expect(called).to.be.true;
+            });
+    });
+
+    it("should filter the data provider if the filter has changed in lineup", () => {
+        let { data, instanceInitialized, provider } = loadInstanceWithData();
+        const col = data.stringColumns[0];
+        const colName = col.column;
+        const value = data.data[1][colName];
+
+        let called = false;
+        return instanceInitialized
+            .then(() => {
+                provider.filter = (filter) => {
+                    called = true;
+                    expect(filter.column).to.be.equal(colName);
+                    expect(filter.value).to.be.equal(value);
+                };
+            })
+            .then(() => setStringFilter(colName, value)) // Basically set the filter to the value in the second row
+            .then(() => {
+                expect(called).to.be.true;
+            });
+    });
+
     // it("should allow for the user filtering a numerical, and then allow for the user to scroll to load more data");
-    it("should allow string column filtering");
-    it("should allow numerical column filtering");
+    it("should allow string column filtering through the UI", () => {
+        let { data, instanceInitialized } = loadInstanceWithData();
+        const col = data.stringColumns[0];
+        const colName = col.column;
+        const value = data.data[1][colName];
+        return instanceInitialized
+            .then(() => setStringFilter(colName, value)) // Basically set the filter to the value in the second row
+            .then(() => getColumnValues(colName))
+            .then((rowValues) => {
+                expect(rowValues.length).to.be.gte(1);
+                rowValues.forEach(n => expect(n).to.contain(value));
+            });
+    });
+
+    xit("should allow numerical column filtering through the UI", () => {
+        let { data, instanceInitialized } = loadInstanceWithData();
+        const col = data.numberColumns[0];
+        const colName = col.column;
+        const value = data.data[1][colName];
+        return instanceInitialized
+            .then(() => setNumericalFilter(colName, value)) // Basically set the filter to the value in the second row
+            .then(() => getColumnValues(colName))
+            .then((rowValues) => {
+                expect(rowValues.length).to.be.gte(1);
+                rowValues.forEach(n => expect(n).to.be.equal(value));
+            });
+    });
+
+    // it("should allow for the user filtering a numerical, and then allow for the user to scroll to load more data");
     it("should allow for infinite scrolling without a filter");
+    it("should check to see if there is more data when infinite scrolling", (done) => {
+        let { instanceInitialized, instance, provider, element } = loadInstanceWithData();
+        return instanceInitialized
+            .then(() => {
+                provider.query = (() => {
+                    expect.fail(true, false, "Should not be called");
+                    done.fail();
+                }) as any;
+
+                let canQueryCalled = false;
+                provider.canQuery = (options) => {
+                    canQueryCalled = true;
+                    return Promise.resolve(false);
+                };
+
+                // HACKY: This mimics a scroll event
+                const scrollable = element.find(".lu-wrapper");
+                scrollable.scrollTop(scrollable.height());
+                instance.lineupImpl.scrolled();
+
+                expect(canQueryCalled).to.be.true;
+                done();
+            });
+    });
+
+    // it("should allow for the user filtering a numerical, and then allow for the user to scroll to load more data");
+    it("should check to see if there is more data when infinite scrolling and there is a filter", (done) => {
+        let { data, instanceInitialized, provider, element, instance } = loadInstanceWithData();
+        const col = data.stringColumns[0];
+        const filterColName = col.column;
+        const filterVal = data.data[1][filterColName];
+        return instanceInitialized
+            .then(() => setStringFilter(filterColName, filterVal)) // Basically set the filter to the value in the second row
+            .then(() => {
+                provider.query = (() => {
+                    expect.fail(true, false, "Should not be called");
+                    done.fail();
+                }) as any;
+
+                let canQueryCalled = false;
+                provider.canQuery = (options) => {
+                    canQueryCalled = true;
+                    const filter = options.query.filter(n => n.column === filterColName)[0];
+                    expect(filter).to.be.deep.equal({
+                        column: filterColName,
+                        value: filterVal,
+                    });
+                    return Promise.resolve(false);
+                };
+
+                // HACKY: This mimics a scroll event
+                const scrollable = element.find(".lu-wrapper");
+                scrollable.scrollTop(scrollable.height());
+                instance.lineupImpl.scrolled();
+
+                expect(canQueryCalled).to.be.true;
+                done();
+            });
+    });
+
+    it("should attempt to load more data when infinite scrolling", (done) => {
+        let { instanceInitialized, instance, provider, element } = loadInstanceWithData();
+        return instanceInitialized
+            .then(() => {
+                let queryCalled = false;
+                provider.query = (() => {
+                    queryCalled = true;
+                    done();
+                }) as any;
+
+                provider.canQuery = (options) => {
+                    return Promise.resolve(true);
+                };
+
+                // HACKY: This mimics a scroll event
+                const scrollable = element.find(".lu-wrapper");
+                scrollable.scrollTop(scrollable.height());
+                instance.lineupImpl.scrolled();
+            });
+    });
+
+    it("should replace data, if the DataProvider indicates that it is new data", (done) => {
+        let { instanceInitialized, instance, provider, data } = loadInstanceWithData();
+        const col = data.stringColumns[0];
+        const filterColName = col.column;
+        const filterVal = data.data[1][filterColName];
+        return instanceInitialized
+            .then(() => setStringFilter(filterColName, filterVal)) // Basically set the filter to the value in the second row
+            .then(() => {
+                let queryCalled = false;
+                let resolved = false;
+                provider.query = (() => {
+                    queryCalled = true;
+                    const newFakeData = createFakeData();
+                    return new Promise<IQueryResult>(resolve => {
+                        resolve({
+                            replace: true,
+                            results: newFakeData.data,
+                        });
+
+                        // SetTimeout is necessary because when you resolve, it doesn't immediately call listeners,
+                        // it delays first.
+                        setTimeout(() => {
+                            expect(instance.data).to.be.deep.equal(newFakeData.data);
+                            done();
+                        }, 20);
+                    });
+                });
+
+                provider.canQuery = (options) => {
+                    let promise = Promise.resolve(!resolved);
+                    resolved = true;
+                    return promise;
+                };
+            });
+    });
+
     it("should allow for infinite scrolling with a string filter");
-    it("should allow for infinite scrolling with a numerical filter");
-    it("should load a new set of data when a string column is filtered");
+    // it("should load a new set of data when a string column is filtered");
     it("should load a new set of data when a numerical column is filtered");
     it("should load a new set of data when a string column is sorted");
     it("should load a new set of data when a numerical column is sorted");

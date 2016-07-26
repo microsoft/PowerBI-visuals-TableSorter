@@ -34,7 +34,7 @@ const log = logger("essex:widget:TableSorterVisual");
 const colors = require("essex.powerbi.base/src/colors");
 /* tslint:enable */
 
-@Visual(require("../build").output.PowerBI)
+@Visual(require("../build.json").output.PowerBI)
 export default class TableSorterVisual extends VisualBase implements IVisual {
 
     /**
@@ -334,11 +334,10 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
      * Gets the css used for this element
      */
     protected getCss(): string[] {
-        const css = [
+        return this.noCss ? [] : super.getCss().concat([
             require("!css!../../node_modules/lineup-v1/css/style.css"),
             require("!css!sass!./css/TableSorterVisual.scss"),
-        ];
-        return this.noCss ? [] : super.getCss().concat(css);
+        ]);
     }
 
     /**
