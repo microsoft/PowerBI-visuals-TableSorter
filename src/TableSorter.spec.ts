@@ -685,13 +685,12 @@ describe("TableSorter", () => {
 
     // it("should allow for the user filtering a numerical, and then allow for the user to scroll to load more data");
     it("should allow for infinite scrolling without a filter");
-    it("should check to see if there is more data when infinite scrolling", (done) => {
+    it("should check to see if there is more data when infinite scrolling", () => {
         let { instanceInitialized, instance, provider, element } = loadInstanceWithData();
         return instanceInitialized
             .then(() => {
                 provider.query = (() => {
                     expect.fail(true, false, "Should not be called");
-                    done.fail();
                 }) as any;
 
                 let canQueryCalled = false;
@@ -706,99 +705,156 @@ describe("TableSorter", () => {
                 instance.lineupImpl.scrolled();
 
                 expect(canQueryCalled).to.be.true;
-                done();
             });
     });
 
-    // it("should allow for the user filtering a numerical, and then allow for the user to scroll to load more data");
-    it("should check to see if there is more data when infinite scrolling and there is a filter", (done) => {
+    /**
+     * Creates an instance with a filter on it
+     */
+    function createInstanceWithFilter() {
         let { data, instanceInitialized, provider, element, instance } = loadInstanceWithData();
         const col = data.stringColumns[0];
         const filterColName = col.column;
         const filterVal = data.data[1][filterColName];
-        return instanceInitialized
-            .then(() => setStringFilter(filterColName, filterVal)) // Basically set the filter to the value in the second row
+        instanceInitialized = instanceInitialized
+            .then(() => setStringFilter(filterColName, filterVal)); // Basically set the filter to the value in the second row
+        return { filterColName, filterVal, ready: instanceInitialized, provider, element, instance, data };
+    }
+
+    /**
+     * Performs the infinite load
+     */
+    function performInfiniteLoad() {
+        // HACKY: This mimics a scroll event
+        const scrollable = parentEle.find(".lu-wrapper");
+        scrollable.scrollTop(scrollable.height());
+        instances[0].lineupImpl.scrolled();
+    }
+
+    // it("should allow for the user filtering a numerical, and then allow for the user to scroll to load more data");
+    it("should check to see if there is more data when infinite scrolling and there is a filter", () => {
+        let { filterColName, filterVal, ready, provider } = createInstanceWithFilter();
+        return ready
             .then(() => {
-                provider.query = (() => {
-                    expect.fail(true, false, "Should not be called");
-                    done.fail();
-                }) as any;
+                return new Promise((resolve, reject) => {
+                    // Make sure query isn't called
+                    provider.query = (() => {
+                        reject(new Error("Should not be called"));
+                    }) as any;
 
-                let canQueryCalled = false;
-                provider.canQuery = (options) => {
-                    canQueryCalled = true;
-                    const filter = options.query.filter(n => n.column === filterColName)[0];
-                    expect(filter).to.be.deep.equal({
-                        column: filterColName,
-                        value: filterVal,
-                    });
-                    return Promise.resolve(false);
-                };
-
-                // HACKY: This mimics a scroll event
-                const scrollable = element.find(".lu-wrapper");
-                scrollable.scrollTop(scrollable.height());
-                instance.lineupImpl.scrolled();
-
-                expect(canQueryCalled).to.be.true;
-                done();
-            });
-    });
-
-    it("should attempt to load more data when infinite scrolling", (done) => {
-        let { instanceInitialized, instance, provider, element } = loadInstanceWithData();
-        return instanceInitialized
-            .then(() => {
-                let queryCalled = false;
-                provider.query = (() => {
-                    queryCalled = true;
-                    done();
-                }) as any;
-
-                provider.canQuery = (options) => {
-                    return Promise.resolve(true);
-                };
-
-                // HACKY: This mimics a scroll event
-                const scrollable = element.find(".lu-wrapper");
-                scrollable.scrollTop(scrollable.height());
-                instance.lineupImpl.scrolled();
-            });
-    });
-
-    it("should replace data, if the DataProvider indicates that it is new data", (done) => {
-        let { instanceInitialized, instance, provider, data } = loadInstanceWithData();
-        const col = data.stringColumns[0];
-        const filterColName = col.column;
-        const filterVal = data.data[1][filterColName];
-        return instanceInitialized
-            .then(() => setStringFilter(filterColName, filterVal)) // Basically set the filter to the value in the second row
-            .then(() => {
-                let queryCalled = false;
-                let resolved = false;
-                provider.query = (() => {
-                    queryCalled = true;
-                    const newFakeData = createFakeData();
-                    return new Promise<IQueryResult>(resolve => {
-                        resolve({
-                            replace: true,
-                            results: newFakeData.data,
+                    // make sure canQuery is called with the correct filter
+                    let canQueryCalled = false;
+                    provider.canQuery = (options) => {
+                        canQueryCalled = true;
+                        const filter = options.query.filter(n => n.column === filterColName)[0];
+                        expect(filter).to.be.deep.equal({
+                            column: filterColName,
+                            value: filterVal,
                         });
+                        return Promise.resolve().then(() => {
+                            // Resolve it after a delay (ie after TableSorter gets it and has time to call query)
+                            setTimeout(resolve, 10);
+                            return false;
+                        });
+                    };
 
-                        // SetTimeout is necessary because when you resolve, it doesn't immediately call listeners,
-                        // it delays first.
-                        setTimeout(() => {
-                            expect(instance.data).to.be.deep.equal(newFakeData.data);
-                            done();
-                        }, 20);
-                    });
+                    // Start the infinite load process
+                    performInfiniteLoad();
+
+                    // Basic check to make sure the function is actually called
+                    expect(canQueryCalled).to.be.true;
                 });
+            });
+    });
 
-                provider.canQuery = (options) => {
-                    let promise = Promise.resolve(!resolved);
-                    resolved = true;
-                    return promise;
-                };
+    it("should attempt to load more data when infinite scrolling", () => {
+        let { instanceInitialized, provider } = loadInstanceWithData();
+        return instanceInitialized
+            .then(() => {
+                return new Promise(resolve => {
+                    let queryCalled = false;
+                    provider.query = (() => {
+                        queryCalled = true;
+                        resolve();
+                    }) as any;
+
+                    provider.canQuery = (options) => {
+                        return Promise.resolve(true);
+                    };
+
+                    // Start the infinite load process
+                    performInfiniteLoad();
+                });
+            });
+    });
+
+    it("should replace data, if the DataProvider indicates that it is should be replaced", () => {
+        let { ready, provider, instance } = createInstanceWithFilter();
+        return ready
+            .then(() => {
+                return new Promise(done => {
+                    provider.query = (() => {
+                        const newFakeData = createFakeData();
+                        return new Promise<IQueryResult>(resolve => {
+                            resolve({
+                                replace: true,
+                                results: newFakeData.data,
+                            });
+
+                            // SetTimeout is necessary because when you resolve, it doesn't immediately call listeners,
+                            // it delays first.
+                            setTimeout(() => {
+                                expect(instance.data).to.be.deep.equal(newFakeData.data);
+                                done();
+                            }, 20);
+                        });
+                    });
+
+                    let resolved = false;
+                    provider.canQuery = (options) => {
+                        let promise = Promise.resolve(!resolved);
+                        resolved = true;
+                        return promise;
+                    };
+
+                    // Start the infinite load process
+                    performInfiniteLoad();
+                });
+            });
+    });
+
+    it("should append data, if the DataProvider indicates that it should be appended", () => {
+        let { ready, provider, instance, data } = createInstanceWithFilter();
+        return ready
+            .then(() => {
+                return new Promise(done => {
+                    provider.query = (() => {
+                        const newFakeData = createFakeData();
+                        return new Promise<IQueryResult>(resolve => {
+                            resolve({
+                                replace: false,
+                                results: newFakeData.data,
+                            });
+
+                            // SetTimeout is necessary because when you resolve, it doesn't immediately call listeners,
+                            // it delays first.
+                            setTimeout(() => {
+                                expect(instance.data).to.be.deep.equal(data.data.concat(newFakeData.data));
+                                done();
+                            }, 20);
+                        });
+                    });
+
+                    // let resolved = false;
+                    // provider.canQuery = (options) => {
+                    //     let promise = Promise.resolve(!resolved);
+                    //     resolved = true;
+                    //     return promise;
+                    // };
+
+                    // Start the infinite load process
+                    performInfiniteLoad();
+                });
             });
     });
 
