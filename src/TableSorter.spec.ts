@@ -640,6 +640,70 @@ describe("TableSorter", () => {
                 });
         });
 
+        it("should restore filters from a configuration", () => {
+            let { instance, data, instanceInitialized, provider } = loadInstanceWithData();
+
+            return instanceInitialized
+                .then(() => {
+                    return new Promise(resolve => {
+                        provider.canQuery = () => Promise.resolve(true);
+                        provider.query = ((options: any) => {
+                            // Make sure the query passed to the data provider matches the ones we added in the configuration
+                            expect(options.query).to.be.deep.equal(
+                                data.columns.map(n => ({ column: n.column, value: "TEST_" + n.column }))
+                            );
+                            resolve();
+                        }) as any;
+                        instance.configuration = {
+                            columns: data.columns.slice(0),
+                            layout: {
+                                // Go through all the columns and apply a "filter to them"
+                                primary: data.columns.map(n => {
+                                    return {
+                                        column: n.column,
+                                        filter: "TEST_" + n.column,
+                                    };
+                                }),
+                            },
+                            primaryKey: "primary",
+                        };
+                    });
+                });
+        });
+
+        it("should restore sorts from a configuration", () => {
+            let { instance, data, instanceInitialized, provider } = loadInstanceWithData();
+
+            return instanceInitialized
+                .then(() => {
+                    return new Promise(resolve => {
+                        provider.canQuery = () => Promise.resolve(true);
+                        provider.query = ((options: any) => {
+                            // Make sure the query passed to the data provider matches the ones we added in the configuration
+                            expect(options.sort).to.be.deep.equal([{
+                                column: data.columns[0].column,
+                                asc: false,
+                            }]);
+                            resolve();
+                        }) as any;
+                        instance.configuration = {
+                            columns: data.columns.slice(0),
+                            sort: {
+                                column: data.columns[0].column,
+                                asc: false,
+                            },
+                            layout: {
+                                // Go through all the columns and apply a "filter to them"
+                                primary: data.columns.map(n => ({
+                                    column: n.column
+                                })),
+                            },
+                            primaryKey: "primary",
+                        };
+                    });
+                });
+        });
+
         it("should filter the data provider if the filter has changed in lineup", () => {
             let { data, instanceInitialized, provider } = loadInstanceWithData();
             const col = data.stringColumns[0];

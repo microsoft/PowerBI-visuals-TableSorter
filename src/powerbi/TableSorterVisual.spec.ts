@@ -142,7 +142,7 @@ describe("TableSorterVisual", () => {
         expect(instance.tableSorter.dataProvider).to.be.equal(fakeProvider); // Make sure it sets my data provider
     });
 
-    it.only("should load tableSorter with the correct layout stored in PBI", () => {
+    it("should load tableSorter with the correct layout stored in PBI", () => {
         let { instance, setUpdateType } = createVisual();
         let fakeProvider = {
             canQuery: () => Promise.resolve(false)
