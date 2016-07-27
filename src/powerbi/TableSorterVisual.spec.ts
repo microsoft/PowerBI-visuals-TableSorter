@@ -10,6 +10,7 @@ import { UpdateType } from "essex.powerbi.base/src/lib/Utils";
 import { expect } from "chai";
 import { default as TableSorterVisual  } from "./TableSorterVisual";
 import * as $ from "jquery";
+import { Promise } from "es6-promise";
 
 describe("TableSorterVisual", () => {
     let parentEle: JQuery;
@@ -124,11 +125,68 @@ describe("TableSorterVisual", () => {
         expect(instance.tableSorter.configuration.sort).to.be.undefined;
     });
 
+    it("should load tableSorter with a new provider when new data is passed via PBI", () => {
+        let { instance, setUpdateType } = createVisual();
+        let fakeProvider = {
+            canQuery: () => Promise.resolve(false)
+        } as any;
+
+        // HACK, we should make it "protected"
+        instance["createDataProvider"] = <any>(() => fakeProvider);
+
+        // Load initial data
+        let data = SpecUtils.createUpdateOptionsWithData();
+        setUpdateType(UpdateType.Data);
+        instance.update(data);
+
+        expect(instance.tableSorter.dataProvider).to.be.equal(fakeProvider); // Make sure it sets my data provider
+    });
+
+    it.only("should load tableSorter with the correct layout stored in PBI", () => {
+        let { instance, setUpdateType } = createVisual();
+        let fakeProvider = {
+            canQuery: () => Promise.resolve(false)
+        } as any;
+
+        // HACK, we should make it "protected"
+        instance["createDataProvider"] = <any>(() => fakeProvider);
+
+        // Load initial data
+        const data = SpecUtils.createUpdateOptionsWithData();
+        setUpdateType(UpdateType.Data);
+        instance.update(data);
+
+        // Tweak the layout of the table
+        const config = instance.tableSorter.configuration;
+        const newLayout = {
+            primary: [{
+                column: "COLUMN_2"
+            }, {
+                column: "COLUMN_1"
+            }, {
+                column: "COLUMN_1"
+            }, ],
+        };
+        data.dataViews[0].metadata = <any>{
+            objects: {
+                "layout": {
+                    "layout": JSON.stringify($.extend(true, {}, config, {
+                        "layout": newLayout
+                     }))
+                },
+            },
+        };
+
+        // Update TableSorterVisual with the new layout
+        setUpdateType(UpdateType.Settings);
+        instance.update(data);
+
+        // Make sure the layouts match
+        expect(instance.tableSorter.configuration.layout).to.be.deep.equal(newLayout);
+    });
+
     describe("Integration", () => {
-
-
         it("should allow for infinite scrolling");
-
         it("should allow for infinite scrolling with a string filter");
         it("should allow for infinite scrolling with a numerical filter");
         it("should load a new set of data when a string column is filtered");

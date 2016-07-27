@@ -376,33 +376,40 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
                 resolver(newData.data);
             } else {
                 log("Loading data into MyDataProvider");
-                this.tableSorter.dataProvider = new MyDataProvider(
-                    newData.data,
-                    (newQuery) => {
-                        // If it is a new query
-                        const canLoadMore = newQuery || !!this.dataView.metadata.segment;
-                        log(`CanLoadMore: ${canLoadMore}`);
-                        return canLoadMore;
-                    },
-                    (options, newQuery, sortChanged, filterChanged) => {
-                        this.waitingForMoreData = true;
-                        return new Promise((resolve, reject) => {
-                            if (newQuery) {
-                                if (filterChanged) {
-                                    this.propertyPersister.persist(false, this.buildSelfFilter(options.query));
-                                }
-                                if (sortChanged) {
-                                    this.handleSort(options.sort[0]);
-                                }
-                            } else {
-                                this.host.loadMoreData();
-                            }
-                            this.loadResolver = resolve;
-                        });
-                    });
+                this.tableSorter.dataProvider = this.createDataProvider(newData);
             }
             this.tableSorter.selection = selectedRows;
         }
+    }
+
+    /**
+     * Creates a data provider with the given set of data
+     */
+    private createDataProvider(newData: { data: any[] }) {
+        return new MyDataProvider(
+            newData.data,
+            (newQuery) => {
+                // If it is a new query
+                const canLoadMore = newQuery || !!this.dataView.metadata.segment;
+                log(`CanLoadMore: ${canLoadMore}`);
+                return canLoadMore;
+            },
+            (options, newQuery, sortChanged, filterChanged) => {
+                this.waitingForMoreData = true;
+                return new Promise((resolve, reject) => {
+                    if (newQuery) {
+                        if (filterChanged) {
+                            this.propertyPersister.persist(false, this.buildSelfFilter(options.query));
+                        }
+                        if (sortChanged) {
+                            this.handleSort(options.sort[0]);
+                        }
+                    } else {
+                        this.host.loadMoreData();
+                    }
+                    this.loadResolver = resolve;
+                });
+            });
     }
 
     private handleSort(rawSort: ITableSorterSort) {
