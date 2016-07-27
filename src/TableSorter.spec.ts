@@ -36,6 +36,10 @@ describe("TableSorter", () => {
         return $(getHeaders().filter((ele) => $(ele).is(`:contains('${colName}')`))[0]);
     };
 
+    const getHeaderNames = () => {
+        return getHeaders().map(n => $(n).find("title").text()).filter(n => n !== "Rank");
+    };
+
     const getFilterEle = (colName: string) => {
         return getHeader(colName).find(".singleColumnFilter");
     };
@@ -76,20 +80,20 @@ describe("TableSorter", () => {
             label: "Column",
             type: "string",
         }, {
-            column: "col2",
-            label: "Column2",
-            type: "number",
-        }, {
-            column: "col3",
-            label: "Column3",
-            type: "number",
-        }, ];
+                column: "col2",
+                label: "Column2",
+                type: "number",
+            }, {
+                column: "col3",
+                label: "Column3",
+                type: "number",
+            }, ];
     };
 
     let createFakeData = () => {
         let rows: ITableSorterRow[] = [];
         for (let i = 0; i < 100; i++) {
-            (function(myId: any) {
+            (function (myId: any) {
                 rows.push(<any>{
                     id: myId, // id is absolutely, positively necessary, otherwise it renders stupidly
                     col1: myId,
@@ -113,8 +117,9 @@ describe("TableSorter", () => {
         let resolver: Function;
         let fakeProvider = <any>{
             shouldResolve: true,
+            alwaysResolve: true,
             canQuery(options: any) {
-                return Promise.resolve(fakeProvider.shouldResolve);
+                return Promise.resolve(fakeProvider.alwaysResolve || fakeProvider.shouldResolve);
             },
             generateHistogram() {
                 return Promise.resolve([]);
@@ -129,14 +134,14 @@ describe("TableSorter", () => {
                     fakeProvider.shouldResolve = false;
 
                     // Ghetto hax, 50 because it tries to checkLoadMoreData after 10 seconds.
-                    setTimeout(function() {
+                    setTimeout(function () {
                         resolver();
                     }, 50);
                 });
             },
         };
         return {
-            instanceInitialized : new Promise((resolve) => {
+            instanceInitialized: new Promise((resolve) => {
                 resolver = resolve;
             }),
             provider: <IDataProvider>fakeProvider,
@@ -175,7 +180,7 @@ describe("TableSorter", () => {
         }
         if (typeof MouseEvent !== "undefined") {
             /* tslint:disable */
-            var ev = new Event("click", {"bubbles":true, "cancelable":false});
+            var ev = new Event("click", { "bubbles": true, "cancelable": false });
             e[0].dispatchEvent(ev);
             /* tslint:enable */
         } else {
@@ -265,11 +270,15 @@ describe("TableSorter", () => {
 
     let loadInstanceWithConfiguration = (config: ITableSorterConfiguration) => {
         let { instance, element } = createInstance();
+        instance.dimensions = { width: 800, height: 1000 };
         let data = createFakeData();
         let { provider, instanceInitialized } = createProvider(data.data);
+        provider["shouldResolve"] = true;
+        provider["alwaysResolve"] = true;
+
+        instance.dataProvider = provider;
 
         instance.configuration = config;
-        instance.dataProvider = provider;
 
         return {
             instance,
@@ -278,6 +287,17 @@ describe("TableSorter", () => {
             data,
         };
     };
+
+    /**
+     * sorts the given column
+     */
+    function sortColumn(column: { column: string; label: string }, asc = true) {
+        let headerEle = getHeader(column.column).find(".labelBG");
+        performClick(headerEle);
+        if (!asc) {
+            performClick(headerEle);
+        }
+    }
 
     /**
      * Creates an instance with a filter on it
@@ -302,7 +322,7 @@ describe("TableSorter", () => {
         instances[0].lineupImpl.scrolled();
     }
 
-    it("should load", function() {
+    it("should load", function () {
         let { instance } = createInstance();
         expect(instance).to.not.be.undefined;
     });
@@ -582,6 +602,232 @@ describe("TableSorter", () => {
             });
         });
 
+        it("should sort the data provider if the sort has changed in lineup", () => {
+            let { data, instanceInitialized, provider } = loadInstanceWithData();
+            const col = data.stringColumns[0];
+            const colName = col.column;
+            return instanceInitialized
+                .then(() => {
+                    return new Promise(resolve => {
+                        provider.sort = (sort) => {
+                            expect(sort.column).to.be.equal(colName);
+                            expect(sort.asc).to.be.true;
+                            resolve();
+                        };
+                        sortColumn(col);
+                    });
+                });
+        });
+
+        it("should sort desc the data provider if the sort has changed in lineup to desc", () => {
+            let { data, instanceInitialized, provider } = loadInstanceWithData();
+            const col = data.stringColumns[0];
+            const colName = col.column;
+            return instanceInitialized
+                .then(() => {
+                    return new Promise(resolve => {
+                        let count = 0;
+                        provider.sort = (sort) => {
+                            count++;
+                            if (count === 2) { // sortColumn does it twice, so check the second one
+                                expect(sort.column).to.be.equal(colName);
+                                expect(sort.asc).to.be.false;
+                                resolve();
+                            }
+                        };
+                        sortColumn(col, false);
+                    });
+                });
+        });
+
+        it("should filter the data provider if the filter has changed in lineup", () => {
+            let { data, instanceInitialized, provider } = loadInstanceWithData();
+            const col = data.stringColumns[0];
+            const colName = col.column;
+            const value = data.data[1][colName];
+
+            let called = false;
+            return instanceInitialized
+                .then(() => {
+                    provider.filter = (filter) => {
+                        called = true;
+                        expect(filter.column).to.be.equal(colName);
+                        expect(filter.value).to.be.equal(value);
+                    };
+                })
+                .then(() => setStringFilter(colName, value)) // Basically set the filter to the value in the second row
+                .then(() => {
+                    expect(called).to.be.true;
+                });
+        });
+
+        // it("should allow for the user filtering a numerical, and then allow for the user to scroll to load more data");
+        it("should allow string column filtering through the UI", () => {
+            let { data, instanceInitialized } = loadInstanceWithData();
+            const col = data.stringColumns[0];
+            const colName = col.column;
+            const value = data.data[1][colName];
+            return instanceInitialized
+                .then(() => setStringFilter(colName, value)) // Basically set the filter to the value in the second row
+                .then(() => getColumnValues(colName))
+                .then((rowValues) => {
+                    expect(rowValues.length).to.be.gte(1);
+                    rowValues.forEach(n => expect(n).to.contain(value));
+                });
+        });
+
+        it.skip("should allow numerical column filtering through the UI", () => {
+            let { data, instanceInitialized } = loadInstanceWithData();
+            const col = data.numberColumns[0];
+            const colName = col.column;
+            const value = data.data[1][colName];
+            return instanceInitialized
+                .then(() => setNumericalFilter(colName, value)) // Basically set the filter to the value in the second row
+                .then(() => getColumnValues(colName))
+                .then((rowValues) => {
+                    expect(rowValues.length).to.be.gte(1);
+                    rowValues.forEach(n => expect(n).to.be.equal(value));
+                });
+        });
+
+        // it("should allow for the user filtering a numerical, and then allow for the user to scroll to load more data");
+        it("should allow for infinite scrolling without a filter");
+        it("should check to see if there is more data when infinite scrolling", () => {
+            let { instanceInitialized, provider } = loadInstanceWithData();
+            return instanceInitialized
+                .then(() => {
+                    return new Promise((resolve, reject) => {
+                        setTimeout(() => {
+                            provider.query = (() => {
+                                reject(new Error("Should not be called"));
+                            }) as any;
+
+                            provider.canQuery = (options) => {
+                                setTimeout(resolve, 10);
+                                return Promise.resolve(false);
+                            };
+
+                            performInfiniteLoad();
+                        }, 1000);
+                    });
+                });
+        });
+
+        // it("should allow for the user filtering a numerical, and then allow for the user to scroll to load more data");
+        it("should check to see if there is more data when infinite scrolling and there is a filter", () => {
+            let { filterColName, filterVal, ready, provider } = loadInstanceWithFilter();
+            return ready
+                .then(() => {
+                    return new Promise((resolve, reject) => {
+                        // Make sure query isn't called
+                        provider.query = (() => {
+                            reject(new Error("Should not be called"));
+                        }) as any;
+
+                        // make sure canQuery is called with the correct filter
+                        provider.canQuery = (options) => {
+                            const filter = options.query.filter(n => n.column === filterColName)[0];
+                            expect(filter).to.be.deep.equal({
+                                column: filterColName,
+                                value: filterVal,
+                            });
+
+                            // Resolve it after a delay (ie after TableSorter gets it and has time to call query)
+                            setTimeout(resolve, 10);
+
+                            return Promise.resolve(false);
+                        };
+
+                        // Start the infinite load process
+                        performInfiniteLoad();
+                    });
+                });
+        });
+
+        it("should attempt to load more data when infinite scrolling", () => {
+            let { instanceInitialized, provider } = loadInstanceWithData();
+            return instanceInitialized
+                .then(() => {
+                    return new Promise(resolve => {
+                        provider.query = resolve as any;
+                        provider.canQuery = () => Promise.resolve(true);
+
+                        // Start the infinite load process
+                        performInfiniteLoad();
+                    });
+                });
+        });
+
+        it("should replace data, if the DataProvider indicates that it is should be replaced", () => {
+            let { ready, provider, instance } = loadInstanceWithFilter();
+            return ready
+                .then(() => {
+                    return new Promise(done => {
+                        provider.query = (() => {
+                            const newFakeData = createFakeData();
+                            return new Promise<IQueryResult>(resolve => {
+                                resolve({
+                                    replace: true,
+                                    results: newFakeData.data,
+                                });
+
+                                // SetTimeout is necessary because when you resolve, it doesn't immediately call listeners,
+                                // it delays first.
+                                setTimeout(() => {
+                                    expect(instance.data).to.be.deep.equal(newFakeData.data);
+                                    done();
+                                }, 20);
+                            });
+                        });
+
+                        let resolved = false;
+                        provider.canQuery = (options) => {
+                            let promise = Promise.resolve(!resolved);
+                            resolved = true;
+                            return promise;
+                        };
+
+                        // Start the infinite load process
+                        performInfiniteLoad();
+                    });
+                });
+        });
+
+        it("should append data, if the DataProvider indicates that it should be appended", () => {
+            let { ready, provider, instance, data } = loadInstanceWithFilter();
+            return ready
+                .then(() => {
+                    return new Promise(done => {
+                        provider.query = (() => {
+                            const newFakeData = createFakeData();
+                            return new Promise<IQueryResult>(resolve => {
+                                resolve({
+                                    replace: false,
+                                    results: newFakeData.data,
+                                });
+
+                                // SetTimeout is necessary because when you resolve, it doesn't immediately call listeners,
+                                // it delays first.
+                                setTimeout(() => {
+                                    expect(instance.data).to.be.deep.equal(data.data.concat(newFakeData.data));
+                                    done();
+                                }, 20);
+                            });
+                        });
+
+                        let resolved = false;
+                        provider.canQuery = (options) => {
+                            let promise = Promise.resolve(!resolved);
+                            resolved = true;
+                            return promise;
+                        };
+
+                        // Start the infinite load process
+                        performInfiniteLoad();
+                    });
+                });
+        });
+
         describe("integration", () => {
             it("saves the configuration when a stacked column is sorted", () => {
                 let {instance, instanceInitialized} = loadInstanceWithStackedColumnsAndClick();
@@ -635,236 +881,70 @@ describe("TableSorter", () => {
                     },
                 });
                 const q = instance.getQueryOptions().query;
-                expect(q).to.be.deep.equal([{ column: "col3", value: { domain: [1, 1], range: undefined }}]);
+                expect(q).to.be.deep.equal([{ column: "col3", value: { domain: [1, 1], range: undefined } }]);
             });
+
+            it("loads lineup with a sorted stacked column and allows for filtering", () => {
+                let { data, instanceInitialized, instance } = loadInstanceWithStackedColumns();
+                const col = data.stringColumns[0];
+                const filterColName = col.column;
+                const filterVal = data.data[1][filterColName];
+                return instanceInitialized
+                    .then(() => setStringFilter(filterColName, filterVal))
+                    .then(() => getColumnValues(filterColName))
+                    .then((rowValues) => {
+                        // Validate that the row values are correct
+                        expect(rowValues.length).to.be.gte(1);
+                        rowValues.forEach(n => expect(n).to.contain(filterVal));
+                    })
+                    .then(() => {
+                        return new Promise(resolve => {
+                            const config = instance.configuration;
+                            const cols = config.layout.primary
+                                .map((n: any) => n.column || n.label)
+                                .filter((n: any) => !!n && n !== "id");
+                            expect(cols).to.be.deep.equal(["col1", "STACKED_COLUMN", "col2", "col3"]);
+                            resolve();
+                        });
+                    });
+            });
+
+            it("correctly loads the ordering of columns from a configuration", () => {
+                const cols = testColumns();
+                let { instanceInitialized } = loadInstanceWithConfiguration({
+                    primaryKey: "primary",
+                    columns: cols.slice(0),
+                    layout: {
+                        primary: cols.reverse()
+                    },
+                });
+                return instanceInitialized.then(() => {
+                    const headers = getHeaderNames();
+                    expect(headers).to.be.deep.equal(cols.map(n => n.label));
+                });
+            });
+
+
+            it("should allow for infinite scrolling with a string filter");
+            // it("should load a new set of data when a string column is filtered");
+            it("should load a new set of data when a numerical column is filtered");
+            it("should load a new set of data when a string column is sorted");
+            it("should load a new set of data when a numerical column is sorted");
+            it("should support stacked sorting");
+            it("should support persisting of state, so after you reload it returns to its original state");
+            it("should support persisting of state, so after you reload it returns to its original state: stacked");
+            it("should support persisting of state, so after you reload it returns to its original state: sort");
+            it("should support persisting of state, so after you reload it returns to its original state: filtering numerical");
+            it("should support persisting of state, so after you reload it returns to its original state: filtering string");
+            it("should support stacking columns, sorting them, then filtering another column");
+            it("should allow for you to change the range of a numerical field, without freezing");
+            it("should stack sort correctly asc");
+            it("should stack sort correctly desc");
+            it("should not go into an infinite loop if you just hit OK on a numerical filter without filtering.");
+            it("should have numerical filter UI that is aligned properly");
+            // it("should have domains UI that is aligned properly"); // TSV
+            // it("should do nothing if the domains dialog does not change ANY value"); // TSV
+            // it("should update the configuration if the domains dialog changes ANY value"); // TSV
         });
     });
-
-    it("should sort the data provider if the sort has changed in lineup", () => {
-        let { data, instanceInitialized, provider, element } = loadInstanceWithData();
-        const col = data.stringColumns[0];
-        const colName = col.column;
-        let called = false;
-        return instanceInitialized
-            .then(() => {
-                provider.sort = (sort) => {
-                    called = true;
-                    expect(sort.column).to.be.equal(colName);
-                    expect(sort.asc).to.be.true;
-                };
-
-                let headerEle = element.find(`.header:contains('${colName}')`).find(".labelBG");
-                performClick(headerEle);
-                expect(called).to.be.true;
-            });
-    });
-
-    it("should filter the data provider if the filter has changed in lineup", () => {
-        let { data, instanceInitialized, provider } = loadInstanceWithData();
-        const col = data.stringColumns[0];
-        const colName = col.column;
-        const value = data.data[1][colName];
-
-        let called = false;
-        return instanceInitialized
-            .then(() => {
-                provider.filter = (filter) => {
-                    called = true;
-                    expect(filter.column).to.be.equal(colName);
-                    expect(filter.value).to.be.equal(value);
-                };
-            })
-            .then(() => setStringFilter(colName, value)) // Basically set the filter to the value in the second row
-            .then(() => {
-                expect(called).to.be.true;
-            });
-    });
-
-    // it("should allow for the user filtering a numerical, and then allow for the user to scroll to load more data");
-    it("should allow string column filtering through the UI", () => {
-        let { data, instanceInitialized } = loadInstanceWithData();
-        const col = data.stringColumns[0];
-        const colName = col.column;
-        const value = data.data[1][colName];
-        return instanceInitialized
-            .then(() => setStringFilter(colName, value)) // Basically set the filter to the value in the second row
-            .then(() => getColumnValues(colName))
-            .then((rowValues) => {
-                expect(rowValues.length).to.be.gte(1);
-                rowValues.forEach(n => expect(n).to.contain(value));
-            });
-    });
-
-    it.skip("should allow numerical column filtering through the UI", () => {
-        let { data, instanceInitialized } = loadInstanceWithData();
-        const col = data.numberColumns[0];
-        const colName = col.column;
-        const value = data.data[1][colName];
-        return instanceInitialized
-            .then(() => setNumericalFilter(colName, value)) // Basically set the filter to the value in the second row
-            .then(() => getColumnValues(colName))
-            .then((rowValues) => {
-                expect(rowValues.length).to.be.gte(1);
-                rowValues.forEach(n => expect(n).to.be.equal(value));
-            });
-    });
-
-    // it("should allow for the user filtering a numerical, and then allow for the user to scroll to load more data");
-    it("should allow for infinite scrolling without a filter");
-    it("should check to see if there is more data when infinite scrolling", () => {
-        let { instanceInitialized, provider } = loadInstanceWithData();
-        return instanceInitialized
-            .then(() => {
-                return new Promise((resolve, reject) => {
-                    setTimeout(() => {
-                        provider.query = (() => {
-                            reject(new Error("Should not be called"));
-                        }) as any;
-
-                        provider.canQuery = (options) => {
-                            setTimeout(resolve, 10);
-                            return Promise.resolve(false);
-                        };
-
-                        performInfiniteLoad();
-                    }, 1000);
-                });
-            });
-    });
-
-    // it("should allow for the user filtering a numerical, and then allow for the user to scroll to load more data");
-    it("should check to see if there is more data when infinite scrolling and there is a filter", () => {
-        let { filterColName, filterVal, ready, provider } = loadInstanceWithFilter();
-        return ready
-            .then(() => {
-                return new Promise((resolve, reject) => {
-                    // Make sure query isn't called
-                    provider.query = (() => {
-                        reject(new Error("Should not be called"));
-                    }) as any;
-
-                    // make sure canQuery is called with the correct filter
-                    provider.canQuery = (options) => {
-                        const filter = options.query.filter(n => n.column === filterColName)[0];
-                        expect(filter).to.be.deep.equal({
-                            column: filterColName,
-                            value: filterVal,
-                        });
-
-                        // Resolve it after a delay (ie after TableSorter gets it and has time to call query)
-                        setTimeout(resolve, 10);
-
-                        return Promise.resolve(false);
-                    };
-
-                    // Start the infinite load process
-                    performInfiniteLoad();
-                });
-            });
-    });
-
-    it("should attempt to load more data when infinite scrolling", () => {
-        let { instanceInitialized, provider } = loadInstanceWithData();
-        return instanceInitialized
-            .then(() => {
-                return new Promise(resolve => {
-                    provider.query = resolve as any;
-                    provider.canQuery = () => Promise.resolve(true);
-
-                    // Start the infinite load process
-                    performInfiniteLoad();
-                });
-            });
-    });
-
-    it("should replace data, if the DataProvider indicates that it is should be replaced", () => {
-        let { ready, provider, instance } = loadInstanceWithFilter();
-        return ready
-            .then(() => {
-                return new Promise(done => {
-                    provider.query = (() => {
-                        const newFakeData = createFakeData();
-                        return new Promise<IQueryResult>(resolve => {
-                            resolve({
-                                replace: true,
-                                results: newFakeData.data,
-                            });
-
-                            // SetTimeout is necessary because when you resolve, it doesn't immediately call listeners,
-                            // it delays first.
-                            setTimeout(() => {
-                                expect(instance.data).to.be.deep.equal(newFakeData.data);
-                                done();
-                            }, 20);
-                        });
-                    });
-
-                    let resolved = false;
-                    provider.canQuery = (options) => {
-                        let promise = Promise.resolve(!resolved);
-                        resolved = true;
-                        return promise;
-                    };
-
-                    // Start the infinite load process
-                    performInfiniteLoad();
-                });
-            });
-    });
-
-    it("should append data, if the DataProvider indicates that it should be appended", () => {
-        let { ready, provider, instance, data } = loadInstanceWithFilter();
-        return ready
-            .then(() => {
-                return new Promise(done => {
-                    provider.query = (() => {
-                        const newFakeData = createFakeData();
-                        return new Promise<IQueryResult>(resolve => {
-                            resolve({
-                                replace: false,
-                                results: newFakeData.data,
-                            });
-
-                            // SetTimeout is necessary because when you resolve, it doesn't immediately call listeners,
-                            // it delays first.
-                            setTimeout(() => {
-                                expect(instance.data).to.be.deep.equal(data.data.concat(newFakeData.data));
-                                done();
-                            }, 20);
-                        });
-                    });
-
-                    let resolved = false;
-                    provider.canQuery = (options) => {
-                        let promise = Promise.resolve(!resolved);
-                        resolved = true;
-                        return promise;
-                    };
-
-                    // Start the infinite load process
-                    performInfiniteLoad();
-                });
-            });
-    });
-
-    it("should allow for infinite scrolling with a string filter");
-    // it("should load a new set of data when a string column is filtered");
-    it("should load a new set of data when a numerical column is filtered");
-    it("should load a new set of data when a string column is sorted");
-    it("should load a new set of data when a numerical column is sorted");
-    it("should support stacked sorting");
-    it("should support persisting of state, so after you reload it returns to its original state");
-    it("should support persisting of state, so after you reload it returns to its original state: stacked");
-    it("should support persisting of state, so after you reload it returns to its original state: sort");
-    it("should support persisting of state, so after you reload it returns to its original state: filtering numerical");
-    it("should support persisting of state, so after you reload it returns to its original state: filtering string");
-    it("should support stacking columns, sorting them, then filtering another column");
-    it("should allow for you to change the range of a numerical field, without freezing");
-    it("should stack sort correctly asc");
-    it("should stack sort correctly desc");
-    it("should not go into an infinite loop if you just hit OK on a numerical filter without filtering.");
-    it("should have numerical filter UI that is aligned properly");
-    it("should have domains UI that is aligned properly"); // TSV
-    it("should do nothing if the domains dialog does not change ANY value"); // TSV
-    it("should update the configuration if the domains dialog changes ANY value"); // TSV
 });
