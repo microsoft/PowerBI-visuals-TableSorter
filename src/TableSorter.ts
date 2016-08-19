@@ -376,13 +376,11 @@ export class TableSorter {
     public set configuration(value: ITableSorterConfiguration) {
         this._configuration = value;
 
-        if (value.sort) {
-            this.queryOptions.sort = [value.sort];
-        }
+        this.queryOptions.sort = value.sort ? [value.sort] : [];
 
         const primary = value && value.layout && value.layout.primary;
         if (primary) {
-            this.queryOptions.query = this.getFiltersFromLayout(primary);
+            this.queryOptions.query = TableSorter.getFiltersFromLayout(primary);
         }
 
         this.applyConfigurationToLineup();
@@ -458,6 +456,32 @@ export class TableSorter {
             primaryKey: "id",
             columns,
         };
+    }
+
+    /**
+     * Gets filters from a layout obj
+     */
+    public static getFiltersFromLayout(layoutObj: any) {
+        if (layoutObj) {
+            let filters: ITableSorterFilter[] = [];
+            layoutObj.forEach((n: any) => {
+                if (n.filter) {
+                    filters.push({
+                        column: n.column,
+                        value: n.filter || undefined,
+                    });
+                } else if (n.domain) {
+                    filters.push({
+                        column: n.column,
+                        value: {
+                            domain: n.domain,
+                            range: n.range,
+                        },
+                    });
+                }
+            });
+            return filters;
+        }
     }
 
     /**
@@ -706,32 +730,6 @@ export class TableSorter {
     }
 
     /**
-     * Gets filters from a layout obj
-     */
-    private getFiltersFromLayout(layoutObj: any) {
-        if (layoutObj) {
-            let filters: ITableSorterFilter[] = [];
-            layoutObj.forEach((n: any) => {
-                if (n.filter) {
-                    filters.push({
-                        column: n.column,
-                        value: n.filter || undefined,
-                    });
-                } else if (n.domain) {
-                    filters.push({
-                        column: n.column,
-                        value: {
-                            domain: n.domain,
-                            range: n.range,
-                        },
-                    });
-                }
-            });
-            return filters;
-        }
-    }
-
-    /**
      * Gets the current list of filters from lineup
      */
     private getFiltersFromLineup(filteredColumn?: any) {
@@ -807,7 +805,13 @@ export class TableSorter {
             });
         // s.filters = this.getFiltersFromLineup();
         s.layout = _.groupBy(descs, (d: any) => d.columnBundle || "primary");
-        s.sort = this.getSortFromLineUp();
+        // const lineupSort = this.getSortFromLineUp();
+        // if (lineupSort) {
+        //     s.sort = lineupSort;
+        // }
+        if (this.queryOptions.sort && this.queryOptions.sort.length) {
+            s.sort = this.queryOptions.sort[0];
+        }
         return s;
     }
 
@@ -816,10 +820,14 @@ export class TableSorter {
      */
     private saveConfiguration(filteredColumn?: any) {
         if (!this.savingConfiguration) {
-            this.savingConfiguration = true;
-            this.configuration = this.getConfigurationFromLineup(filteredColumn);
-            this.raiseConfigurationChanged(this.configuration);
-            this.savingConfiguration = false;
+            const currentConfig = this.configuration;
+            const newConfig = this.getConfigurationFromLineup(filteredColumn);;
+            if (!_.isEqual(currentConfig, newConfig)) {
+                this.savingConfiguration = true;
+                this.configuration = newConfig;
+                this.raiseConfigurationChanged(this.configuration, currentConfig);
+                this.savingConfiguration = false;
+            }
         }
     }
 
@@ -908,8 +916,8 @@ export class TableSorter {
     /**
      * Raises the configuration changed event
      */
-    private raiseConfigurationChanged(configuration: ITableSorterConfiguration) {
-        this.events.raiseEvent(TableSorter.EVENTS.CONFIG_CHANGED, configuration);
+    private raiseConfigurationChanged(configuration: ITableSorterConfiguration, oldConfig: ITableSorterConfiguration) {
+        this.events.raiseEvent(TableSorter.EVENTS.CONFIG_CHANGED, configuration, oldConfig);
     }
 
     /**

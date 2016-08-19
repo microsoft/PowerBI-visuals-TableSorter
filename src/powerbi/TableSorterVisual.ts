@@ -1,11 +1,13 @@
 import { VisualBase, Visual, logger } from "essex.powerbi.base";
 import { updateTypeGetter, UpdateType, createPropertyPersister, PropertyPersister } from "essex.powerbi.base/src/lib/Utils";
 import { TableSorter  } from "../TableSorter";
+import { IStateful, register, unregister, unregisterListener, IStateChangeListener, publishChange } from "pbi-stateful";
 import {
     ITableSorterRow,
     ITableSorterSettings,
     ITableSorterSort,
     ITableSorterFilter,
+    ITableSorterConfiguration,
     INumericalFilter,
 } from "../models";
 import { Promise } from "es6-promise";
@@ -35,7 +37,7 @@ const colors = require("essex.powerbi.base/src/colors");
 /* tslint:enable */
 
 @Visual(require("../build.json").output.PowerBI)
-export default class TableSorterVisual extends VisualBase implements IVisual {
+export default class TableSorterVisual extends VisualBase implements IVisual, IStateful<ITableSorterState> {
 
     /**
      * The set of capabilities for the visual
@@ -58,6 +60,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
         },
     });
 
+    public stateChangeListeners: IStateChangeListener<ITableSorterState>[] = [];
     public tableSorter: TableSorter;
     private dataViewTable: DataViewTable;
     private dataView: powerbi.DataView;
@@ -68,6 +71,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
     private handlingUpdate: boolean;
     private updateType: () => UpdateType;
     private propertyPersister: PropertyPersister;
+    private loadingState = false;
 
     // Stores our current set of data.
     private _data: { data: ITableSorterVisualRow[], cols: string[] };
@@ -211,6 +215,32 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
     }
 
     /**
+     * Getter for the name
+     */
+    public get name() { return "TableSorter"; }
+
+    /**
+     * Gets the current state for the table sorter
+     */
+    public get state(): ITableSorterState {
+        return {
+            settings: $.extend(true, {}, this.tableSorter.settings),
+            configuration: $.extend(true, {}, this.tableSorter.configuration)
+        };
+    }
+
+    /**
+     * Sets the current state of the table sorter
+     */
+    public set state(value: ITableSorterState) {
+        this.loadingState = true;
+        this.tableSorter.settings = value.settings;
+        this.loadDataFromPowerBI(value.configuration);
+
+        this.loadingState = false;
+    }
+
+    /**
      * Converts the data from power bi to a data we can use
      */
     private static converter(view: DataView, selectedIds: any) {
@@ -252,6 +282,8 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
 
     /** This is called once when the visual is initialially created */
     public init(options: VisualInitOptions): void {
+        register(this, window);
+
         super.init(options, this.template, true);
         this.host = options.host;
 
@@ -263,11 +295,35 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
         this.tableSorter.settings = this.initialSettings;
         this.tableSorter.events.on("selectionChanged", (rows: ITableSorterVisualRow[]) => this.onSelectionChanged(rows));
         this.tableSorter.events.on(TableSorter.EVENTS.CLEAR_SELECTION, () => this.onSelectionChanged());
-        this.tableSorter.events.on("configurationChanged", (config: any) => {
-            if (!this.handlingUpdate) {
-                this.configurationUpdater();
-            }
-        });
+        this.tableSorter.events.on(TableSorter.EVENTS.CONFIG_CHANGED,
+            (config: ITableSorterConfiguration, oConfig: ITableSorterConfiguration) => {
+                if (!this.handlingUpdate && !this.loadingState) {
+                    this.configurationUpdater();
+                    let updates: string[] = [];
+                    if (config) {
+                        if (!_.isEqual(config.sort, oConfig && oConfig.sort)) {
+                            updates.push("Sort changed");
+                        }
+                        const newLayout = (config && config.layout && config.layout.primary) || [];
+                        const oldLayout = (oConfig && oConfig.layout && oConfig.layout.primary) || [];
+                        const newFilters = TableSorter.getFiltersFromLayout(newLayout);
+                        const oldFilters = TableSorter.getFiltersFromLayout(oldLayout);
+
+                        // Assume that a filter can only be applied when a the columns haven't changed,
+                        // otherwise, this always fires because when you add a column, it populates the "filter"
+                        if (newLayout.length === oldLayout.length &&
+                            !_.isEqual(newFilters, oldFilters)) {
+                            updates.push("Filter changed");
+                        } else if (!_.isEqual(config.layout, oConfig && oConfig.layout)) {
+                            updates.push("Layout changed");
+                        }
+                    }
+                    if (!updates.length) {
+                        updates.push("Configuration updated");
+                    }
+                    publishChange(this, updates.join(", "), this.state);
+                }
+            });
 
         this.dimensions = { width: options.viewport.width, height: options.viewport.height };
     }
@@ -310,6 +366,14 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
     }
 
     /**
+     * Destroys this table sorter
+     */
+    public destroy() {
+        unregister(this, window);
+        this.stateChangeListeners.forEach(n => unregisterListener(n, this));
+    }
+
+    /**
      * Enumerates the instances for the objects that appear in the power bi panel
      */
     public enumerateObjectInstances(options: EnumerateVisualObjectInstancesOptions): VisualObjectInstance[] {
@@ -328,6 +392,14 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
             });
         }
         return options.objectName === "layout" ? <any>{} : instances;
+    }
+
+    public registerStateChangeListener(listener: IStateChangeListener<ITableSorterState>) {
+        this.stateChangeListeners.push(listener);
+    }
+
+    public unregisterStateChangeListener(listener: IStateChangeListener<ITableSorterState>) {
+        unregisterListener(listener, this);
     }
 
     /**
@@ -361,10 +433,10 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
     /**
      * Event listener for when the visual data's changes
      */
-    private loadDataFromPowerBI() {
+    private loadDataFromPowerBI(config?: any) {
         if (this.dataViewTable) {
             let newData = TableSorterVisual.converter(this.dataView, this.selectionManager.getSelectionIds());
-            let config = buildConfig(this.dataView, newData.data);
+            config = config || buildConfig(this.dataView, newData.data);
             let selectedRows = newData.data.filter(n => n.selected);
 
             this.tableSorter.configuration = config;
@@ -521,7 +593,11 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
                 this.tableSorter.rerenderValues();
             }
 
+            const oldSettings = this.tableSorter.settings;
             this.tableSorter.settings = updatedSettings;
+            if (!_.isEqual(oldSettings, updatedSettings)) {
+                publishChange(this, "Settings Updated", this.state);
+            }
         }
     }
 }
@@ -535,4 +611,12 @@ interface ITableSorterVisualRow extends ITableSorterRow, powerbi.visuals.Selecta
      * The expression that will exactly match this row
      */
     filterExpr: powerbi.data.SQExpr;
+}
+
+/**
+ * The state of the table sorter
+ */
+export interface ITableSorterState {
+    settings: ITableSorterSettings;
+    configuration: any;
 }
