@@ -683,7 +683,7 @@ describe("TableSorter", () => {
                             expect(options.sort).to.be.deep.equal([{
                                 column: data.columns[0].column,
                                 asc: false,
-                            }]);
+                            }, ]);
                             resolve();
                         }) as any;
                         instance.configuration = {

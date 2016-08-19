@@ -255,6 +255,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
                 return TableSorterVisual.createItem(n.id, SelectionId.createWithId(identity), filterExpr);
             });
             this.onSelectionChanged(this.tableSorter.selection as any, true);
+            this.configurationUpdater();
         }
 
         this.loadingState = false;
@@ -285,7 +286,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
                     TableSorterVisual.createItem(
                         newId.getKey() + rowIndex,
                         newId,
-                        identity.expr as powerbi.data.SQExpr);
+                        identity && identity.expr as powerbi.data.SQExpr);
                 row.forEach((colInRow, i) => {
                     result[table.columns[i].displayName] = colInRow;
                 });

@@ -796,12 +796,9 @@ export class TableSorter {
             });
         // s.filters = this.getFiltersFromLineup();
         s.layout = _.groupBy(descs, (d: any) => d.columnBundle || "primary");
-        // const lineupSort = this.getSortFromLineUp();
-        // if (lineupSort) {
-        //     s.sort = lineupSort;
-        // }
-        if (this.queryOptions.sort && this.queryOptions.sort.length) {
-            s.sort = this.queryOptions.sort[0];
+        const lineupSort = this.getSortFromLineUp();
+        if (lineupSort) {
+            s.sort = lineupSort;
         }
         return s;
     }
@@ -812,7 +809,7 @@ export class TableSorter {
     private saveConfiguration(filteredColumn?: any) {
         if (!this.savingConfiguration) {
             const currentConfig = this.configuration;
-            const newConfig = this.getConfigurationFromLineup(filteredColumn);;
+            const newConfig = this.getConfigurationFromLineup(filteredColumn);
             if (!_.isEqual(currentConfig, newConfig)) {
                 this.savingConfiguration = true;
                 this.configuration = newConfig;
