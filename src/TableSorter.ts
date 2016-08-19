@@ -331,7 +331,7 @@ export class TableSorter {
      * Sets the selection of lineup
      */
     public set selection(value: ITableSorterRow[]) {
-        this._selectedRows = this.updateRowSelection(value);
+        this._selectedRows = value;
         if (this.lineupImpl) {
             this.lineupImpl.select(value);
         }
@@ -627,8 +627,9 @@ export class TableSorter {
 
         this.loadLineup(config);
 
-        // Update the selection
-        this.selection = this._data.filter((n) => n.selected);
+        if (this.lineupImpl) {
+            this.lineupImpl.select(this.selection);
+        }
 
         // Reapply the configuration to lineup
         this.applyConfigurationToLineup();
@@ -674,13 +675,13 @@ export class TableSorter {
         });
         this.lineupImpl.listeners.on(`multiselected${EVENTS_NS}`, (rows: ITableSorterRow[]) => {
             if (this.settings.selection.multiSelect) {
-                this._selectedRows = this.updateRowSelection(rows);
+                this._selectedRows = rows;
                 this.raiseSelectionChanged(rows);
             }
         });
         this.lineupImpl.listeners.on(`selected${EVENTS_NS}`, (row: ITableSorterRow) => {
             if (!this.settings.selection.multiSelect) {
-                this._selectedRows = this.updateRowSelection(row ? [row] : []);
+                this._selectedRows = row ? [row] : [];
                 this.raiseSelectionChanged(this.selection);
             }
         });
@@ -717,16 +718,6 @@ export class TableSorter {
      */
     private getColumnByName(colName: string) {
         return this.configuration && this.configuration.columns && this.configuration.columns.filter(c => c.column === colName)[0];
-    }
-
-    /**
-     * Updates the selected state of each row, and returns all the selected rows
-     */
-    private updateRowSelection(sels: ITableSorterRow[]) {
-        if (this._data) {
-            this._data.forEach((d) => d.selected = false);
-        }
-        return sels && sels.length ? sels.filter((d) => d.selected = true) : [];
     }
 
     /**

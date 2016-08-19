@@ -14,11 +14,6 @@ export interface ITableSorterRow {
     id: string|number;
 
     /**
-     * Whether or not this row is selected
-     */
-    selected: boolean;
-
-    /**
      * Returns true if this table sorter row equals another
      */
     equals(b: ITableSorterRow): boolean;

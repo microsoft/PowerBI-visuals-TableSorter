@@ -135,7 +135,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
     /**
      * Selects the given rows
      */
-    private onSelectionChanged = _.debounce((rows? : ITableSorterVisualRow[]) => {
+    private onSelectionChanged = _.debounce((rows? : ITableSorterVisualRow[], loadingState?: boolean) => {
         let filter: powerbi.data.SemanticFilter;
         let { multiSelect } = this.tableSorter.settings.selection;
         if (rows && rows.length) {
@@ -144,7 +144,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
             // If we are allowing multiSelect
             if (rows.length > 0 && multiSelect) {
                 rows.slice(1).forEach((r) => {
-                expr = powerbi.data.SQExprBuilder.or(expr, r.filterExpr);
+                    expr = powerbi.data.SQExprBuilder.or(expr, r.filterExpr);
                 });
             }
             filter = powerbi.data.SemanticFilter.fromSQExpr(expr);
@@ -162,6 +162,10 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
         let operation = "merge";
         if (!filter) {
             operation = "remove";
+        }
+
+        if (!loadingState) {
+            publishChange(this, "Selection Changed", this.state);
         }
 
         this.propertyPersister.persist(true, {
@@ -225,7 +229,13 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
     public get state(): ITableSorterState {
         return {
             settings: $.extend(true, {}, this.tableSorter.settings),
-            configuration: $.extend(true, {}, this.tableSorter.configuration)
+            configuration: $.extend(true, {}, this.tableSorter.configuration),
+            selection: this.tableSorter.selection.map((n: ITableSorterVisualRow) => {
+                return {
+                    id: <string>n.id,
+                    serializedFilter: powerbi.data["services"].SemanticQuerySerializer.serializeExpr(n.filterExpr),
+                };
+            }),
         };
     }
 
@@ -237,21 +247,31 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
         this.tableSorter.settings = value.settings;
         this.loadDataFromPowerBI(value.configuration);
 
+        if (value.selection) {
+            const serializer = powerbi.data["services"].SemanticQuerySerializer;
+            this.tableSorter.selection = value.selection.map(n => {
+                const filterExpr = serializer.deserializeExpr(n.serializedFilter) as powerbi.data.SQExpr;
+                const identity = powerbi.data.createDataViewScopeIdentity(filterExpr);
+                return TableSorterVisual.createItem(n.id, SelectionId.createWithId(identity), filterExpr);
+            });
+            this.onSelectionChanged(this.tableSorter.selection as any, true);
+        }
+
         this.loadingState = false;
     }
 
     /**
      * Converts the data from power bi to a data we can use
      */
-    private static converter(view: DataView, selectedIds: any) {
+    private static converter(view: DataView) {
         let data: ITableSorterVisualRow[] = [];
         let cols: string[];
         if (view && view.table) {
             let table = view.table;
             cols = table.columns.filter(n => !!n).map(n => n.displayName);
             table.rows.forEach((row, rowIndex) => {
-                let identity: any;
-                let newId: any;
+                let identity: powerbi.DataViewScopeIdentity;
+                let newId: SelectionId;
                 if (view.categorical && view.categorical.categories && view.categorical.categories.length) {
                     identity = view.categorical.categories[0].identity[rowIndex];
                     newId = SelectionId.createWithId(identity);
@@ -261,13 +281,11 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
 
                 // The below is busted > 100
                 // let identity = SelectionId.createWithId(this.dataViewTable.identity[rowIndex]);
-                let result: ITableSorterVisualRow = {
-                    id: newId.key + rowIndex,
-                    identity: newId,
-                    equals: (b) => (<ITableSorterVisualRow>b).identity.equals(newId),
-                    filterExpr: identity && identity.expr,
-                    selected: !!_.find(selectedIds, (id: SelectionId) => id.equals(newId)),
-                };
+                let result: ITableSorterVisualRow =
+                    TableSorterVisual.createItem(
+                        newId.getKey() + rowIndex,
+                        newId,
+                        identity.expr as powerbi.data.SQExpr);
                 row.forEach((colInRow, i) => {
                     result[table.columns[i].displayName] = colInRow;
                 });
@@ -277,6 +295,22 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
         return {
             data,
             cols,
+        };
+    }
+
+    /**
+     * Creates an item
+     */
+    private static createItem(
+        id: string,
+        identity: powerbi.visuals.SelectionId,
+        filterExpr: powerbi.data.SQExpr): ITableSorterVisualRow {
+        return {
+            id: id,
+            identity: identity,
+            equals: (b: ITableSorterVisualRow) => b.id === id,
+            filterExpr: filterExpr,
+            selected: false, // We don't really pay attention to this
         };
     }
 
@@ -435,9 +469,8 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
      */
     private loadDataFromPowerBI(config?: any) {
         if (this.dataViewTable) {
-            let newData = TableSorterVisual.converter(this.dataView, this.selectionManager.getSelectionIds());
+            let newData = TableSorterVisual.converter(this.dataView);
             config = config || buildConfig(this.dataView, newData.data);
-            let selectedRows = newData.data.filter(n => n.selected);
 
             this.tableSorter.configuration = config;
             this._data = newData;
@@ -450,7 +483,10 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
                 log("Loading data into MyDataProvider");
                 this.tableSorter.dataProvider = this.createDataProvider(newData);
             }
-            this.tableSorter.selection = selectedRows;
+            const selectedIds = this.selectionManager.getSelectionIds();
+            this.tableSorter.selection = newData.data.filter(n => {
+                return !!_.find(selectedIds, (id: SelectionId) => id.equals(n.identity));
+            });
         }
     }
 
@@ -594,8 +630,14 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
             }
 
             const oldSettings = this.tableSorter.settings;
+            const newSettings = _.cloneDeep(updatedSettings);
             this.tableSorter.settings = updatedSettings;
-            if (!_.isEqual(oldSettings, updatedSettings)) {
+
+            delete oldSettings.presentation.numberFormatter;
+            delete oldSettings.presentation.columnColors;
+            delete newSettings.presentation.numberFormatter;
+            delete newSettings.presentation.columnColors;
+            if (!_.isEqual(oldSettings, newSettings)) {
                 publishChange(this, "Settings Updated", this.state);
             }
         }
@@ -619,4 +661,8 @@ interface ITableSorterVisualRow extends ITableSorterRow, powerbi.visuals.Selecta
 export interface ITableSorterState {
     settings: ITableSorterSettings;
     configuration: any;
+    selection?: {
+        id: string,
+        serializedFilter: Object,
+    }[];
 }
