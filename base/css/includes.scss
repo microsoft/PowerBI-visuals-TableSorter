@@ -1,7 +1,9 @@
 @import "./font";
 
-html, body {
-    overflow: hidden;
-    margin: 0;
-    padding: 0;
+:local(.className) {
+    html, body {
+        overflow: hidden;
+        margin: 0;
+        padding: 0;
+    }
 }

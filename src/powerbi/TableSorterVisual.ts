@@ -79,9 +79,9 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
     `.trim().replace(/\n/g, "");
 
     /**
-     * If css should be loaded or not
+     * My css module
      */
-    private noCss: boolean = false;
+    private myCssModule: any;
 
     /**
      * The initial set of settings to use
@@ -177,8 +177,10 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
      * The constructor for the visual
      */
     public constructor(noCss: boolean = false, initialSettings?: ITableSorterSettings, updateTypeGetterOverride?: () => UpdateType) {
-        super();
-        this.noCss = noCss;
+        super(noCss);
+        if (!noCss) {
+             this.myCssModule = require("!css!sass!./css/TableSorterVisual.scss");
+        }
         this.initialSettings = initialSettings || {
             presentation: {
                 numberFormatter: (d: number) => this.numberFormatter.format(d)
@@ -252,7 +254,13 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
 
     /** This is called once when the visual is initialially created */
     public init(options: VisualInitOptions): void {
-        super.init(options, this.template, true);
+        super.init(options, this.template);
+
+        const className = this.myCssModule && this.myCssModule.locals && this.myCssModule.locals.className;
+        if (className) {
+            this.element.addClass(className);
+        }
+
         this.host = options.host;
 
         this.propertyPersister = createPropertyPersister(this.host, 100);
@@ -334,10 +342,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
      * Gets the css used for this element
      */
     protected getCss(): string[] {
-        return this.noCss ? [] : super.getCss().concat([
-            require("!css!../../node_modules/lineup-v1/css/style.css"),
-            require("!css!sass!./css/TableSorterVisual.scss"),
-        ]);
+        return this.myCssModule ? super.getCss().concat([this.myCssModule + ""]) : [];
     }
 
     /**

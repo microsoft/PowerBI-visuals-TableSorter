@@ -1,2 +1,49 @@
 @import "../../../node_modules/essex.powerbi.base/css/main";
-@import "../../css/Base.scss";
+@import "../../../node_modules/essex.powerbi.base/css/variables";
+@import "../../css/Base";
+
+:local(.className) {
+    /* reset the button, because of PBI */
+    button {
+        background-image: initial !important;
+        box-shadow: initial !important;
+        font-size: initial !important;
+        width: initial !important;
+        line-height: initial !important;
+        white-space: initial !important;
+        transition: initial !important;
+
+        align-items: flex-start !important;
+        text-align: center !important;
+        cursor: default !important;
+        color: buttontext !important;
+        border-image-source: initial !important;
+        border-image-slice: initial !important;
+        border-image-width: initial !important;
+        border-image-outset: initial !important;
+        border-image-repeat: initial !important;
+        background-color: buttonface !important;
+        box-sizing: border-box !important;
+        padding: 2px 6px 3px !important;
+        border-width: 2px !important;
+        border-style: outset !important;
+        border-color: buttonface !important;
+        text-rendering: auto !important;
+        color: initial !important;
+        letter-spacing: normal !important;
+        word-spacing: normal !important;
+        text-transform: none !important;
+        text-indent: 0px !important;
+        text-shadow: none !important;
+        display: inline-block !important;
+        text-align: start !important;
+        margin: 0em 0em 0em 0em !important;
+        font: 11px BlinkMacSystemFont !important;
+        -webkit-writing-mode: horizontal-tb !important;
+        -webkit-appearance: button !important;
+        -moz-appearance: button !important;
+    }
+    button:active {
+        border-style: inset !important;
+    }
+}
