@@ -32,6 +32,29 @@ describe("JSONDataProvider", () => {
         },
     ];
 
+    const TEST_CASE_WITH_NEGATIVES_AND_ZERO = [
+        {
+            "id": 1,
+            "some_value": 2,
+            "negative_numbers": 5
+        },
+        {
+            "id": 2,
+            "some_value": 2,
+            "negative_numbers": 0
+        },
+        {
+            "id": 3,
+            "some_value": 2,
+            "negative_numbers": -5
+        },
+        {
+            "id": 4,
+            "some_value": 2,
+            "negative_numbers": -1
+        }
+    ];
+
     const NUMERIC_SAME_DOMAIN = [
         {
             "id": 1,
@@ -137,6 +160,30 @@ describe("JSONDataProvider", () => {
             return result.then((resp) => {
                 let ids = resp.results.map(n => n.id);
                 expect(ids).to.deep.equal([ 2, 4, 3, 1 ]);
+            });
+        });
+
+        it ("should sort correctly with negatives and zeros", () => {
+            let { instance } = createInstance(TEST_CASE_WITH_NEGATIVES_AND_ZERO);
+            let result = instance.query({
+                // offset: 0,
+                // count: 100,
+                sort: [{
+                    "stack": {
+                    "name": "Stacked",
+                    "columns": [{
+                        "column": "some_value",
+                        "weight": 1,
+                    }, {
+                        "column": "negative_numbers",
+                        "weight": 1,
+                    }, ], },
+                    "asc": true,
+                }, ],
+            });
+            return result.then((resp) => {
+                let ids = resp.results.map(n => n.id);
+                expect(ids).to.deep.equal([ 3, 4, 2, 1 ]);
             });
         });
 

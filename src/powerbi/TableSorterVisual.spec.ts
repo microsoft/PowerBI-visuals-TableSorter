@@ -172,7 +172,7 @@ describe("TableSorterVisual", () => {
                 "layout": {
                     "layout": JSON.stringify($.extend(true, {}, config, {
                         "layout": newLayout
-                     }))
+                     })),
                 },
             },
         };

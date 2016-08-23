@@ -1,4 +1,4 @@
-import { ITableSorterColumn, ITableSorterRow, ITableSorterConfiguration } from "../models";
+import { ITableSorterColumn, ITableSorterRow, ITableSorterConfiguration, ITableSorterLayoutColumn } from "../models";
 import { default as Utils } from "essex.powerbi.base/src/lib/Utils";
 import * as _ from "lodash";
 
@@ -57,6 +57,7 @@ function parseColumnsFromDataView(dataView: powerbi.DataView, data: ITableSorter
 function processExistingConfig(config: ITableSorterConfiguration, columns: ITableSorterColumn[]) {
     "use strict";
     let newColNames = columns.map(c => c.column);
+    let oldConfig = _.merge({}, config);
 
     // Filter out any columns that don't exist anymore
     config.columns = config.columns.filter(c =>
@@ -67,14 +68,8 @@ function processExistingConfig(config: ITableSorterConfiguration, columns: ITabl
     config.columns.forEach(n => {
         let newCol = columns.filter(m => m.column === n.column)[0];
         if (newCol.domain) {
-            if (!n.domain) {
-                n.domain = newCol.domain;
-            } else {
-                // Merge the two, using the max bounds between the two
-                let lowerBound = Math.min(newCol.domain[0], n.domain[0]);
-                let upperBound = Math.max(newCol.domain[1], n.domain[1]);
-                n.domain = [lowerBound, upperBound];
-            }
+            // Reset the domain, cause we now have a new set of data
+            n.domain = newCol.domain.slice(0) as any;
         }
     });
 
@@ -83,8 +78,9 @@ function processExistingConfig(config: ITableSorterConfiguration, columns: ITabl
         config.sort = undefined;
     }
 
-    if (config.layout && config.layout["primary"]) {
-        removeMissingLayoutColumns(config, newColNames);
+    // If we have a layout
+    if (config.layout && config.layout.primary) {
+        config.layout.primary = syncLayoutColumns(config.layout.primary, config.columns, oldConfig.columns);
     }
 
     removeMissingColumns(config, columns);
@@ -125,32 +121,44 @@ function removeMissingColumns(config: ITableSorterConfiguration, columns: ITable
 }
 
 /**
- * Removes columns from the given config if they don't exist in the given set of column names
+ * Synchronizes the layout columns with the actual set of columns to ensure that it only has real columns,
+ * and the filters are bounded appropriately
  */
-function removeMissingLayoutColumns(config: ITableSorterConfiguration, columns: string[]) {
+export function syncLayoutColumns(layoutCols: ITableSorterLayoutColumn[], newCols: ITableSorterColumn[], oldCols: ITableSorterColumn[]) {
     "use strict";
-    let removedColumnFilter = (c: { column: string, children: any[], domain: any[] }) => {
+    let columnFilter = (c: ITableSorterLayoutColumn) => {
         // If this column exists in the new sets of columns, pass the filter
-        if (columns.indexOf(c.column) >= 0) {
+        const newCol = newCols.filter(m => m.column === c.column)[0];
+        let result = !!newCol;
+        if (newCol) {
 
             // Bound the filted domain to the actual domain (in case they set a bad filter)
-            let aCol = config.columns.filter(m => m.column === c.column)[0];
+            let oldCol = oldCols.filter(m => m.column === c.column)[0];
             if (c.domain) {
-                let lowerBound = Math.max(aCol.domain[0], c.domain[0]);
-                let upperBound = Math.min(aCol.domain[1], c.domain[1]);
+                // It is filtered if the "filter" domain is different than the actual domain
+                const isFiltered = c.domain[0] !== oldCol.domain[0] || c.domain[1] !== oldCol.domain[1];
+                let lowerBound = newCol.domain[0];
+                let upperBound = newCol.domain[1];
+
+                // If it was filtered before, then copy over the filter, but bound it to the new domain
+                if (isFiltered) {
+                    lowerBound = Math.max(newCol.domain[0], c.domain[0]);
+                    upperBound = Math.min(newCol.domain[1], c.domain[1]);
+                }
+
                 c.domain = [lowerBound, upperBound];
             }
-
-            return true;
         }
 
         if (c.children) {
-            c.children = c.children.filter(removedColumnFilter);
+            c.children = c.children.filter(columnFilter);
             return c.children.length > 0;
         }
-        return false;
+
+        return result;
     };
-    config.layout["primary"] = config.layout["primary"].filter(removedColumnFilter);
+
+    return layoutCols.filter(columnFilter);
 }
 
 /**

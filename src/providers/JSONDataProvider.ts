@@ -133,20 +133,28 @@ export class JSONDataProvider implements IDataProvider {
                 return (aValue > bValue ? 1 : -1) * dir;
             };
 
-            const calcStackedValue = (item: any, sortToCheck: ITableSorterSort, minMax: { [col: string] : { min: number, max: number}}) => {
+            const calcStackedValue = (
+                item: any,
+                sortToCheck: ITableSorterSort,
+                minMax: { [col: string] : { min: number, max: number, range: number }}) => {
                 let columns = sortToCheck.stack.columns;
                 if (columns) {
                     let sortVal = columns.reduce((a, v) => {
+
                         /**
                          * This calculates the percent that this guy is of the max value
                          */
                         let value = item[v.column];
-                        if (minMax[v.column].min !== minMax[v.column].max && value) {
-                            value -= minMax[v.column].min;
-                            value /= (minMax[v.column].max - minMax[v.column].min);
+                        const range = minMax[v.column].range;
+                        const valueOffset = value - minMax[v.column].min;
+
+                        // If the data has some sort of range, and the value isn't the minimum value
+                        if (range > 0 && valueOffset > 0) {
+                            value = valueOffset / range;
                         } else {
                             value = 0;
                         }
+
                         return a + (value * v.weight);
                     }, 0);
                     return sortVal;
@@ -154,12 +162,15 @@ export class JSONDataProvider implements IDataProvider {
                 return 0;
             };
 
-            let maxValues:  { [col: string] : { min: number, max: number}};
+            let maxValues: { [col: string] : { min: number, max: number, range: number }};
             if (sortItem.stack) {
                  maxValues = sortItem.stack.columns.reduce((a, b) => {
+                    const max = d3.max(this.data, (i) => i[b.column]);
+                    const min = d3.min(this.data, (i) => i[b.column]);
                     a[b.column] = {
-                        max: d3.max(this.data, (i) => i[b.column]),
-                        min: d3.min(this.data, (i) => i[b.column]),
+                        max: max,
+                        min: min,
+                        range: max - min
                     };
                     return a;
                 }, <any>{});

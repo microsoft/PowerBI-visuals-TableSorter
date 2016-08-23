@@ -88,7 +88,22 @@ export interface ITableSorterColumn {
 }
 
 /**
+ * A column which describes a layout column
+ */
+export interface ITableSorterLayoutColumn extends ITableSorterColumn {
+    /**
+     * The child columns (if this is a stacked column)
+     */
+    children?: ITableSorterLayoutColumn[];
+}
+
+/**
  * Represents the configuration of a table sorter instance
+ * INFO ===
+ * There are two real parts to the configuration
+ * 1. columns - This is the list of the raw columns that are in the dataset, and their associated domains
+ * 2. layout - This is how the columns are visually layed out in Table Sorter, ie single...stacked, whatever, and the 
+ *   `domain` that it is filtered to, this CAN differ from the domain in the columns array, which indicates that the column is filtered.
  */
 export interface ITableSorterConfiguration {
     /**
