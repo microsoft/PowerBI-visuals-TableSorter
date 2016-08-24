@@ -30,11 +30,11 @@
     "babel-core": "^6.11.4",
     "d3": "3.5.12",
     "dompurify": "^0.7.4",
-    "essex.powerbi.base": "~0.1.0",
+    "essex.powerbi.base": "^0.2.3",
     "jquery": "^2.2.0",
     "lodash": "4.0.0",
     "moment": "^2.12.0",
-    "pbi-stateful": "^0.2.0",
+    "pbi-stateful": "^0.3.0",
     "powerbi-visuals": "^0.5.0"
   },
   "devDependencies": {

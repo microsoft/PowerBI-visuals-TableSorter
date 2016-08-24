@@ -70,6 +70,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
 
     // The name of this visual will change when the bound column change
     public name = "TableSorter";
+    public baseName = "TableSorter";
     public stateChangeListeners: IStateChangeListener<ITableSorterState>[] = [];
     public tableSorter: TableSorter;
     private dataViewTable: DataViewTable;
@@ -325,7 +326,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
     public init(options: VisualInitOptions): void {
         register(this, window);
 
-        super.init(options, this.template, true);
+        super.init(options, this.template);
         this.host = options.host;
 
         this.propertyPersister = createPropertyPersister(this.host, 100);
