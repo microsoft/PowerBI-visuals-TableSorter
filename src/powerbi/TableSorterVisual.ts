@@ -8,6 +8,7 @@ import {
     unregisterListener, 
     IStateChangeListener, 
     publishChange,
+    publishReplace,
     publishNameResolved,
 } from "pbi-stateful";
 import {
@@ -210,6 +211,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
             precision: this.labelPrecision,
         });
         this.updateType = updateTypeGetterOverride ? updateTypeGetterOverride : updateTypeGetter(this);
+        this.tableSorter = new TableSorter(this.element.find(".lineup"));        
     }
 
     /**
@@ -333,7 +335,6 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
         this.selectionManager = new SelectionManager({
             hostServices: options.host
         });
-        this.tableSorter = new TableSorter(this.element.find(".lineup"));
         this.tableSorter.settings = this.initialSettings;
         this.tableSorter.events.on("selectionChanged", (rows: ITableSorterVisualRow[]) => this.onSelectionChanged(rows));
         this.tableSorter.events.on(TableSorter.EVENTS.CLEAR_SELECTION, () => this.onSelectionChanged());
@@ -657,7 +658,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
             delete newSettings.presentation.numberFormatter;
             delete newSettings.presentation.columnColors;
             if (!_.isEqual(oldSettings, newSettings)) {
-                publishChange(this, "Settings Updated", this.state);
+                publishReplace(this, "Settings Updated", this.state);
             }
         }
     }
