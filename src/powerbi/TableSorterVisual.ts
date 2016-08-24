@@ -89,11 +89,13 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
     // Stores our current set of data.
     private _data: { data: ITableSorterVisualRow[], cols: string[] };
 
-    private template: string = `
-        <div>
-            <div class="lineup"></div>
-        </div>
-    `.trim().replace(/\n/g, "");
+    public get template() { 
+        return `
+            <div>
+                <div class="lineup"></div>
+            </div>
+        `.trim().replace(/\n/g, "");
+    }
 
     /**
      * If css should be loaded or not
@@ -325,10 +327,8 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
     }
 
     /** This is called once when the visual is initialially created */
-    public init(options: VisualInitOptions): void {
-        register(this, window);
-
-        super.init(options, this.template);
+    public init(options: VisualInitOptions): void {        
+        super.init(options);
         this.host = options.host;
 
         this.propertyPersister = createPropertyPersister(this.host, 100);
@@ -369,6 +369,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
             });
 
         this.dimensions = { width: options.viewport.width, height: options.viewport.height };
+        register(this, window);
     }
 
     /** Update is called for data updates, resizes & formatting changes */
