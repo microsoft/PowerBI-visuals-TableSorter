@@ -1,7 +1,15 @@
 import { VisualBase, Visual, logger } from "essex.powerbi.base";
 import { updateTypeGetter, UpdateType, createPropertyPersister, PropertyPersister } from "essex.powerbi.base/src/lib/Utils";
 import { TableSorter  } from "../TableSorter";
-import { IStateful, register, unregister, unregisterListener, IStateChangeListener, publishChange } from "pbi-stateful";
+import { 
+    IStateful, 
+    register, 
+    unregister, 
+    unregisterListener, 
+    IStateChangeListener, 
+    publishChange,
+    publishNameResolved,
+} from "pbi-stateful";
 import {
     ITableSorterRow,
     ITableSorterSettings,
@@ -60,6 +68,8 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
         },
     });
 
+    // The name of this visual will change when the bound column change
+    public name = "TableSorter";
     public stateChangeListeners: IStateChangeListener<ITableSorterState>[] = [];
     public tableSorter: TableSorter;
     private dataViewTable: DataViewTable;
@@ -72,6 +82,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
     private updateType: () => UpdateType;
     private propertyPersister: PropertyPersister;
     private loadingState = false;
+    private isNameSet = false;
 
     // Stores our current set of data.
     private _data: { data: ITableSorterVisualRow[], cols: string[] };
@@ -219,11 +230,6 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
     }
 
     /**
-     * Getter for the name
-     */
-    public get name() { return "TableSorter"; }
-
-    /**
      * Gets the current state for the table sorter
      */
     public get state(): ITableSorterState {
@@ -365,12 +371,23 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
 
     /** Update is called for data updates, resizes & formatting changes */
     public update(options: VisualUpdateOptions) {
+        log("Update: ", options);
         const updateType = this.updateType();
         this.handlingUpdate = true;
         this.dataView = options.dataViews && options.dataViews[0];
         this.dataViewTable = this.dataView && this.dataView.table;
         log("Update Type: ", updateType);
         super.update(options);
+
+        if (!this.isNameSet && options.dataViews.length > 0) {
+            const oldName = this.name;            
+            let name = "TableSorter::";
+            options.dataViews[0].metadata.columns.forEach(c => name += `${c.queryName}:`)
+            log("TableSorter Resolved Name: " + name);
+            this.name = name;
+            this.isNameSet = true;
+            publishNameResolved(this, oldName, name);
+        }
 
         // Assume that data updates won't happen when resizing
         const newDims = { width: options.viewport.width, height: options.viewport.height };
