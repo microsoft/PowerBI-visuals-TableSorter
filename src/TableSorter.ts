@@ -224,14 +224,20 @@ export class TableSorter {
     constructor(element: JQuery, dataProvider?: IDataProvider) {
         this.element = $(this.template);
         this.element.find(".clear-selection").on("click", () => {
-            this.lineupImpl.clearSelection();
+            if (this.lineupImpl) {
+                this.lineupImpl.clearSelection();
+            }
             this.raiseClearSelection();
         });
         this.element.find(".add-column").on("click", () => {
-            this.lineupImpl.addNewSingleColumnDialog();
+            if (this.lineupImpl) {
+                this.lineupImpl.addNewSingleColumnDialog();
+            }
         });
         this.element.find(".add-stacked-column").on("click", () => {
-            this.lineupImpl.addNewStackedColumnDialog();
+            if (this.lineupImpl) {
+                this.lineupImpl.addNewStackedColumnDialog();
+            }
         });
         this._eventEmitter = new EventEmitter();
         element.append(this.element);

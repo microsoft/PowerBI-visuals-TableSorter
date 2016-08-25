@@ -1,15 +1,15 @@
 import { VisualBase, Visual, logger } from "essex.powerbi.base";
 import { updateTypeGetter, UpdateType, createPropertyPersister, PropertyPersister } from "essex.powerbi.base/src/lib/Utils";
 import { TableSorter  } from "../TableSorter";
-import { 
-    IStateful, 
-    register, 
-    unregister, 
-    unregisterListener, 
-    IStateChangeListener, 
+import {
+    IStateful,
+    register,
+    unregister,
+    unregisterListener,
+    IStateChangeListener,
     publishChange,
     publishReplace,
-    publishNameResolved,
+    publishNameChange,
 } from "pbi-stateful";
 import {
     ITableSorterRow,
@@ -84,12 +84,11 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
     private updateType: () => UpdateType;
     private propertyPersister: PropertyPersister;
     private loadingState = false;
-    private isNameSet = false;
 
     // Stores our current set of data.
     private _data: { data: ITableSorterVisualRow[], cols: string[] };
 
-    public get template() { 
+    public get template() {
         return `
             <div>
                 <div class="lineup"></div>
@@ -200,7 +199,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
      * The constructor for the visual
      */
     public constructor(noCss: boolean = false, initialSettings?: ITableSorterSettings, updateTypeGetterOverride?: () => UpdateType) {
-        super();
+        super(noCss);
         this.noCss = noCss;
         this.initialSettings = initialSettings || {
             presentation: {
@@ -213,7 +212,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
             precision: this.labelPrecision,
         });
         this.updateType = updateTypeGetterOverride ? updateTypeGetterOverride : updateTypeGetter(this);
-        this.tableSorter = new TableSorter(this.element.find(".lineup"));        
+        this.tableSorter = new TableSorter(this.element.find(".lineup"));
     }
 
     /**
@@ -254,6 +253,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
      * Sets the current state of the table sorter
      */
     public set state(value: ITableSorterState) {
+        log("loading state", value);
         this.loadingState = true;
         this.tableSorter.settings = value.settings;
         this.loadDataFromPowerBI(value.configuration);
@@ -327,7 +327,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
     }
 
     /** This is called once when the visual is initialially created */
-    public init(options: VisualInitOptions): void {        
+    public init(options: VisualInitOptions): void {
         super.init(options);
         this.host = options.host;
 
@@ -343,9 +343,11 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
                 if (!this.handlingUpdate && !this.loadingState) {
                     this.configurationUpdater();
                     let updates: string[] = [];
+                    let isNewState = false;
                     if (config) {
                         if (!_.isEqual(config.sort, oConfig && oConfig.sort)) {
                             updates.push("Sort changed");
+                            isNewState = true;
                         }
                         const newLayout = (config && config.layout && config.layout.primary) || [];
                         const oldLayout = (oConfig && oConfig.layout && oConfig.layout.primary) || [];
@@ -357,14 +359,19 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
                         if (newLayout.length === oldLayout.length &&
                             !_.isEqual(newFilters, oldFilters)) {
                             updates.push("Filter changed");
+                            isNewState = true;
                         } else if (!_.isEqual(config.layout, oConfig && oConfig.layout)) {
                             updates.push("Layout changed");
+                            // Replace State
                         }
                     }
                     if (!updates.length) {
+                        isNewState = true;
                         updates.push("Configuration updated");
+                        // Replace State
                     }
-                    publishChange(this, updates.join(", "), this.state);
+                    const method = isNewState ? publishChange : publishReplace;
+                    method(this, updates.join(", "), this.state);
                 }
             });
 
@@ -382,14 +389,14 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
         log("Update Type: ", updateType);
         super.update(options);
 
-        if (!this.isNameSet && options.dataViews.length > 0) {
-            const oldName = this.name;            
-            let name = "TableSorter::";
-            options.dataViews[0].metadata.columns.forEach(c => name += `${c.queryName}:`)
-            log("TableSorter Resolved Name: " + name);
-            this.name = name;
-            this.isNameSet = true;
-            publishNameResolved(this, oldName, name);
+        if (options.dataViews.length > 0) {
+            const oldName = this.name;
+            const candidateName = "TableSorter::" + options.dataViews[0].metadata.columns.map(c => `${c.queryName}`).join("::");
+            if (oldName !== candidateName) {
+                log("TableSorter Name Change: %s => %s", oldName, candidateName);
+                this.name = candidateName;
+                publishNameChange(this, oldName, candidateName);
+            }
         }
 
         // Assume that data updates won't happen when resizing

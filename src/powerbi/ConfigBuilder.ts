@@ -59,13 +59,13 @@ function processExistingConfig(config: ITableSorterConfiguration, columns: ITabl
     let newColNames = columns.map(c => c.column);
 
     // Filter out any columns that don't exist anymore
-    config.columns = config.columns.filter(c =>
+    config.columns = (config.columns || []).filter(c =>
         newColNames.indexOf(c.column) >= 0
     );
 
     // Override the domain, with the newest data
     config.columns.forEach(n => {
-        let newCol = columns.filter(m => m.column === n.column)[0];
+        let newCol = (columns || []).filter(m => m.column === n.column)[0];
         if (newCol.domain) {
             if (!n.domain) {
                 n.domain = newCol.domain;
