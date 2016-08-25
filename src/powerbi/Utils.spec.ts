@@ -49,7 +49,7 @@ describe("Utils", () => {
         it("should return yyyy-MM-dd hh tt, if the year, and millisecond is not 0", () => {
             formatTest("yyyy-MM-dd hh:mm:ss.fff tt",
                 new Date(2016, 0, 1, 0, 0, 0, 10),
-                new Date(2016, 0, 1, 0, 0, 0, 20));
+                new Date(2017, 0, 1, 0, 0, 0, 20));
         });
         it("should return hh tt, if only the hour is not 0", () => {
             formatTest("hh tt",
@@ -70,6 +70,11 @@ describe("Utils", () => {
             formatTest("hh:mm:ss.fff tt",
                 new Date(0, 0, 1, 1, 0, 0, 12),
                 new Date(0, 0, 1, 1, 0, 0, 20));
+        });
+        it("should return yyyy, if all the same dates", () => {
+            formatTest("yyyy",
+                new Date(0, 0, 1, 0, 0, 0, 0),
+                new Date(0, 0, 1, 0, 0, 0, 0));
         });
     });
 });

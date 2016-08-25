@@ -2,6 +2,7 @@
  * Creates a calculator that calculates an appropriate date string format to represent the data
  */
 export function dateTimeFormatCalculator() {
+    "use strict";
     let prevDate: Date;
     let hasDates = false;
     let showYear = false;
@@ -19,7 +20,8 @@ export function dateTimeFormatCalculator() {
             if (prevDate && date) {
 
                 hasDates = true;
-                if (date.getFullYear()) {
+                const fullYear = date.getFullYear();
+                if (fullYear && fullYear !== prevDate.getFullYear()) {
                     showYear = true;
                 }
 
@@ -83,7 +85,11 @@ export function dateTimeFormatCalculator() {
                 format += " tt";
             }
 
+            if (!format) {
+                format = "yyyy";
+            }
+
             return format;
-        }
-    }
+        },
+    };
 }

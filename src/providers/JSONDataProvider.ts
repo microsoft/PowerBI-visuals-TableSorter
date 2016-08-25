@@ -170,7 +170,7 @@ export class JSONDataProvider implements IDataProvider {
                     a[b.column] = {
                         max: max,
                         min: min,
-                        range: max - min
+                        range: max - min,
                     };
                     return a;
                 }, <any>{});

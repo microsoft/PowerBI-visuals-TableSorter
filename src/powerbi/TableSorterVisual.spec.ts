@@ -186,9 +186,9 @@ describe("TableSorterVisual", () => {
     });
 
     describe("Integration", () => {
-        it("should allow for infinite scrolling");
-        it("should allow for infinite scrolling with a string filter");
-        it("should allow for infinite scrolling with a numerical filter");
+        xit("should allow for infinite scrolling");
+        xit("should allow for infinite scrolling with a string filter");
+        xit("should allow for infinite scrolling with a numerical filter");
         it("should load a new set of data when a string column is filtered");
         it("should load a new set of data when a numerical column is filtered");
         it("should load a new set of data when a string column is sorted");

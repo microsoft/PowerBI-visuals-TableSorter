@@ -225,7 +225,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
                 return {
                     idx: n.idx,
                     col: n.col,
-                    calculator: dateTimeFormatCalculator()
+                    calculator: dateTimeFormatCalculator(),
                 };
             });
             cols = table.columns.filter(n => !!n).map(n => n.displayName);

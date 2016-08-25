@@ -36,23 +36,23 @@ describe("JSONDataProvider", () => {
         {
             "id": 1,
             "some_value": 2,
-            "negative_numbers": 5
+            "negative_numbers": 5,
         },
         {
             "id": 2,
             "some_value": 2,
-            "negative_numbers": 0
+            "negative_numbers": 0,
         },
         {
             "id": 3,
             "some_value": 2,
-            "negative_numbers": -5
+            "negative_numbers": -5,
         },
         {
             "id": 4,
             "some_value": 2,
-            "negative_numbers": -1
-        }
+            "negative_numbers": -1,
+        },
     ];
 
     const NUMERIC_SAME_DOMAIN = [
