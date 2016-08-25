@@ -1,6 +1,7 @@
 import { VisualBase, Visual, logger } from "essex.powerbi.base";
 import { updateTypeGetter, UpdateType, createPropertyPersister, PropertyPersister } from "essex.powerbi.base/src/lib/Utils";
 import { TableSorter  } from "../TableSorter";
+import { dateTimeFormatCalculator } from "./Utils";
 import {
     ITableSorterRow,
     ITableSorterSettings,
@@ -220,6 +221,13 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
         let cols: string[];
         if (view && view.table) {
             let table = view.table;
+            const dateCols = table.columns.map((n, i) => ({ idx: i, col: n })).filter(n => n.col.type.dateTime).map(n => {
+                return {
+                    idx: n.idx,
+                    col: n.col,
+                    calculator: dateTimeFormatCalculator()
+                };
+            });
             cols = table.columns.filter(n => !!n).map(n => n.displayName);
             table.rows.forEach((row, rowIndex) => {
                 let identity: any;
@@ -240,10 +248,24 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
                     filterExpr: identity && identity.expr,
                     selected: !!_.find(selectedIds, (id: SelectionId) => id.equals(newId)),
                 };
-                row.forEach((colInRow, i) => {
-                    result[table.columns[i].displayName] = colInRow;
+
+                // Copy over column data
+                row.forEach((colInRow, i) => result[table.columns[i].displayName] = colInRow);
+
+                dateCols.forEach(c => {
+                    c.calculator.addToCalculation(result[c.col.displayName]);
                 });
+
                 data.push(result);
+            });
+
+            dateCols.forEach(n => {
+                const formatter = valueFormatterFactory({
+                    format: n.col.format || n.calculator.getFormat()
+                });
+                data.forEach(result => {
+                    result[n.col.displayName] = formatter.format(result[n.col.displayName]);
+                });
             });
         }
         return {
