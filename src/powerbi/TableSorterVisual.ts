@@ -10,6 +10,7 @@ import {
     publishChange,
     publishReplace,
     publishNameChange,
+    publishStateInjectionRequest,
 } from "pbi-stateful";
 import {
     ITableSorterRow,
@@ -84,6 +85,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
     private updateType: () => UpdateType;
     private propertyPersister: PropertyPersister;
     private loadingState = false;
+    private isBootstrapping = true;
 
     // Stores our current set of data.
     private _data: { data: ITableSorterVisualRow[], cols: string[] };
@@ -131,18 +133,22 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
      */
     private configurationUpdater = _.debounce(() => {
         const config = this.tableSorter.configuration;
+        const configJson = JSON.stringify(config);
+        log("Persisting Table Configuration", configJson);
+        if (configJson === "{}") {
+            console.log("WTF", new Error().stack);
+        }
         const objects: powerbi.VisualObjectInstancesToPersist = {
             merge: [
                 <VisualObjectInstance>{
                     objectName: "layout",
                     properties: {
-                        "layout": JSON.stringify(config)
+                        "layout": configJson,
                     },
                     selector: undefined,
                 },
             ],
         };
-        log("Updating Config");
         this.propertyPersister.persist(false, objects);
     }, 100);
 
@@ -200,6 +206,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
      */
     public constructor(noCss: boolean = false, initialSettings?: ITableSorterSettings, updateTypeGetterOverride?: () => UpdateType) {
         super(noCss);
+        log("Constructing TableSorter");
         this.noCss = noCss;
         this.initialSettings = initialSettings || {
             presentation: {
@@ -237,7 +244,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
      * Gets the current state for the table sorter
      */
     public get state(): ITableSorterState {
-        return {
+        const result = {
             settings: $.extend(true, {}, this.tableSorter.settings),
             configuration: $.extend(true, {}, this.tableSorter.configuration),
             selection: this.tableSorter.selection.map((n: ITableSorterVisualRow) => {
@@ -247,6 +254,8 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
                 };
             }),
         };
+        log("TableSorter getState: ", result);
+        return result;
     }
 
     /**
@@ -266,6 +275,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
                 return TableSorterVisual.createItem(n.id, SelectionId.createWithId(identity), filterExpr);
             });
             this.onSelectionChanged(this.tableSorter.selection as any, true);
+            log("SetState Invoking ConfigurationUpdater");
             this.configurationUpdater();
         }
 
@@ -341,6 +351,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
         this.tableSorter.events.on(TableSorter.EVENTS.CONFIG_CHANGED,
             (config: ITableSorterConfiguration, oConfig: ITableSorterConfiguration) => {
                 if (!this.handlingUpdate && !this.loadingState) {
+                    log("CONFIG_CHANGED Event Handler Invoking configurationUpdater");
                     this.configurationUpdater();
                     let updates: string[] = [];
                     let isNewState = false;
@@ -376,6 +387,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
             });
 
         this.dimensions = { width: options.viewport.width, height: options.viewport.height };
+        log("Registering TableSorter");
         register(this, window);
     }
 
@@ -391,11 +403,16 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
 
         if (options.dataViews.length > 0) {
             const oldName = this.name;
-            const candidateName = "TableSorter::" + options.dataViews[0].metadata.columns.map(c => `${c.queryName}`).join("::");
+            const candidateName = "TableSorter::" + options.dataViews[0].metadata.columns.sort().map(c => `${c.queryName}`).join("::");
             if (oldName !== candidateName) {
                 log("TableSorter Name Change: %s => %s", oldName, candidateName);
                 this.name = candidateName;
                 publishNameChange(this, oldName, candidateName);
+
+                if (this.isBootstrapping) {
+                    this.isBootstrapping = false;
+                    publishStateInjectionRequest(this);
+                }
             }
         }
 
@@ -414,7 +431,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
             this.hasLayoutChanged(updateType, options) ||
 
             // The data may not have changed, but we are loading
-            // Necessary because sometimes the user "changes" the filter, but it doesn't actually change the dataset. 
+            // Necessary because sometimes the user "changes" the filter, but it doesn't actually change the dataset.
             // ie. If the user selects the min value and the max value of the dataset as a filter.
             this.loadResolver) {
             // If we explicitly are loading more data OR If we had no data before, then data has been loaded
@@ -478,11 +495,13 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
      * Returns true if the layout has changed in the PBI settings
      */
     private hasLayoutChanged(updateType: UpdateType, options: VisualUpdateOptions) {
-        if (updateType & UpdateType.Settings &&
-            options.dataViews && options.dataViews.length) {
+        if (updateType & UpdateType.Settings && options.dataViews && options.dataViews.length) {
             if (this.dataView.metadata && this.dataView.metadata.objects && this.dataView.metadata.objects["layout"]) {
                 // Basically string compares the two layouts to see if anything has changed
-                const layoutChanged = this.dataView.metadata.objects["layout"]["layout"] !== JSON.stringify(this.tableSorter.configuration);
+                const dataViewLayout = this.dataView.metadata.objects["layout"]["layout"];
+                const tableSorterLayout = JSON.stringify(this.tableSorter.configuration);
+                log("COMPARING LAYOUTS", dataViewLayout, tableSorterLayout, this.dataView);
+                const layoutChanged = dataViewLayout !== tableSorterLayout
                 if (layoutChanged) {
                     log("Layout changed!");
                 }
