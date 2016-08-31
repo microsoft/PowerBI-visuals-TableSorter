@@ -1,19 +1,10 @@
-import { 
-    updateTypeGetter,
-    UpdateType,
-    createPropertyPersister,
-    PropertyPersister,
-} from "essex.powerbi.base/src/lib/Utils";
+import { PropertyPersister } from "essex.powerbi.base/src/lib/Utils";
 import VisualObjectInstance = powerbi.VisualObjectInstance;
 import SQExprBuilder = powerbi.data.SQExprBuilder;
 import SelectionManager = powerbi.visuals.utility.SelectionManager;
 import { ITableSorterState, ITableSorterVisualRow } from "./interfaces";
 import {
-    ITableSorterRow,
-    ITableSorterSettings,
-    ITableSorterSort,
     ITableSorterFilter,
-    ITableSorterConfiguration,
     INumericalFilter,
 } from "../models";
 

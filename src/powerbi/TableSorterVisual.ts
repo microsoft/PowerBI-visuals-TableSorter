@@ -209,21 +209,19 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
         try {
             super.init(options);
             this.host = options.host;
+            this.selectionManager = new SelectionManager({ hostServices: options.host });
             this.propertyPersistManager = new PropertyPersistManager(
                 createPropertyPersister(this.host, 100),
                 this.selectionManager
             );
-            this.selectionManager = new SelectionManager({
-                hostServices: options.host
-            });
-            this.tableSorter.settings = this.initialSettings;
+            this.dimensions = { width: options.viewport.width, height: options.viewport.height };
 
-            // Wire up event handlers
+            // Wire up the table sorter
+            this.tableSorter.settings = this.initialSettings;
             this.tableSorter.events.on("selectionChanged", this.handleSelectionChanged.bind(this));
             this.tableSorter.events.on(TableSorter.EVENTS.CLEAR_SELECTION, this.handleSelectionCleared.bind(this));
             this.tableSorter.events.on(TableSorter.EVENTS.CONFIG_CHANGED, this.handleConfigChanged.bind(this));
 
-            this.dimensions = { width: options.viewport.width, height: options.viewport.height };
             log("Registering TableSorter");
             register(this, window);
         } catch(err) {
