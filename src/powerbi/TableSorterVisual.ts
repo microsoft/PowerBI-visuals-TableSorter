@@ -1,16 +1,10 @@
-import { VisualBase, Visual, logger } from "essex.powerbi.base";
+import { Visual, logger } from "essex.powerbi.base";
+import { StatefulVisual, IDimensions } from "pbi-stateful";
 import { updateTypeGetter, UpdateType, createPropertyPersister } from "essex.powerbi.base/src/lib/Utils";
 import { TableSorter  } from "../TableSorter";
 import {
-    IStateful,
-    register,
-    unregister,
-    unregisterListener,
-    IStateChangeListener,
     publishChange,
     publishReplace,
-    publishNameChange,
-    publishStateInjectionRequest,
 } from "pbi-stateful";
 import {
     ITableSorterSettings,
@@ -24,7 +18,6 @@ import buildConfig from "./ConfigBuilder";
 import { ITableSorterVisualRow, ITableSorterState } from "./interfaces";
 
 import * as _ from "lodash";
-import IVisual = powerbi.IVisual;
 import DataViewTable = powerbi.DataViewTable;
 import IVisualHostServices = powerbi.IVisualHostServices;
 import VisualCapabilities = powerbi.VisualCapabilities;
@@ -46,8 +39,7 @@ const ldget = require("lodash.get");
 /* tslint:enable */
 
 @Visual(require("../build.json").output.PowerBI)
-export default class TableSorterVisual extends VisualBase implements IVisual, IStateful<ITableSorterState> {
-
+export default class TableSorterVisual extends StatefulVisual<ITableSorterState> {
     /**
      * The set of capabilities for the visual
      */
@@ -69,10 +61,6 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
         },
     });
 
-    // The name of this visual will change when the bound column change
-    public name = "TableSorter";
-    public baseName = "TableSorter";
-    public stateChangeListeners: IStateChangeListener<ITableSorterState>[] = [];
     public tableSorter: TableSorter;
     private dataViewTable: DataViewTable;
     private dataView: powerbi.DataView;
@@ -80,11 +68,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
     private selectionManager: SelectionManager;
     private waitingForMoreData: boolean;
     private waitingForSort: boolean;
-    private handlingUpdate: boolean;
-    private updateType: () => UpdateType;
     private propertyPersistManager: PropertyPersistManager;
-    private loadingState = false;
-    private isBootstrapping = true;
 
     // Stores our current set of data.
     private _data: { data: ITableSorterVisualRow[], cols: string[] };
@@ -96,11 +80,6 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
             </div>
         `.trim().replace(/\n/g, "");
     }
-
-    /**
-     * If css should be loaded or not
-     */
-    private noCss: boolean = false;
 
     /**
      * The initial set of settings to use
@@ -121,9 +100,8 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
      * The constructor for the visual
      */
     public constructor(noCss: boolean = false, initialSettings?: ITableSorterSettings, updateTypeGetterOverride?: () => UpdateType) {
-        super(noCss);
+        super(noCss, "TableSorter");
         log("Constructing TableSorter");
-        this.noCss = noCss;
         this.initialSettings = initialSettings || {
             presentation: {
                 numberFormatter: (d: number) => this.numberFormatConfig.formatter.format(d)
@@ -134,33 +112,8 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
         this.tableSorter = new TableSorter(this.element.find(".lineup"));
     }
 
-    /**
-     * Setter for dimensions
-     */
-    private _dimensions: { width: number; height: number };
-    public set dimensions (value: { width: number; height: number }) {
-        this._dimensions = value;
-        if (this.tableSorter) {
-            this.tableSorter.dimensions = value;
-        }
-    }
-
-    /**
-     * Getter for dimensions
-     */
-    public get dimensions() {
-        return this._dimensions;
-    }
-
-    private get isMultiSelect() {
-        return ldget(this, "tableSorter.settings.selection.multiSelect", false);
-    }
-
-    /**
-     * Gets the current state for the table sorter
-     */
-    public get state(): ITableSorterState {
-        const result = {
+    protected generateState(): ITableSorterState {
+        return {
             settings: $.extend(true, {}, this.tableSorter.settings),
             configuration: $.extend(true, {}, this.tableSorter.configuration),
             selection: this.tableSorter.selection.map((n: ITableSorterVisualRow) => {
@@ -170,127 +123,77 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
                 };
             }),
         };
-        return result;
     }
 
-    /**
-     * Sets the current state of the table sorter
-     */
-    public set state(value: ITableSorterState) {
-        try {
-            log("set state", value);
-            this.loadingState = true;
-            this.tableSorter.settings = value.settings;
-            this.loadDataFromPowerBI(value.configuration);
+    protected onSetState(value: ITableSorterState): void {
+        log("set state", value);
+        this.tableSorter.settings = value.settings;
+        this.loadDataFromPowerBI(value.configuration);
 
-            if (value.selection) {
-                const serializer = powerbi.data["services"].SemanticQuerySerializer;
-                this.tableSorter.selection = value.selection.map(n => {
-                    const filterExpr = serializer.deserializeExpr(n.serializedFilter) as powerbi.data.SQExpr;
-                    const identity = powerbi.data.createDataViewScopeIdentity(filterExpr);
-                    return DataFactory.createItem(n.id, SelectionId.createWithId(identity), filterExpr);
-                });
-                this.propertyPersistManager.updateSelection(
+        if (value.selection) {
+            const serializer = powerbi.data["services"].SemanticQuerySerializer;
+            this.tableSorter.selection = value.selection.map(n => {
+                const filterExpr = serializer.deserializeExpr(n.serializedFilter) as powerbi.data.SQExpr;
+                const identity = powerbi.data.createDataViewScopeIdentity(filterExpr);
+                return DataFactory.createItem(n.id, SelectionId.createWithId(identity), filterExpr);
+            });
+            this.propertyPersistManager.updateSelection(
                 this.tableSorter.selection as ITableSorterVisualRow[],
                 this.isMultiSelect
             );
             log("SetState Invoking ConfigurationUpdater", value);
-            this.propertyPersistManager.updateConfiguration(value);
-            }
-        } catch (err) {
-            console.log("TableSorter::set state Error", err);
-        } finally {
-            this.loadingState = false;
+            this.propertyPersistManager.updateConfiguration(value.configuration.configuration);
         }
     }
 
-    /** This is called once when the visual is initialially created */
-    public init(options: VisualInitOptions): void {
-        try {
-            super.init(options);
-            this.host = options.host;
-            this.selectionManager = new SelectionManager({ hostServices: options.host });
-            this.propertyPersistManager = new PropertyPersistManager(
-                createPropertyPersister(this.host, 100),
-                this.selectionManager
-            );
-            this.dimensions = { width: options.viewport.width, height: options.viewport.height };
-
-            // Wire up the table sorter
-            this.tableSorter.settings = this.initialSettings;
-            this.tableSorter.events.on("selectionChanged", this.handleSelectionChanged.bind(this));
-            this.tableSorter.events.on(TableSorter.EVENTS.CLEAR_SELECTION, this.handleSelectionCleared.bind(this));
-            this.tableSorter.events.on(TableSorter.EVENTS.CONFIG_CHANGED, this.handleConfigChanged.bind(this));
-
-            log("Registering TableSorter");
-            register(this, window);
-        } catch(err) {
-            console.log("TableSorter Init Error", err);
+    protected onSetDimensions(value: IDimensions): void {
+        if (this.tableSorter) {
+            this.tableSorter.dimensions = value;
         }
     }
 
-    /** Update is called for data updates, resizes & formatting changes */
-    public update(options: VisualUpdateOptions) {
-        try {
-            const updateType = this.updateType();
-            this.handlingUpdate = true;
-            this.dataView = ldget(options, "dataViews[0]");
-            this.dataViewTable = ldget(this, "dataView.table");
-            log("Update: ", options, updateType);
-            super.update(options);
+    protected onInit(options: VisualInitOptions): void {
+        this.host = options.host;
+        this.selectionManager = new SelectionManager({ hostServices: options.host });
+        this.propertyPersistManager = new PropertyPersistManager(
+            createPropertyPersister(this.host, 100),
+            this.selectionManager
+        );
+        this.dimensions = { width: options.viewport.width, height: options.viewport.height };
 
-            if (options.dataViews.length > 0) {
-                const oldName = this.name;
-                const candidateName = "TableSorter::" + options.dataViews[0].metadata.columns.sort().map(c => `${c.queryName}`).join("::");
-                if (oldName !== candidateName) {
-                    log("TableSorter Name Change: %s => %s", oldName, candidateName);
-                    this.name = candidateName;
-                    publishNameChange(this, oldName, candidateName);
+        // Wire up the table sorter
+        this.tableSorter.settings = this.initialSettings;
+        this.tableSorter.events.on("selectionChanged", this.handleSelectionChanged.bind(this));
+        this.tableSorter.events.on(TableSorter.EVENTS.CLEAR_SELECTION, this.handleSelectionCleared.bind(this));
+        this.tableSorter.events.on(TableSorter.EVENTS.CONFIG_CHANGED, this.handleConfigChanged.bind(this));
+    }
 
-                    if (this.isBootstrapping) {
-                        this.isBootstrapping = false;
-                        publishStateInjectionRequest(this);
-                    }
-                }
-            }
+    protected onUpdate(options: VisualUpdateOptions, updateType: UpdateType): void {
+        this.dataView = ldget(options, "dataViews[0]");
+        this.dataViewTable = ldget(this, "dataView.table");
 
-            // Assume that data updates won't happen when resizing
-            const newDims = { width: options.viewport.width, height: options.viewport.height };
-            if ((updateType & UpdateType.Resize)) {
-                this.dimensions = newDims;
-            }
+        if (updateType & UpdateType.Settings) {
+            this.loadSettingsFromPowerBI();
+        }
 
-            if (updateType & UpdateType.Settings) {
-                this.loadSettingsFromPowerBI();
-            }
+        if (updateType & UpdateType.Data ||
+            // If the layout has changed, we need to reload table sorter
+            this.hasLayoutChanged(updateType, options) ||
 
-            if (updateType & UpdateType.Data ||
-                // If the layout has changed, we need to reload table sorter
-                this.hasLayoutChanged(updateType, options) ||
+            // The data may not have changed, but we are loading
+            // Necessary because sometimes the user "changes" the filter, but it doesn't actually change the dataset.
+            // ie. If the user selects the min value and the max value of the dataset as a filter.
+            this.loadResolver) {
+            // If we explicitly are loading more data OR If we had no data before, then data has been loaded
+            this.waitingForMoreData = false;
+            this.waitingForSort = false;
 
-                // The data may not have changed, but we are loading
-                // Necessary because sometimes the user "changes" the filter, but it doesn't actually change the dataset.
-                // ie. If the user selects the min value and the max value of the dataset as a filter.
-                this.loadResolver) {
-                // If we explicitly are loading more data OR If we had no data before, then data has been loaded
-                this.waitingForMoreData = false;
-                this.waitingForSort = false;
-
-                this.loadDataFromPowerBI();
-            }
-        } catch (err) {
-            console.log("TableSorter Update Error", err);
-        } finally {
-            this.handlingUpdate = false;
+            this.loadDataFromPowerBI();
         }
     }
 
-    /**
-     * Destroys this table sorter
-     */
-    public destroy() {
-        unregister(this, window);
-        this.stateChangeListeners.forEach(n => unregisterListener(n, this));
+    private get isMultiSelect() {
+        return ldget(this, "tableSorter.settings.selection.multiSelect", false);
     }
 
     /**
@@ -314,22 +217,14 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
         return options.objectName === "layout" ? <any>{} : instances;
     }
 
-    public registerStateChangeListener(listener: IStateChangeListener<ITableSorterState>) {
-        this.stateChangeListeners.push(listener);
-    }
-
-    public unregisterStateChangeListener(listener: IStateChangeListener<ITableSorterState>) {
-        unregisterListener(listener, this);
-    }
-
     /**
      * Gets the css used for this element
      */
-    protected getCss(): string[] {
-        return this.noCss ? [] : super.getCss().concat([
+    protected getCustomCssModules(): string[] {
+        return [
             require("!css!../../node_modules/lineup-v1/css/style.css"),
             require("!css!sass!./css/TableSorterVisual.scss"),
-        ]);
+        ];
     }
 
     /**
@@ -435,7 +330,8 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
     private handleSelectionChanged(rows: ITableSorterVisualRow[]) {
         log("Selection changed", rows);
         this.propertyPersistManager.updateSelection(rows, this.isMultiSelect);
-        if (!this.loadingState) {
+        if (!this.isHandlingSetState) {
+            this.state = this.generateState();
             publishChange(this, "Selection Changed", this.state);
         }
     }
@@ -443,15 +339,15 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
     private handleSelectionCleared() {
         log("Selection cleared");
         this.propertyPersistManager.updateSelection([], this.isMultiSelect);
-        if (!this.loadingState) {
+        if (!this.isHandlingSetState) {
+            this.state = this.generateState();
             publishChange(this, "Selection Cleared", this.state);
         }
     }
 
     private handleConfigChanged(config: ITableSorterConfiguration, oldConfig: ITableSorterConfiguration) {
-        log("Configuration Changed", config, oldConfig);
-        if (!this.handlingUpdate && !this.loadingState) {
-            log("Configuration Change Being Applied", config, oldConfig);
+        if (!this.isHandlingUpdate && !this.isHandlingSetState) {
+            log("User-Driven Configuration Change", config, oldConfig);
             let updates: string[] = [];
             let isNewState = false;
             if (config) {
@@ -459,7 +355,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
                 if (!_.isEqual(sort, ldget(oldConfig, "sort"))) {
                     const isAsc = sort.asc;
                     const sortColumn = sort.column || sort.stack.name;
-                    updates.push(`Sort ${isAsc ? "↑" : "↓"}${sortColumn}`);
+                    updates.push(`Sort ${isAsc ? "↑" : "↓"} ${sortColumn}`);
                     isNewState = true;
                 }
                 const newLayout = ldget(config, "layout.primary", []);
@@ -485,7 +381,8 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
             }
             const method = isNewState ? publishChange : publishReplace;
 
-            this.propertyPersistManager.updateConfiguration(this.state);
+            this.state = this.generateState();
+            this.propertyPersistManager.updateConfiguration(this.state.configuration);
             method(this, updates.join(", "), this.state);
         }
     }

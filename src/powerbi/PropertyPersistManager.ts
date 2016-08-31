@@ -1,3 +1,7 @@
+import { logger } from "essex.powerbi.base";
+/* tslint:disable */
+const log = logger("essex:widget:TableSorterVisual");
+/* tslint:enable */
 import { PropertyPersister } from "essex.powerbi.base/src/lib/Utils";
 import VisualObjectInstance = powerbi.VisualObjectInstance;
 import SQExprBuilder = powerbi.data.SQExprBuilder;
@@ -6,7 +10,9 @@ import { ITableSorterState, ITableSorterVisualRow } from "./interfaces";
 import {
     ITableSorterFilter,
     INumericalFilter,
+    ITableSorterConfiguration,
 } from "../models";
+
 
 export default class PropertyPersistManager {
     private propertyPersister: PropertyPersister;
@@ -21,10 +27,10 @@ export default class PropertyPersistManager {
     /**
      * A simple debounced function to update the configuration
      */
-    public updateConfiguration(state: ITableSorterState) {
-        const config = state.configuration;
+    public updateConfiguration(config: ITableSorterConfiguration) {
         const configJson = JSON.stringify(config);
-        if (configJson === "{}") { 
+        if (configJson === "{}") {
+            log("Rejecting UpdateConfiguration", config);
             return;
         }
         const objects: powerbi.VisualObjectInstancesToPersist = {
