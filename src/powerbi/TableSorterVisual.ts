@@ -15,9 +15,7 @@ import {
 import {
     ITableSorterSettings,
     ITableSorterSort,
-    ITableSorterFilter,
     ITableSorterConfiguration,
-    INumericalFilter,
 } from "../models";
 import { Promise } from "es6-promise";
 import capabilities from "./TableSorterVisual.capabilities";
@@ -34,17 +32,17 @@ import VisualInitOptions = powerbi.VisualInitOptions;
 import VisualUpdateOptions = powerbi.VisualUpdateOptions;
 import VisualObjectInstance = powerbi.VisualObjectInstance;
 import EnumerateVisualObjectInstancesOptions = powerbi.EnumerateVisualObjectInstancesOptions;
-import DataView = powerbi.DataView;
 import SelectionId = powerbi.visuals.SelectionId;
 import SelectionManager = powerbi.visuals.utility.SelectionManager;
-import SQExprBuilder = powerbi.data.SQExprBuilder;
 
 import NumberFormatConfig from "./NumberFormatConfig";
 import * as DataFactory from "./DataFactory";
+import PropertyPersistManager from "./PropertyPersistManager";
 
 /* tslint:disable */
 const log = logger("essex:widget:TableSorterVisual");
 const colors = require("essex.powerbi.base/src/colors");
+const ldget = require("lodash.get");
 /* tslint:enable */
 
 @Visual(require("../build.json").output.PowerBI)
@@ -84,7 +82,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
     private waitingForSort: boolean;
     private handlingUpdate: boolean;
     private updateType: () => UpdateType;
-    private propertyPersister: PropertyPersister;
+    private propertyPersistManager: PropertyPersistManager;
     private loadingState = false;
     private isBootstrapping = true;
 
@@ -118,79 +116,6 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
      * The current load promise
      */
     private loadResolver: (data: any[]) => void;
-
-    /**
-     * A simple debounced function to update the configuration
-     */
-    private configurationUpdater = _.debounce(() => {
-        const config = this.tableSorter.configuration;
-        const configJson = JSON.stringify(config);
-        log("Persisting Table Configuration", configJson);
-        if (configJson === "{}") {
-            console.log("WTF", new Error().stack);
-        }
-        const objects: powerbi.VisualObjectInstancesToPersist = {
-            merge: [
-                <VisualObjectInstance>{
-                    objectName: "layout",
-                    properties: {
-                        "layout": configJson,
-                    },
-                    selector: undefined,
-                },
-            ],
-        };
-        this.propertyPersister.persist(false, objects);
-    }, 100);
-
-    /**
-     * Selects the given rows
-     */
-    private onSelectionChanged = _.debounce((rows? : ITableSorterVisualRow[], loadingState?: boolean) => {
-        let filter: powerbi.data.SemanticFilter;
-        let { multiSelect } = this.tableSorter.settings.selection;
-        if (rows && rows.length) {
-            let expr = rows[0].filterExpr;
-
-            // If we are allowing multiSelect
-            if (rows.length > 0 && multiSelect) {
-                rows.slice(1).forEach((r) => {
-                    expr = powerbi.data.SQExprBuilder.or(expr, r.filterExpr);
-                });
-            }
-            filter = powerbi.data.SemanticFilter.fromSQExpr(expr);
-        }
-
-        // rows are what are currently selected in lineup
-        if (rows && rows.length) {
-            // HACK
-            this.selectionManager.clear();
-            rows.forEach((r) => this.selectionManager.select(r.identity, true));
-        } else {
-            this.selectionManager.clear();
-        }
-
-        let operation = "merge";
-        if (!filter) {
-            operation = "remove";
-        }
-
-        if (!loadingState) {
-            publishChange(this, "Selection Changed", this.state);
-        }
-
-        this.propertyPersister.persist(true, {
-            [operation]: [
-                <powerbi.VisualObjectInstance>{
-                    objectName: "general",
-                    selector: undefined,
-                    properties: {
-                        "filter": filter
-                    },
-                },
-            ],
-        });
-    }, 100);
 
     /**
      * The constructor for the visual
@@ -227,6 +152,10 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
         return this._dimensions;
     }
 
+    private get isMultiSelect() {
+        return ldget(this, "tableSorter.settings.selection.multiSelect", false);
+    }
+
     /**
      * Gets the current state for the table sorter
      */
@@ -241,7 +170,6 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
                 };
             }),
         };
-        log("TableSorter getState: ", result);
         return result;
     }
 
@@ -249,24 +177,31 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
      * Sets the current state of the table sorter
      */
     public set state(value: ITableSorterState) {
-        log("loading state", value);
-        this.loadingState = true;
-        this.tableSorter.settings = value.settings;
-        this.loadDataFromPowerBI(value.configuration);
+        try {
+            log("set state", value);
+            this.loadingState = true;
+            this.tableSorter.settings = value.settings;
+            this.loadDataFromPowerBI(value.configuration);
 
-        if (value.selection) {
-            const serializer = powerbi.data["services"].SemanticQuerySerializer;
-            this.tableSorter.selection = value.selection.map(n => {
-                const filterExpr = serializer.deserializeExpr(n.serializedFilter) as powerbi.data.SQExpr;
-                const identity = powerbi.data.createDataViewScopeIdentity(filterExpr);
-                return DataFactory.createItem(n.id, SelectionId.createWithId(identity), filterExpr);
-            });
-            this.onSelectionChanged(this.tableSorter.selection as any, true);
-            log("SetState Invoking ConfigurationUpdater");
-            this.configurationUpdater();
+            if (value.selection) {
+                const serializer = powerbi.data["services"].SemanticQuerySerializer;
+                this.tableSorter.selection = value.selection.map(n => {
+                    const filterExpr = serializer.deserializeExpr(n.serializedFilter) as powerbi.data.SQExpr;
+                    const identity = powerbi.data.createDataViewScopeIdentity(filterExpr);
+                    return DataFactory.createItem(n.id, SelectionId.createWithId(identity), filterExpr);
+                });
+                this.propertyPersistManager.updateSelection(
+                this.tableSorter.selection as ITableSorterVisualRow[],
+                this.isMultiSelect
+            );
+            log("SetState Invoking ConfigurationUpdater", value);
+            this.propertyPersistManager.updateConfiguration(value);
+            }
+        } catch (err) {
+            console.log("TableSorter::set state Error", err);
+        } finally {
+            this.loadingState = false;
         }
-
-        this.loadingState = false;
     }
 
     /** This is called once when the visual is initialially created */
@@ -274,17 +209,19 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
         try {
             super.init(options);
             this.host = options.host;
-
-            this.propertyPersister = createPropertyPersister(this.host, 100);
+            this.propertyPersistManager = new PropertyPersistManager(
+                createPropertyPersister(this.host, 100),
+                this.selectionManager
+            );
             this.selectionManager = new SelectionManager({
                 hostServices: options.host
             });
             this.tableSorter.settings = this.initialSettings;
 
             // Wire up event handlers
-            this.tableSorter.events.on("selectionChanged", (rows: ITableSorterVisualRow[]) => this.onSelectionChanged(rows));
-            this.tableSorter.events.on(TableSorter.EVENTS.CLEAR_SELECTION, () => this.onSelectionChanged());
-            this.tableSorter.events.on(TableSorter.EVENTS.CONFIG_CHANGED, this.onConfigurationChanged.bind(this));
+            this.tableSorter.events.on("selectionChanged", this.handleSelectionChanged.bind(this));
+            this.tableSorter.events.on(TableSorter.EVENTS.CLEAR_SELECTION, this.handleSelectionCleared.bind(this));
+            this.tableSorter.events.on(TableSorter.EVENTS.CONFIG_CHANGED, this.handleConfigChanged.bind(this));
 
             this.dimensions = { width: options.viewport.width, height: options.viewport.height };
             log("Registering TableSorter");
@@ -406,12 +343,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
                 // Basically string compares the two layouts to see if anything has changed
                 const dataViewLayout = this.dataView.metadata.objects["layout"]["layout"];
                 const tableSorterLayout = JSON.stringify(this.tableSorter.configuration);
-                log("COMPARING LAYOUTS", dataViewLayout, tableSorterLayout, this.dataView);
-                const layoutChanged = dataViewLayout !== tableSorterLayout
-                if (layoutChanged) {
-                    log("Layout changed!");
-                }
-                return layoutChanged;
+                return dataViewLayout !== tableSorterLayout;
             }
         }
         return false;
@@ -428,12 +360,10 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
             this.tableSorter.configuration = config;
             this._data = newData;
             if (this.loadResolver) {
-                log("Resolving additional data");
                 let resolver = this.loadResolver;
                 delete this.loadResolver;
                 resolver(newData.data);
             } else {
-                log("Loading data into MyDataProvider");
                 this.tableSorter.dataProvider = this.createDataProvider(newData);
             }
             const selectedIds = this.selectionManager.getSelectionIds();
@@ -460,7 +390,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
                 return new Promise((resolve, reject) => {
                     if (newQuery) {
                         if (filterChanged) {
-                            this.propertyPersister.persist(false, this.buildSelfFilter(options.query));
+                            this.propertyPersistManager.updateSelfFilter(options.query, this.dataView.table.columns);
                         }
                         if (sortChanged) {
                             this.handleSort(options.sort[0]);
@@ -503,19 +433,38 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
         this.host.onCustomSort(args);
     }
 
-    private onConfigurationChanged(config: ITableSorterConfiguration, oldConfig: ITableSorterConfiguration) {
+    private handleSelectionChanged(rows: ITableSorterVisualRow[]) {
+        log("Selection changed", rows);
+        this.propertyPersistManager.updateSelection(rows, this.isMultiSelect);
+        if (!this.loadingState) {
+            publishChange(this, "Selection Changed", this.state);
+        }
+    }
+
+    private handleSelectionCleared() {
+        log("Selection cleared");
+        this.propertyPersistManager.updateSelection([], this.isMultiSelect);
+        if (!this.loadingState) {
+            publishChange(this, "Selection Cleared", this.state);
+        }
+    }
+
+    private handleConfigChanged(config: ITableSorterConfiguration, oldConfig: ITableSorterConfiguration) {
+        log("Configuration Changed", config, oldConfig);
         if (!this.handlingUpdate && !this.loadingState) {
-            log("CONFIG_CHANGED Event Handler Invoking configurationUpdater");
-            this.configurationUpdater();
+            log("Configuration Change Being Applied", config, oldConfig);
             let updates: string[] = [];
             let isNewState = false;
             if (config) {
-                if (!_.isEqual(config.sort, oldConfig && oldConfig.sort)) {
-                    updates.push("Sort changed");
+                const sort = config.sort;
+                if (!_.isEqual(sort, oldConfig && oldConfig.sort)) {
+                    const isAsc = sort.asc;
+                    const sortColumn = sort.column || sort.stack.name;
+                    updates.push(`Sort ${isAsc ? "↑" : "↓"}${sortColumn}`);
                     isNewState = true;
                 }
-                const newLayout = (config && config.layout && config.layout.primary) || [];
-                const oldLayout = (oldConfig && oldConfig.layout && oldConfig.layout.primary) || [];
+                const newLayout = ldget(config, "layout.primary", []);
+                const oldLayout = ldget(oldConfig, "layout.primary", []);
                 const newFilters = TableSorter.getFiltersFromLayout(newLayout);
                 const oldFilters = TableSorter.getFiltersFromLayout(oldLayout);
 
@@ -527,7 +476,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
                     isNewState = true;
                 } else if (!_.isEqual(config.layout, oldConfig && oldConfig.layout)) {
                     updates.push("Layout changed");
-                    // Replace State
+                    // isNewState = true;
                 }
             }
             if (!updates.length) {
@@ -536,48 +485,10 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
                 // Replace State
             }
             const method = isNewState ? publishChange : publishReplace;
+
+            this.propertyPersistManager.updateConfiguration(this.state);
             method(this, updates.join(", "), this.state);
         }
-    }
-
-    /**
-     * Builds a self filter for PBI from the list of filters
-     */
-    private buildSelfFilter(filters: ITableSorterFilter[]) {
-        let operation = "remove";
-        let filter: powerbi.data.SemanticFilter;
-        if (filters && filters.length) {
-            operation = "replace";
-            let finalExpr: powerbi.data.SQExpr;
-            filters.forEach(m => {
-                const col = this.dataViewTable.columns.filter(n => n.displayName === m.column)[0];
-                const colExpr = <powerbi.data.SQExpr>col.expr;
-                let currExpr: powerbi.data.SQExpr;
-                if (typeof m.value === "string") {
-                    currExpr = SQExprBuilder.contains(colExpr, SQExprBuilder.text(<string>m.value));
-                } else if ((<INumericalFilter>m.value).domain) {
-                    const numFilter = m.value as INumericalFilter;
-                    currExpr = powerbi.data.SQExprBuilder.between(
-                        colExpr,
-                        powerbi.data.SQExprBuilder.decimal(numFilter.domain[0]),
-                        powerbi.data.SQExprBuilder.decimal(numFilter.domain[1])
-                    );
-                }
-                finalExpr = finalExpr ? powerbi.data.SQExprBuilder.and(finalExpr, currExpr) : currExpr;
-            });
-            filter = powerbi.data.SemanticFilter.fromSQExpr(finalExpr);
-        }
-        return {
-            [operation]: [
-                <powerbi.VisualObjectInstance>{
-                    objectName: "general",
-                    selector: undefined,
-                    properties: {
-                        "selfFilter": filter
-                    },
-                },
-            ],
-        };
     }
 
     /**
