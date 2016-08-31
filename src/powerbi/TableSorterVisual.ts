@@ -1,5 +1,5 @@
 import { VisualBase, Visual, logger } from "essex.powerbi.base";
-import { updateTypeGetter, UpdateType, createPropertyPersister, PropertyPersister } from "essex.powerbi.base/src/lib/Utils";
+import { updateTypeGetter, UpdateType, createPropertyPersister } from "essex.powerbi.base/src/lib/Utils";
 import { TableSorter  } from "../TableSorter";
 import {
     IStateful,
