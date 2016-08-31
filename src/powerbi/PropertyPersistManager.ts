@@ -44,6 +44,7 @@ export default class PropertyPersistManager {
             ],
         };
         // TODO: Debounce
+        log("Persisting TableSorter Configuration");
         this.propertyPersister.persist(false, objects);
     }
 

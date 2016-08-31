@@ -1,31 +1,38 @@
 import { ITableSorterColumn, ITableSorterRow, ITableSorterConfiguration } from "../models";
 import { default as Utils } from "essex.powerbi.base/src/lib/Utils";
 import * as _ from "lodash";
+/* tslint:disable */
+const ldget = require("lodash.get");
+/* tslint:enable */
 
 /**
  * Gets a lineup config from the data view
  */
 export default function(dataView: powerbi.DataView, data: ITableSorterRow[]): ITableSorterConfiguration {
     "use strict";
-    if (dataView) {
-        const newColArr = parseColumnsFromDataView(dataView, data);
-        let config: ITableSorterConfiguration;
-        if (dataView.metadata && dataView.metadata.objects && dataView.metadata.objects["layout"]) {
-            let configStr = dataView.metadata.objects["layout"]["layout"];
-            if (configStr) {
-                config = JSON.parse(configStr);
-            }
-        }
-        if (!config) {
-            config = {
-                primaryKey: newColArr[0].label,
-                columns: newColArr,
-            };
-        } else {
-            processExistingConfig(config, newColArr);
-        }
-        return config;
+    if (!dataView) {
+        throw new Error("dataView must be defined");
     }
+    if (!data) {
+        throw new Error("data must be defined");
+    }
+
+    let config: ITableSorterConfiguration;
+    let configStr = ldget(dataView, "metadata.objects.layout.layout");
+    if (configStr) {
+        config = JSON.parse(configStr);
+    }
+
+    const newColArr = parseColumnsFromDataView(dataView, data);
+    if (config) {
+        processExistingConfig(config, newColArr);
+    } else {
+        config = {
+            primaryKey: newColArr[0].label,
+            columns: newColArr,
+        };
+    }
+    return config;
 }
 
 /**

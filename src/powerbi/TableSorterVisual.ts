@@ -68,6 +68,7 @@ export default class TableSorterVisual extends StatefulVisual<ITableSorterState>
     private selectionManager: SelectionManager;
     private waitingForMoreData: boolean;
     private waitingForSort: boolean;
+    private isWaitingForInitialPBIConfiguration = true;
     private propertyPersistManager: PropertyPersistManager;
 
     // Stores our current set of data.
@@ -113,16 +114,18 @@ export default class TableSorterVisual extends StatefulVisual<ITableSorterState>
     }
 
     protected generateState(): ITableSorterState {
+        log("generating state");
         const settings = _.assign({}, this.tableSorter.settings);
         const configuration = _.assign({}, this.tableSorter.configuration);
         const selection = this.tableSorter.selection.map(DataFactory.convertRowSelectionToState);
         return { settings, configuration, selection };
     }
 
-    protected onSetState(value: ITableSorterState): void {
+    protected onSetState(value: ITableSorterState, oldValue: ITableSorterState): void {
         log("set state", value);
         this.tableSorter.settings = value.settings;
-        this.loadDataFromPowerBI(value.configuration);
+        this.loadDataFromPowerBI(value.configuration); // Sets the configuration and loads from PBI
+        this.propertyPersistManager.updateConfiguration(value.configuration);
 
         if (value.selection) {
             this.tableSorter.selection = value.selection.map(DataFactory.convertStateRowSelectionToControl);
@@ -130,18 +133,19 @@ export default class TableSorterVisual extends StatefulVisual<ITableSorterState>
                 this.tableSorter.selection as ITableSorterVisualRow[],
                 this.isMultiSelect
             );
-            log("SetState Invoking ConfigurationUpdater", value);
-            this.propertyPersistManager.updateConfiguration(value.configuration.configuration);
         }
+        log("SetState Invoking ConfigurationUpdater", value);
     }
 
     protected onSetDimensions(value: IDimensions): void {
+        log("dimensions set");
         if (this.tableSorter) {
             this.tableSorter.dimensions = value;
         }
     }
 
     protected onInit(options: VisualInitOptions): void {
+        log("init", options);
         this.host = options.host;
         this.selectionManager = new SelectionManager({ hostServices: options.host });
         this.propertyPersistManager = new PropertyPersistManager(
@@ -153,20 +157,32 @@ export default class TableSorterVisual extends StatefulVisual<ITableSorterState>
 
         // Wire up the table sorter
         this.tableSorter.settings = this.initialSettings;
-        this.tableSorter.events.on("selectionChanged", this.handleSelectionChanged.bind(this));
-        this.tableSorter.events.on(TableSorter.EVENTS.CLEAR_SELECTION, this.handleSelectionCleared.bind(this));
-        this.tableSorter.events.on(TableSorter.EVENTS.CONFIG_CHANGED, this.handleConfigChanged.bind(this));
+        this.tableSorter.events.on("selectionChanged", this.handleTableSorterSelectionChange.bind(this));
+        this.tableSorter.events.on(TableSorter.EVENTS.CLEAR_SELECTION, this.handleTableSorterSelectionClear.bind(this));
+        this.tableSorter.events.on(TableSorter.EVENTS.CONFIG_CHANGED, this.handleTableSorterConfigChange.bind(this));
     }
 
     protected onUpdate(options: VisualUpdateOptions, updateType: UpdateType): void {
-        this.dataView = ldget(options, "dataViews[0]");
-        this.dataViewTable = ldget(this, "dataView.table");
+        log("update", options);
+        const isSettingsUpdate = updateType & UpdateType.Settings;
+        const isDataUpdate = updateType & UpdateType.Data;
+        const dataView = ldget(options, "dataViews[0]");
+        const dataViewTable = ldget(dataView, "table");
 
-        if (updateType & UpdateType.Settings) {
+        this.dataView = dataView;
+        this.dataViewTable = dataViewTable;
+
+        if (isSettingsUpdate) {
             this.loadSettingsFromPowerBI();
         }
 
-        if (updateType & UpdateType.Data ||
+        // When this layout updates for the first time, retrieve the layout configuration from the 
+        // PowerBI Configuration
+        if (this.isWaitingForInitialPBIConfiguration && this.dataView) {
+            this.loadLayoutFromPowerBI();
+        }
+
+        if (isDataUpdate ||
             // If the layout has changed, we need to reload table sorter
             this.hasLayoutChanged(updateType, options) ||
 
@@ -178,6 +194,7 @@ export default class TableSorterVisual extends StatefulVisual<ITableSorterState>
             this.waitingForMoreData = false;
             this.waitingForSort = false;
 
+            // const layoutText = ldget(this.dataView, "metadata.objects.layout.layout");
             this.loadDataFromPowerBI();
         }
     }
@@ -237,23 +254,33 @@ export default class TableSorterVisual extends StatefulVisual<ITableSorterState>
      * Event listener for when the visual data's changes
      */
     private loadDataFromPowerBI(config?: any) {
-        if (this.dataViewTable) {
-            let newData = DataFactory.convert(this.dataView);
-            config = config || buildConfig(this.dataView, newData.data);
+        log("loadDataFromPowerBI");
+        let newData = DataFactory.convert(this.dataView);
+        if (!config || Object.keys(config).length === 0) {
+            log("loadDataFromPowerBI::Forcing Config build");
+            config = buildConfig(this.dataView, newData.data);
+        }
+        this.receiveTableData(newData);
+        const selectedIds = this.selectionManager.getSelectionIds();
+        this.tableSorter.configuration = config;
+        this.tableSorter.selection = newData.data.filter(n => {
+            return !!_.find(selectedIds, (id: SelectionId) => id.equals(n.identity));
+        });
+    }
 
-            this.tableSorter.configuration = config;
-            this._data = newData;
-            if (this.loadResolver) {
+    private receiveTableData(newData: DataFactory.ITableData) {
+        this._data = newData;
+        if (this.loadResolver) {
+            log("ReceiveTableData::Updating Existing Resolver");
+            try {
                 let resolver = this.loadResolver;
-                delete this.loadResolver;
                 resolver(newData.data);
-            } else {
-                this.tableSorter.dataProvider = this.createDataProvider(newData);
+            } finally {
+                delete this.loadResolver;
             }
-            const selectedIds = this.selectionManager.getSelectionIds();
-            this.tableSorter.selection = newData.data.filter(n => {
-                return !!_.find(selectedIds, (id: SelectionId) => id.equals(n.identity));
-            });
+        } else {
+            log("ReceiveTableData::Creating new Data Provider");
+            this.tableSorter.dataProvider = this.createDataProvider(newData);
         }
     }
 
@@ -288,6 +315,7 @@ export default class TableSorterVisual extends StatefulVisual<ITableSorterState>
     }
 
     private handleSort(rawSort: ITableSorterSort) {
+        log("Handle Sort");
         /* tslint:disable */
         let args: powerbi.CustomSortEventArgs = null;
         /* tslint:enable */
@@ -317,25 +345,26 @@ export default class TableSorterVisual extends StatefulVisual<ITableSorterState>
         this.host.onCustomSort(args);
     }
 
-    private handleSelectionChanged(rows: ITableSorterVisualRow[]) {
-        log("Selection changed", rows);
+    private handleTableSorterSelectionChange(rows: ITableSorterVisualRow[]) {
+        log("handleTableSorterSelectionChange", rows);
         this.propertyPersistManager.updateSelection(rows, this.isMultiSelect);
         if (!this.isHandlingSetState) {
-            this.state = this.generateState();
+            this.clearState();
             publishChange(this, "Selection Changed", this.state);
         }
     }
 
-    private handleSelectionCleared() {
-        log("Selection cleared");
+    private handleTableSorterSelectionClear() {
+        log("handleTableSorterSelectionClear");
         this.propertyPersistManager.updateSelection([], this.isMultiSelect);
         if (!this.isHandlingSetState) {
-            this.state = this.generateState();
+            this.clearState();
             publishChange(this, "Selection Cleared", this.state);
         }
     }
 
-    private handleConfigChanged(config: ITableSorterConfiguration, oldConfig: ITableSorterConfiguration) {
+    private handleTableSorterConfigChange(config: ITableSorterConfiguration, oldConfig: ITableSorterConfiguration) {
+        log("handleTableSorterConfigChange", config, oldConfig);
         if (!this.isHandlingUpdate && !this.isHandlingSetState) {
             log("User-Driven Configuration Change", config, oldConfig);
             let updates: string[] = [];
@@ -345,7 +374,9 @@ export default class TableSorterVisual extends StatefulVisual<ITableSorterState>
                 if (!_.isEqual(sort, ldget(oldConfig, "sort"))) {
                     const isAsc = sort.asc;
                     const sortColumn = sort.column || sort.stack.name;
-                    updates.push(`Sort ${isAsc ? "↑" : "↓"} ${sortColumn}`);
+                    const sortLabel = `Sort ${isAsc ? "↑" : "↓"} ${sortColumn}`;
+                    log("Sort Updated: ", sortLabel, sort);
+                    updates.push(sortLabel);
                     isNewState = true;
                 }
                 const newLayout = ldget(config, "layout.primary", []);
@@ -357,23 +388,38 @@ export default class TableSorterVisual extends StatefulVisual<ITableSorterState>
                 // otherwise, this always fires because when you add a column, it populates the "filter"
                 if (newLayout.length === oldLayout.length &&
                     !_.isEqual(newFilters, oldFilters)) {
+                    log("Filter Changed", newFilters, oldFilters);
                     updates.push("Filter changed");
                     isNewState = true;
-                } else if (!_.isEqual(config.layout, ldget(oldConfig, "layout"))) {
+                } else if (!_.isEqual(newLayout, oldLayout)) {
+                    log("Layout Changed", newLayout, oldLayout);
                     updates.push("Layout changed");
                     // isNewState = true;
                 }
             }
             if (!updates.length) {
                 isNewState = true;
+                log("Configuration Updated");
                 updates.push("Configuration updated");
                 // Replace State
             }
             const method = isNewState ? publishChange : publishReplace;
 
-            this.state = this.generateState();
+            this.clearState();
             this.propertyPersistManager.updateConfiguration(this.state.configuration);
             method(this, updates.join(", "), this.state);
+        }
+    }
+
+    private loadLayoutFromPowerBI() {
+        log("loadLayoutFromPowerBI")
+        if (this.dataView) {
+            this.isWaitingForInitialPBIConfiguration = false;
+            const layoutText = ldget(this.dataView, "metadata.objects.layout.layout");
+            if (layoutText) {
+                const layout = JSON.parse(layoutText);
+                this.tableSorter.configuration = layout;
+            }
         }
     }
 
@@ -381,6 +427,7 @@ export default class TableSorterVisual extends StatefulVisual<ITableSorterState>
      * Listener for when the visual settings changed
      */
     private loadSettingsFromPowerBI() {
+        log("loadSettingsFromPowerBI");
         if (this.dataView) {
             // Make sure we have the default values
             let updatedSettings: ITableSorterSettings =
