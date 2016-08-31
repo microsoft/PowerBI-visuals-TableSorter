@@ -24,6 +24,9 @@ export default class PropertyPersistManager {
     public updateConfiguration(state: ITableSorterState) {
         const config = state.configuration;
         const configJson = JSON.stringify(config);
+        if (configJson === "{}") { 
+            return;
+        }
         const objects: powerbi.VisualObjectInstancesToPersist = {
             merge: [
                 <VisualObjectInstance>{
