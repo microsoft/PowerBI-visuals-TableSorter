@@ -236,8 +236,8 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
         try {
             const updateType = this.updateType();
             this.handlingUpdate = true;
-            this.dataView = options.dataViews && options.dataViews[0];
-            this.dataViewTable = this.dataView && this.dataView.table;
+            this.dataView = ldget(options, "dataViews[0]");
+            this.dataViewTable = ldget(this, "dataView.table");
             log("Update: ", options, updateType);
             super.update(options);
 
@@ -338,13 +338,14 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
      * Returns true if the layout has changed in the PBI settings
      */
     private hasLayoutChanged(updateType: UpdateType, options: VisualUpdateOptions) {
-        if (updateType & UpdateType.Settings && options.dataViews && options.dataViews.length) {
-            if (this.dataView.metadata && this.dataView.metadata.objects && this.dataView.metadata.objects["layout"]) {
-                // Basically string compares the two layouts to see if anything has changed
-                const dataViewLayout = this.dataView.metadata.objects["layout"]["layout"];
-                const tableSorterLayout = JSON.stringify(this.tableSorter.configuration);
-                return dataViewLayout !== tableSorterLayout;
-            }
+        const isSettingsUpdate = updateType & UpdateType.Settings;
+        const hasDataViews = ldget(options, "dataViews.length");
+        const hasLayout = ldget(this, "dataView.metadata.objects.layout");
+        if (isSettingsUpdate && hasDataViews && hasLayout) {
+            // Basically string compares the two layouts to see if anything has changed
+            const dataViewLayout = this.dataView.metadata.objects["layout"]["layout"];
+            const tableSorterLayout = JSON.stringify(this.tableSorter.configuration);
+            return dataViewLayout !== tableSorterLayout;
         }
         return false;
     }
@@ -457,7 +458,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
             let isNewState = false;
             if (config) {
                 const sort = config.sort;
-                if (!_.isEqual(sort, oldConfig && oldConfig.sort)) {
+                if (!_.isEqual(sort, ldget(oldConfig, "sort"))) {
                     const isAsc = sort.asc;
                     const sortColumn = sort.column || sort.stack.name;
                     updates.push(`Sort ${isAsc ? "↑" : "↓"}${sortColumn}`);
@@ -474,7 +475,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
                     !_.isEqual(newFilters, oldFilters)) {
                     updates.push("Filter changed");
                     isNewState = true;
-                } else if (!_.isEqual(config.layout, oldConfig && oldConfig.layout)) {
+                } else if (!_.isEqual(config.layout, ldget(oldConfig, "layout"))) {
                     updates.push("Layout changed");
                     // isNewState = true;
                 }
@@ -502,7 +503,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
 
             // Copy over new values
             let newObjs = $.extend(true, {}, <ITableSorterSettings>this.dataView.metadata.objects);
-            const presObjs = newObjs && newObjs.presentation;
+            const presObjs = ldget(newObjs, "presentation");
             if (newObjs) {
                 for (let section in newObjs) {
                     if (newObjs.hasOwnProperty(section)) {
@@ -516,8 +517,8 @@ export default class TableSorterVisual extends VisualBase implements IVisual, IS
                 }
             }
 
-            let newLabelPrecision = (presObjs && presObjs.labelPrecision) || 0;
-            let newLabelDisplayUnits = (presObjs && presObjs.labelDisplayUnits) || 0;
+            let newLabelPrecision = ldget(presObjs, "labelPrecision", 0);
+            let newLabelDisplayUnits = ldget(presObjs, "labelDisplayUnits", 0);
             const newConfig = new NumberFormatConfig(newLabelDisplayUnits, newLabelPrecision);
             if (!this.numberFormatConfig.isEqual(newConfig)) {
                 this.numberFormatConfig = newConfig;
