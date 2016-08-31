@@ -1,18 +1,17 @@
 import { logger } from "essex.powerbi.base";
 /* tslint:disable */
-const log = logger("essex:widget:TableSorterVisual");
+const log = logger("essex:widget:TableSorterVisual:PropertyPesistManager");
 /* tslint:enable */
 import { PropertyPersister } from "essex.powerbi.base/src/lib/Utils";
 import VisualObjectInstance = powerbi.VisualObjectInstance;
 import SQExprBuilder = powerbi.data.SQExprBuilder;
 import SelectionManager = powerbi.visuals.utility.SelectionManager;
-import { ITableSorterState, ITableSorterVisualRow } from "./interfaces";
+import { ITableSorterVisualRow } from "./interfaces";
 import {
     ITableSorterFilter,
     INumericalFilter,
     ITableSorterConfiguration,
 } from "../models";
-
 
 export default class PropertyPersistManager {
     private propertyPersister: PropertyPersister;

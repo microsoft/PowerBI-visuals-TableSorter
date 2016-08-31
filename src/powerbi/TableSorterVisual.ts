@@ -71,7 +71,7 @@ export default class TableSorterVisual extends StatefulVisual<ITableSorterState>
     private propertyPersistManager: PropertyPersistManager;
 
     // Stores our current set of data.
-    private _data: { data: ITableSorterVisualRow[], cols: string[] };
+    private _data: DataFactory.ITableData;
 
     public get template() {
         return `
@@ -113,16 +113,10 @@ export default class TableSorterVisual extends StatefulVisual<ITableSorterState>
     }
 
     protected generateState(): ITableSorterState {
-        return {
-            settings: $.extend(true, {}, this.tableSorter.settings),
-            configuration: $.extend(true, {}, this.tableSorter.configuration),
-            selection: this.tableSorter.selection.map((n: ITableSorterVisualRow) => {
-                return {
-                    id: <string>n.id,
-                    serializedFilter: powerbi.data["services"].SemanticQuerySerializer.serializeExpr(n.filterExpr),
-                };
-            }),
-        };
+        const settings = _.assign({}, this.tableSorter.settings);
+        const configuration = _.assign({}, this.tableSorter.configuration);
+        const selection = this.tableSorter.selection.map(DataFactory.convertRowSelectionToState);
+        return { settings, configuration, selection };
     }
 
     protected onSetState(value: ITableSorterState): void {
@@ -131,12 +125,7 @@ export default class TableSorterVisual extends StatefulVisual<ITableSorterState>
         this.loadDataFromPowerBI(value.configuration);
 
         if (value.selection) {
-            const serializer = powerbi.data["services"].SemanticQuerySerializer;
-            this.tableSorter.selection = value.selection.map(n => {
-                const filterExpr = serializer.deserializeExpr(n.serializedFilter) as powerbi.data.SQExpr;
-                const identity = powerbi.data.createDataViewScopeIdentity(filterExpr);
-                return DataFactory.createItem(n.id, SelectionId.createWithId(identity), filterExpr);
-            });
+            this.tableSorter.selection = value.selection.map(DataFactory.convertStateRowSelectionToControl);
             this.propertyPersistManager.updateSelection(
                 this.tableSorter.selection as ITableSorterVisualRow[],
                 this.isMultiSelect
@@ -159,7 +148,8 @@ export default class TableSorterVisual extends StatefulVisual<ITableSorterState>
             createPropertyPersister(this.host, 100),
             this.selectionManager
         );
-        this.dimensions = { width: options.viewport.width, height: options.viewport.height };
+        const { width, height } = options.viewport;
+        this.dimensions = { width, height };
 
         // Wire up the table sorter
         this.tableSorter.settings = this.initialSettings;

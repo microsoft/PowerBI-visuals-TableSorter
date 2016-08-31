@@ -1,6 +1,14 @@
 import { ITableSorterVisualRow } from "./interfaces";
 import DataView = powerbi.DataView;
 import SelectionId = powerbi.visuals.SelectionId;
+/* tslint:disable */
+const ldget = require("lodash.get");
+/* tslint:enable */
+
+export interface ITableData {
+    data: ITableSorterVisualRow[];
+    cols: string[];
+}
 
 /**
  * Creates an item
@@ -19,12 +27,10 @@ export function createItem(
     };
 }
 
-
-
 /**
  * Converts the data from power bi to a data we can use
  */
-export function convert(view: DataView) {
+export function convert(view: DataView): ITableData {
     "use strict";
     let data: ITableSorterVisualRow[] = [];
     let cols: string[];
@@ -34,7 +40,7 @@ export function convert(view: DataView) {
         table.rows.forEach((row, rowIndex) => {
             let identity: powerbi.DataViewScopeIdentity;
             let newId: SelectionId;
-            if (view.categorical && view.categorical.categories && view.categorical.categories.length) {
+            if (ldget(view, "categorical.categories.length")) {
                 identity = view.categorical.categories[0].identity[rowIndex];
                 newId = SelectionId.createWithId(identity);
             } else {
@@ -57,4 +63,21 @@ export function convert(view: DataView) {
         data,
         cols,
     };
+}
+
+export function convertRowSelectionToState(n: ITableSorterVisualRow) {
+    "use strict";
+    return {
+        id: <string>n.id,
+        serializedFilter: powerbi.data["services"].SemanticQuerySerializer.serializeExpr(n.filterExpr),
+    };
+}
+
+
+export function convertStateRowSelectionToControl(n: {id: string, serializedFilter: any}) {
+    "use strict";
+    const serializer = powerbi.data["services"].SemanticQuerySerializer;
+    const filterExpr = serializer.deserializeExpr(n.serializedFilter) as powerbi.data.SQExpr;
+    const identity = powerbi.data.createDataViewScopeIdentity(filterExpr);
+    return createItem(n.id, SelectionId.createWithId(identity), filterExpr);
 }
