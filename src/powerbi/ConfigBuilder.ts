@@ -58,14 +58,15 @@ function processExistingConfig(config: ITableSorterConfiguration, columns: ITabl
     "use strict";
     let newColNames = columns.map(c => c.column);
     let oldConfig = _.merge({}, config);
+    const oldCols = config.columns || [];
 
     // Filter out any columns that don't exist anymore
-    config.columns = config.columns.filter(c =>
+    config.columns = oldCols.filter(c =>
         newColNames.indexOf(c.column) >= 0
     );
 
     // Override the domain, with the newest data
-    config.columns.forEach(n => {
+    oldCols.forEach(n => {
         let newCol = columns.filter(m => m.column === n.column)[0];
         if (newCol.domain) {
             // Reset the domain, cause we now have a new set of data
@@ -126,6 +127,9 @@ function removeMissingColumns(config: ITableSorterConfiguration, columns: ITable
  */
 export function syncLayoutColumns(layoutCols: ITableSorterLayoutColumn[], newCols: ITableSorterColumn[], oldCols: ITableSorterColumn[]) {
     "use strict";
+    newCols = newCols || [];
+    oldCols = oldCols || [];
+    layoutCols = layoutCols || [];
     let columnFilter = (c: ITableSorterLayoutColumn) => {
         // If this column exists in the new sets of columns, pass the filter
         const newCol = newCols.filter(m => m.column === c.column)[0];
@@ -136,7 +140,9 @@ export function syncLayoutColumns(layoutCols: ITableSorterLayoutColumn[], newCol
             let oldCol = oldCols.filter(m => m.column === c.column)[0];
             if (c.domain) {
                 // It is filtered if the "filter" domain is different than the actual domain
-                const isFiltered = c.domain[0] !== oldCol.domain[0] || c.domain[1] !== oldCol.domain[1];
+                const isFiltered =
+                    isValidDomain(c.domain) && isValidDomain(oldCol.domain) &&
+                    (c.domain[0] !== oldCol.domain[0] || c.domain[1] !== oldCol.domain[1]);
                 let lowerBound = newCol.domain[0];
                 let upperBound = newCol.domain[1];
 
@@ -159,6 +165,14 @@ export function syncLayoutColumns(layoutCols: ITableSorterLayoutColumn[], newCol
     };
 
     return layoutCols.filter(columnFilter);
+}
+
+/**
+ * Returns true if the given domain is valid
+ */
+function isValidDomain(domain: number[]) {
+    "use strict";
+    return domain && domain.length === 2 && domain[0] !== null && domain[0] !== undefined && domain[1] !== null && domain[1] !== undefined;
 }
 
 /**
