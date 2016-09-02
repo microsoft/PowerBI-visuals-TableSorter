@@ -1,4 +1,4 @@
-import { syncLayoutColumns } from "./ConfigBuilder";
+import { syncLayoutColumns, calcDomain } from "./ConfigBuilder";
 import { expect } from "chai";
 import {  ITableSorterLayoutColumn } from "../models";
 describe("ConfigBuilder", () => {
@@ -98,6 +98,29 @@ describe("ConfigBuilder", () => {
             // It should bound correctly
             const result = syncLayoutColumns(SIMPLE_STACKED_MULTIPLE_COLUMNS(), SIMPLE_COLUMNS(), SIMPLE_COLUMNS());
             expect(result[0].children).to.be.deep.equal(SIMPLE_COLUMNS());
+        });
+    });
+
+    describe("calcDomain", () => {
+        it ("should not include 'null' in the min max calculation", () => {
+            const result = calcDomain([{ a: 10 }, { a: null }, { a: 100 }], "a"); // tslint:disable-line
+            expect(result).to.be.deep.equal([10, 100]);
+        });
+        it ("should not include 'undefined' in the min max calculation", () => {
+            const result = calcDomain([{ a: 10 }, { a: undefined }, { a: 100 }], "a"); // tslint:disable-line
+            expect(result).to.be.deep.equal([10, 100]);
+        });
+        it ("should work with negative numbers", () => {
+            const result = calcDomain([{ a: -10 }, { a: undefined }, { a: 100 }], "a"); // tslint:disable-line
+            expect(result).to.be.deep.equal([-10, 100]);
+        });
+        it ("should work with fractions", () => {
+            const result = calcDomain([{ a: .01 }, { a: undefined }, { a: .102 }], "a"); // tslint:disable-line
+            expect(result).to.be.deep.equal([.01, .102]);
+        });
+        it ("should work out of order values", () => {
+            const result = calcDomain([{ a: 100 }, { a: undefined }, { a: 10 }], "a"); // tslint:disable-line
+            expect(result).to.be.deep.equal([10, 100]);
         });
     });
 });

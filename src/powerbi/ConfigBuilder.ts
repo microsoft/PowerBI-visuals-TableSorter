@@ -164,17 +164,19 @@ export function syncLayoutColumns(layoutCols: ITableSorterLayoutColumn[], newCol
 /**
  * Calculates the domain of the given column
  */
-function calcDomain (data: any[], name: string) {
+export function calcDomain (data: any[], name: string) {
     "use strict";
     let min: number;
     let max: number;
     data.forEach(m => {
         const val = m[name];
-        if (typeof min === "undefined" || val < min) {
-            min = val;
-        }
-        if (typeof max === "undefined" || val > max) {
-            max = val;
+        if (val !== null && val !== undefined) { // tslint:disable-line
+            if (typeof min === "undefined" || val < min) {
+                min = val;
+            }
+            if (typeof max === "undefined" || val > max) {
+                max = val;
+            }
         }
     });
     return [min || 0, max || 0];

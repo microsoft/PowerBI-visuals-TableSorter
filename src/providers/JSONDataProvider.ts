@@ -136,7 +136,7 @@ export class JSONDataProvider implements IDataProvider {
             const calcStackedValue = (
                 item: any,
                 sortToCheck: ITableSorterSort,
-                minMax: { [col: string] : { min: number, max: number, range: number }}) => {
+                minMax: { [col: string]: { min: number, max: number, range: number }}) => {
                 let columns = sortToCheck.stack.columns;
                 if (columns) {
                     let sortVal = columns.reduce((a, v) => {
