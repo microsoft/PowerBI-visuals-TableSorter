@@ -123,18 +123,22 @@ export default class TableSorterVisual extends StatefulVisual<ITableSorterState>
 
     protected onSetState(value: ITableSorterState, oldValue: ITableSorterState): void {
         log("set state", value);
-        this.tableSorter.settings = value.settings;
-        this.loadDataFromPowerBI(value.configuration); // Sets the configuration and loads from PBI
-        this.propertyPersistManager.updateConfiguration(value.configuration);
+        if (value) {
+            this.tableSorter.settings = value.settings;
+            this.loadDataFromPowerBI(value.configuration); // Sets the configuration and loads from PBI
+            this.propertyPersistManager.updateConfiguration(value.configuration);
 
-        if (value.selection) {
-            this.tableSorter.selection = value.selection.map(DataFactory.convertStateRowSelectionToControl);
-            this.propertyPersistManager.updateSelection(
-                this.tableSorter.selection as ITableSorterVisualRow[],
-                this.isMultiSelect
-            );
+            if (value.selection) {
+                this.tableSorter.selection = value.selection.map(DataFactory.convertStateRowSelectionToControl);
+                this.propertyPersistManager.updateSelection(
+                    this.tableSorter.selection as ITableSorterVisualRow[],
+                    this.isMultiSelect
+                );
+            }
+            log("SetState Invoking ConfigurationUpdater", value);
+        } else {
+            log("TODO: Undefined State Injected");
         }
-        log("SetState Invoking ConfigurationUpdater", value);
     }
 
     protected onSetDimensions(value: IDimensions): void {
@@ -176,7 +180,7 @@ export default class TableSorterVisual extends StatefulVisual<ITableSorterState>
             this.loadSettingsFromPowerBI();
         }
 
-        // When this layout updates for the first time, retrieve the layout configuration from the 
+        // When this layout updates for the first time, retrieve the layout configuration from the
         // PowerBI Configuration
         if (this.isWaitingForInitialPBIConfiguration && this.dataView) {
             this.loadLayoutFromPowerBI();
@@ -255,17 +259,19 @@ export default class TableSorterVisual extends StatefulVisual<ITableSorterState>
      */
     private loadDataFromPowerBI(config?: any) {
         log("loadDataFromPowerBI");
-        let newData = DataFactory.convert(this.dataView);
-        if (!config || Object.keys(config).length === 0) {
-            log("loadDataFromPowerBI::Forcing Config build");
-            config = buildConfig(this.dataView, newData.data);
+        if (this.dataView) {
+            let newData = DataFactory.convert(this.dataView);
+            if (!config || Object.keys(config).length === 0) {
+                log("loadDataFromPowerBI::Forcing Config build");
+                config = buildConfig(this.dataView, newData.data);
+            }
+            this.receiveTableData(newData);
+            const selectedIds = this.selectionManager.getSelectionIds();
+            this.tableSorter.configuration = config;
+            this.tableSorter.selection = newData.data.filter(n => {
+                return !!_.find(selectedIds, (id: SelectionId) => id.equals(n.identity));
+            });
         }
-        this.receiveTableData(newData);
-        const selectedIds = this.selectionManager.getSelectionIds();
-        this.tableSorter.configuration = config;
-        this.tableSorter.selection = newData.data.filter(n => {
-            return !!_.find(selectedIds, (id: SelectionId) => id.equals(n.identity));
-        });
     }
 
     private receiveTableData(newData: DataFactory.ITableData) {
