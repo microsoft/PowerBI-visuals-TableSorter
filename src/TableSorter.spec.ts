@@ -14,6 +14,7 @@ import {
 } from "./models";
 import * as $ from "jquery";
 import { Promise } from "es6-promise";
+import { convertSort } from "./conversion";
 
 describe("TableSorter", () => {
     let parentEle: JQuery;
@@ -87,7 +88,7 @@ describe("TableSorter", () => {
                 column: "col3",
                 label: "Column3",
                 type: "number",
-            }, ];
+            }];
     };
 
     let createFakeData = () => {
@@ -158,7 +159,7 @@ describe("TableSorter", () => {
                 label: "STACKED_COLUMN",
                 width: 10,
                 children: [
-                    { column: "col2", type: "number", weight: 100 }
+                    { column: "col2", type: "number", weight: 100 },
                 ],
             };
             let inst = instance.lineupImpl;
@@ -256,7 +257,7 @@ describe("TableSorter", () => {
         // Set the settings
         instance.settings = $.extend(true, {}, settings, {
             presentation: {
-                animation: false
+                animation: false,
             },
         });
 
@@ -336,7 +337,7 @@ describe("TableSorter", () => {
             let { instance } = createInstance();
             let newSettings: ITableSorterSettings = {
                 presentation: {
-                    histograms: false
+                    histograms: false,
                 },
             };
 
@@ -352,7 +353,7 @@ describe("TableSorter", () => {
         it("should pass rendering settings to lineupimpl", () => {
             let { instance, instanceInitialized } = loadInstanceWithSettings({
                 presentation: {
-                    histograms: false
+                    histograms: false,
                 },
             });
 
@@ -588,14 +589,14 @@ describe("TableSorter", () => {
             it("does not crash when sorting a stacked column", () => {
                 let {instance, instanceInitialized} = loadInstanceWithStackedColumnsAndClick();
                 return instanceInitialized.then(() => {
-                    expect(instance.getSortFromLineUp()).not.to.throw;
+                    expect(convertSort(instance.lineupImpl)).not.to.throw;
                 });
             });
 
             it("returns a 'stack' property when a stack is cliked on", () => {
                 let {instance, instanceInitialized} = loadInstanceWithStackedColumnsAndClick();
                 return instanceInitialized.then(() => {
-                    let result = instance.getSortFromLineUp();
+                    let result = convertSort(instance.lineupImpl);
                     expect(result.stack.name).to.equal("STACKED_COLUMN");
                     expect(result.column).to.be.undefined;
                 });
@@ -683,7 +684,7 @@ describe("TableSorter", () => {
                             expect(options.sort).to.be.deep.equal([{
                                 column: data.columns[0].column,
                                 asc: false,
-                            }, ]);
+                            }]);
                             resolve();
                         }) as any;
                         instance.configuration = {
@@ -695,7 +696,7 @@ describe("TableSorter", () => {
                             layout: {
                                 // Go through all the columns and apply a "filter to them"
                                 primary: data.columns.map(n => ({
-                                    column: n.column
+                                    column: n.column,
                                 })),
                             },
                             primaryKey: "primary",
@@ -923,12 +924,12 @@ describe("TableSorter", () => {
                         columns: data.columns,
                         sort: {
                             stack: {
-                                name: "STACKED_COLUMN"
+                                name: "STACKED_COLUMN",
                             },
                             asc: true,
                         },
                     };
-                    let result = instance.getSortFromLineUp();
+                    let result = convertSort(instance.lineupImpl);
                     expect(result.stack.name).to.equal("STACKED_COLUMN");
                     expect(result.column).to.be.undefined;
                 });
@@ -941,7 +942,7 @@ describe("TableSorter", () => {
                         primary: [{
                             column: "col3",
                             domain: [1, 1], // should just be a single column
-                        }, ],
+                        }],
                     },
                 });
                 const q = instance.getQueryOptions().query;
@@ -979,7 +980,7 @@ describe("TableSorter", () => {
                     primaryKey: "primary",
                     columns: cols.slice(0),
                     layout: {
-                        primary: cols.reverse()
+                        primary: cols.reverse(),
                     },
                 });
                 return instanceInitialized.then(() => {

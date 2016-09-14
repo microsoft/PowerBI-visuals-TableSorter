@@ -91,13 +91,74 @@ describe("JSONDataProvider", () => {
 
     const createInstance = (data: any[]) => {
         const result = {
-            instance: new JSONDataProvider(data)
+            instance: new JSONDataProvider(data),
         };
         return result;
     };
 
     it("should load", () => {
         createInstance(TEST_DATA_WITH_ALL_NULLS);
+    });
+
+    describe("canQuery", () => {
+        it("should return true on the initial load, with data", () => {
+            let { instance } = createInstance(NUMERIC_SAME_DOMAIN);
+            return instance.canQuery({}).then(result => expect(result).to.be.true);
+        });
+        it("should return true on the initial load, with empty data", () => {
+            let { instance } = createInstance([]);
+            return instance.canQuery({}).then(result => expect(result).to.be.true);
+        });
+        it("should return false after it has been queried, and it has returned all of its data, and it is empty", () => {
+            let { instance } = createInstance([]);
+            return instance.canQuery({})
+                .then(result => expect(result).to.be.true) // First time should be true
+                .then(result => instance.query({})) // Query for the first set of data
+                .then(result => instance.canQuery({})) // Try to query for the next set of data
+                .then(result => expect(result).to.be.false);
+                     // It has no more data, and should return false, because it returned the entire set in the first query call
+        });
+        it("should return false after it has been queried, and it has returned all of its data", () => {
+            let { instance } = createInstance(NUMERIC_SAME_DOMAIN);
+            return instance.canQuery({})
+                .then(result => expect(result).to.be.true) // First time should be true
+                .then(result => instance.query({})) // Query for the first set of data
+                .then(result => instance.canQuery({})) // Try to query for the next set of data
+                .then(result => expect(result).to.be.false);
+                     // It has no more data, and should return false, because it returned the entire set in the first query call
+        });
+        it("should return true after it has been queried, but the filter has been changed", () => {
+            let { instance } = createInstance(NUMERIC_SAME_DOMAIN);
+            const FAKE_FILTER = {
+                column: "WHATEVER",
+                value: "WHATEVER",
+            };
+            return instance.canQuery({})
+                .then(result => expect(result).to.be.true) // First time should be true
+                .then(result => instance.query({})) // Query for the first set of data
+                .then(result => instance.filter(FAKE_FILTER)) // Pretend we did a filter
+                .then(result => instance.canQuery({
+                    query: [FAKE_FILTER],
+                })) // Try to query for the next set of data
+                .then(result => expect(result).to.be.true);
+                     // It should return true, because now we are quering for a different set of data (because we changed the filter)
+        });
+        it("should return true after it has been queried, but the filter has been changed, and empty", () => {
+            let { instance } = createInstance([]);
+            const FAKE_FILTER = {
+                column: "WHATEVER",
+                value: "WHATEVER",
+            };
+            return instance.canQuery({})
+                .then(result => expect(result).to.be.true) // First time should be true
+                .then(result => instance.query({})) // Query for the first set of data
+                .then(result => instance.filter(FAKE_FILTER)) // Pretend we did a filter
+                .then(result => instance.canQuery({
+                    query: [FAKE_FILTER],
+                })) // Try to query for the next set of data
+                .then(result => expect(result).to.be.true);
+                     // It should return true, because now we are quering for a different set of data (because we changed the filter)
+        });
     });
 
     describe("stacked sorting", () => {
@@ -116,9 +177,9 @@ describe("JSONDataProvider", () => {
                         }, {
                             column: "null_col",
                             weight: .5,
-                        }, ],
+                        }],
                     },
-                }, ],
+                }],
             });
 
             result.then((sorted) => {
@@ -153,9 +214,9 @@ describe("JSONDataProvider", () => {
                     }, {
                         "column": "num_tweets",
                         "weight": 1,
-                    }, ], },
+                    }]},
                     "asc": true,
-                }, ],
+                }],
             });
             return result.then((resp) => {
                 let ids = resp.results.map(n => n.id);
@@ -177,9 +238,9 @@ describe("JSONDataProvider", () => {
                     }, {
                         "column": "negative_numbers",
                         "weight": 1,
-                    }, ], },
+                    }]},
                     "asc": true,
-                }, ],
+                }],
             });
             return result.then((resp) => {
                 let ids = resp.results.map(n => n.id);
@@ -201,9 +262,9 @@ describe("JSONDataProvider", () => {
                     }, {
                         "column": "num_mentions",
                         "weight": 1,
-                    }, ], },
+                    }]},
                     "asc": true,
-                }, ],
+                }],
             });
             return result.then((resp) => {
                 let ids = resp.results.map(n => n.id);

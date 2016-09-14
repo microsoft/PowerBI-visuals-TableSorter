@@ -8,7 +8,7 @@ export default $.extend(true, {}, VisualBase.capabilities, {
         name: "Values",
         kind: VisualDataRoleKind.GroupingOrMeasure,
         displayName: "Values",
-    }, ],
+    }],
     dataViewMappings: [{
         table: {
             rows: {
@@ -17,7 +17,7 @@ export default $.extend(true, {}, VisualBase.capabilities, {
             },
             rowCount: { preferred: { min: 1 } },
         },
-    }, ],
+    }],
     objects: {
         general: {
             displayName: "General",
@@ -59,7 +59,7 @@ export default $.extend(true, {}, VisualBase.capabilities, {
                 //     type: { bool: true }
                 // },
                 layout: {
-                    type: { text: {} }
+                    type: { text: {} },
                 },
             },
         },
@@ -107,6 +107,6 @@ export default $.extend(true, {}, VisualBase.capabilities, {
         },
     },
     sorting: {
-        custom: {}
+        custom: {},
     },
 });

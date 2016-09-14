@@ -14,6 +14,22 @@ export class JSONDataProvider implements IDataProvider {
     private handleFilter = true;
     private count = 100;
     private offset = 0;
+    private initialQuery = true;
+
+    /**
+     * A filter for string values
+     */
+    private static checkStringFilter(data: { [key: string]: string }, filter: { column: string; value: string }) {
+        return (data[filter.column] || "").match(new RegExp(filter.value));
+    }
+
+    /**
+     * A filter for numeric values
+     */
+    private static checkNumberFilter(data: { [key: string]: number }, filter: { column: string; value: { domain: [number, number]; } }) {
+        let value = data[filter.column] || 0;
+        return value >= filter.value.domain[0] && value <= filter.value.domain[1];
+    }
 
     constructor(data: any[], handleSort = true, handleFilter = true, count = 100) {
         this.data = data;
@@ -23,25 +39,10 @@ export class JSONDataProvider implements IDataProvider {
     }
 
     /**
-     * A filter for string values
-     */
-    private static checkStringFilter(data: { [key: string] : string }, filter: { column: string; value: string }) {
-        return (data[filter.column] || "").match(new RegExp(filter.value));
-    }
-
-    /**
-     * A filter for numeric values
-     */
-    private static checkNumberFilter(data: { [key: string] : number }, filter: { column: string; value: { domain: [number, number]; } }) {
-        let value = data[filter.column] || 0;
-        return value >= filter.value.domain[0] && value <= filter.value.domain[1];
-    }
-
-    /**
      * Determines if the dataset can be queried again
      */
     public canQuery(options: IQueryOptions): PromiseLike<boolean> {
-        return new Promise<boolean>((resolve) => resolve(this.offset < this.data.length));
+        return new Promise<boolean>((resolve) => resolve(this.initialQuery || (this.offset < this.data.length)));
     }
 
     /**
@@ -49,6 +50,7 @@ export class JSONDataProvider implements IDataProvider {
      */
     public query(options: IQueryOptions): PromiseLike<IQueryResult> {
         return new Promise<IQueryResult>((resolve, reject) => {
+            this.initialQuery = false;
             let newData: any[];
             let replace = this.offset === 0;
             try {
@@ -75,6 +77,7 @@ export class JSONDataProvider implements IDataProvider {
         if (this.handleSort) {
             this.offset = 0;
         }
+        this.initialQuery = true;
     }
 
     /**
@@ -84,6 +87,7 @@ export class JSONDataProvider implements IDataProvider {
         if (this.handleFilter) {
             this.offset = 0;
         }
+        this.initialQuery = true;
     }
 
     /**
@@ -162,7 +166,7 @@ export class JSONDataProvider implements IDataProvider {
                 return 0;
             };
 
-            let maxValues: { [col: string] : { min: number, max: number, range: number }};
+            let maxValues: { [col: string]: { min: number, max: number, range: number }};
             if (sortItem.stack) {
                  maxValues = sortItem.stack.columns.reduce((a, b) => {
                     const max = d3.max(this.data, (i) => i[b.column]);

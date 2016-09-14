@@ -13,6 +13,7 @@ import { Promise } from "es6-promise";
 import capabilities from "./TableSorterVisual.capabilities";
 import MyDataProvider from "./TableSorterVisual.dataProvider";
 import buildConfig from "./ConfigBuilder";
+import { DEFAULT_TABLESORTER_SETTINGS } from "../TableSorter.defaults";
 
 import * as _ from "lodash";
 import IVisual = powerbi.IVisual;
@@ -33,6 +34,7 @@ import IValueFormatter = powerbi.visuals.IValueFormatter;
 /* tslint:disable */
 const log = logger("essex:widget:TableSorterVisual");
 const colors = require("essex.powerbi.base/src/colors");
+const CSS_MODULE = require("!css!sass!./css/TableSorterVisual.scss");
 /* tslint:enable */
 
 @Visual(require("../build.json").output.PowerBI)
@@ -47,7 +49,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
      * The default settings for the visual
      */
     private static VISUAL_DEFAULT_SETTINGS: ITableSorterSettings =
-        $.extend(true, {}, TableSorter.DEFAULT_SETTINGS, {
+        $.extend(true, {}, DEFAULT_TABLESORTER_SETTINGS, {
         presentation: {
             columnColors: (idx: number) => {
                 return colors[idx % colors.length];
@@ -72,12 +74,6 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
 
     // Stores our current set of data.
     private _data: { data: ITableSorterVisualRow[], cols: string[] };
-
-    private template: string = `
-        <div>
-            <div class="lineup"></div>
-        </div>
-    `.trim().replace(/\n/g, "");
 
     /**
      * My css module
@@ -119,7 +115,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
                 <VisualObjectInstance>{
                     objectName: "layout",
                     properties: {
-                        "layout": JSON.stringify(config)
+                        "layout": JSON.stringify(config),
                     },
                     selector: undefined,
                 },
@@ -132,7 +128,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
     /**
      * Selects the given rows
      */
-    private onSelectionChanged = _.debounce((rows? : ITableSorterVisualRow[]) => {
+    private onSelectionChanged = _.debounce((rows?: ITableSorterVisualRow[]) => {
         let filter: powerbi.data.SemanticFilter;
         let { multiSelect } = this.tableSorter.settings.selection;
         if (rows && rows.length) {
@@ -167,7 +163,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
                     objectName: "general",
                     selector: undefined,
                     properties: {
-                        "filter": filter
+                        "filter": filter,
                     },
                 },
             ],
@@ -179,14 +175,17 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
      */
     public constructor(noCss: boolean = false, initialSettings?: ITableSorterSettings, updateTypeGetterOverride?: () => UpdateType) {
         super(noCss);
-        if (!noCss) {
-             this.myCssModule = require("!css!sass!./css/TableSorterVisual.scss");
-        }
         this.initialSettings = initialSettings || {
             presentation: {
-                numberFormatter: (d: number) => this.numberFormatter.format(d)
+                numberFormatter: (d: number) => this.numberFormatter.format(d),
             },
         };
+
+        const className = CSS_MODULE && CSS_MODULE.locals && CSS_MODULE.locals.className;
+        if (className) {
+            this.element.addClass(className);
+        }
+
         this.numberFormatter = valueFormatterFactory({
             value: this.labelDisplayUnits,
             format: "0",
@@ -195,10 +194,20 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
         this.updateType = updateTypeGetterOverride ? updateTypeGetterOverride : updateTypeGetter(this);
     }
 
+    /* tslint:disable */
+    public get template() {
+         return `
+            <div>
+                <div class="lineup"></div>
+            </div>
+        `.trim().replace(/\n/g, "");
+    }
+    /* tslint:enable */
+
     /**
      * Setter for dimensions
      */
-    private _dimensions: { width: number; height: number };
+    private _dimensions: { width: number; height: number }; // tslint:disable-line
     public set dimensions (value: { width: number; height: number }) {
         this._dimensions = value;
         if (this.tableSorter) {
@@ -261,7 +270,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
 
             dateCols.forEach(n => {
                 const formatter = valueFormatterFactory({
-                    format: n.col.format || n.calculator.getFormat()
+                    format: n.col.format || n.calculator.getFormat(),
                 });
                 data.forEach(result => {
                     result[n.col.displayName] = formatter.format(result[n.col.displayName]);
@@ -276,7 +285,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
 
     /** This is called once when the visual is initialially created */
     public init(options: VisualInitOptions): void {
-        super.init(options, this.template);
+        super.init(options);
 
         const className = this.myCssModule && this.myCssModule.locals && this.myCssModule.locals.className;
         if (className) {
@@ -287,7 +296,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
 
         this.propertyPersister = createPropertyPersister(this.host, 100);
         this.selectionManager = new SelectionManager({
-            hostServices: options.host
+            hostServices: options.host,
         });
         this.tableSorter = new TableSorter(this.element.find(".lineup"));
         this.tableSorter.settings = this.initialSettings;
@@ -349,7 +358,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
             /* tslint:enable */
             objectName: options.objectName,
             properties: {},
-        }, ];
+        }];
         $.extend(true, instances[0].properties, this.tableSorter.settings[options.objectName]);
         if (options.objectName === "presentation") {
             $.extend(true, instances[0].properties, {
@@ -364,7 +373,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
      * Gets the css used for this element
      */
     protected getCss(): string[] {
-        return this.myCssModule ? super.getCss().concat([this.myCssModule + ""]) : [];
+        return (super.getCss() || []).concat(CSS_MODULE);
     }
 
     /**
@@ -413,15 +422,17 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
      * Creates a data provider with the given set of data
      */
     private createDataProvider(newData: { data: any[] }) {
+        let firstLoad = true;
         return new MyDataProvider(
             newData.data,
             (newQuery) => {
                 // If it is a new query
-                const canLoadMore = newQuery || !!this.dataView.metadata.segment;
+                const canLoadMore = firstLoad || newQuery || !!this.dataView.metadata.segment;
                 log(`CanLoadMore: ${canLoadMore}`);
                 return canLoadMore;
             },
             (options, newQuery, sortChanged, filterChanged) => {
+                firstLoad = false;
                 this.waitingForMoreData = true;
                 return new Promise((resolve, reject) => {
                     if (newQuery) {
@@ -462,7 +473,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
                 };
             });
             args = {
-                sortDescriptors: sortDescriptors
+                sortDescriptors: sortDescriptors,
             };
         }
         this.waitingForSort = true;
@@ -502,7 +513,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
                     objectName: "general",
                     selector: undefined,
                     properties: {
-                        "selfFilter": filter
+                        "selfFilter": filter,
                     },
                 },
             ],

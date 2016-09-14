@@ -198,7 +198,7 @@ export interface IDataProvider {
     canQuery(options: IQueryOptions): PromiseLike<boolean>;
 
     /**
-     * Asks the data provider to load more data
+     * Asks the data provider to load the data with the given query options
      */
     query(options: IQueryOptions): PromiseLike<IQueryResult>;
 
@@ -257,4 +257,32 @@ export interface IQueryResult {
      * Whether or not the results should replace the current dataset, otherwise it will be appended
      */
     replace?: boolean;
+}
+
+/**
+ * Represents the interface to the line up implementation
+ */
+export interface ILineupImpl {
+    $container: d3.Selection<any>;
+    spec: any;
+    config: any;
+    storage: {
+        config: any;
+        getColumnLayout: any
+        addStackedColumn: (desc: any) => void;
+    };
+    listeners: d3.Dispatch;
+    headerUpdateRequired: boolean;
+    clearSelection: () => void;
+    addNewSingleColumnDialog: () => void;
+    addNewStackedColumnDialog: () => void;
+    updateBody: () => void;
+    updateAll: () => void;
+    destroy: () => void;
+    select: (obj: any) => void;
+    scrolled: () => void;
+    changeRenderingOption: (key: string, value: any) => void;
+    changeInteractionOption: (key: string, value: any) => void;
+    changeDataStorage: (spec: any) => void;
+    sortBy: (colName: string, asc: boolean) => void;
 }

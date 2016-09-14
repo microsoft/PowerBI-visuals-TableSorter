@@ -29,7 +29,7 @@ describe("TableSorterVisual", () => {
         let currentUpdateType: UpdateType;
         let instance: TableSorterVisual = new TableSorterVisual(true, {
             presentation: {
-                animation: false
+                animation: false,
             },
         }, () => currentUpdateType);
         let initOptions = SpecUtils.createFakeInitOptions();
@@ -60,7 +60,7 @@ describe("TableSorterVisual", () => {
         newOptions.dataViews[0].metadata = <any>{
             objects: {
                 "layout": {
-                    "layout": JSON.stringify(config)
+                    "layout": JSON.stringify(config),
                 },
             },
         };
@@ -112,7 +112,7 @@ describe("TableSorterVisual", () => {
         newOptions.dataViews[0].metadata = <any>{
             objects: {
                 "layout": {
-                    "layout": JSON.stringify(config)
+                    "layout": JSON.stringify(config),
                 },
             },
         };
@@ -128,7 +128,7 @@ describe("TableSorterVisual", () => {
     it("should load tableSorter with a new provider when new data is passed via PBI", () => {
         let { instance, setUpdateType } = createVisual();
         let fakeProvider = {
-            canQuery: () => Promise.resolve(false)
+            canQuery: () => Promise.resolve(false),
         } as any;
 
         // HACK, we should make it "protected"
@@ -145,7 +145,7 @@ describe("TableSorterVisual", () => {
     it("should load tableSorter with the correct layout stored in PBI", () => {
         let { instance, setUpdateType } = createVisual();
         let fakeProvider = {
-            canQuery: () => Promise.resolve(false)
+            canQuery: () => Promise.resolve(false),
         } as any;
 
         // HACK, we should make it "protected"
@@ -160,18 +160,18 @@ describe("TableSorterVisual", () => {
         const config = instance.tableSorter.configuration;
         const newLayout = {
             primary: [{
-                column: "COLUMN_2"
+                column: "COLUMN_2",
             }, {
-                column: "COLUMN_1"
+                column: "COLUMN_1",
             }, {
-                column: "COLUMN_1"
-            }, ],
+                column: "COLUMN_1",
+            }],
         };
         data.dataViews[0].metadata = <any>{
             objects: {
                 "layout": {
                     "layout": JSON.stringify($.extend(true, {}, config, {
-                        "layout": newLayout
+                        "layout": newLayout,
                      })),
                 },
             },

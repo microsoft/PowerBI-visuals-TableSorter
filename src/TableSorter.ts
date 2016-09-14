@@ -1,37 +1,31 @@
 import { default as EventEmitter } from "../base/EventEmitter";
-import { logger } from "essex.powerbi.base";
-import { JSONDataProvider } from "./providers/JSONDataProvider";
 import * as _  from "lodash";
 import * as d3 from "d3";
+import * as $ from "jquery";
 import {
     IQueryOptions,
     IQueryResult,
     IDataProvider,
-    ITableSorterColumn,
     ITableSorterRow,
     ITableSorterSettings,
     ITableSorterConfiguration,
-    ITableSorterSort,
     ITableSorterFilter,
+    ILineupImpl,
 } from "./models";
-import * as $ from "jquery";
+import { createConfigurationFromData, hasConfigurationChanged } from "./configuration";
+import { convertFilters, convertConfiguration, convertSort, convertFiltersFromLayout } from "./conversion";
+import template from "./templates/tablesorter.tmpl";
+import { DEFAULT_TABLESORTER_SETTINGS, DEFAULT_NUMBER_FORMATTER } from "./TableSorter.defaults";
+
 /* tslint:disable */
 const LineUpLib = require("lineup-v1");
-const log = logger("essex:widget:tablesorter:TableSorter");
-const EVENTS_NS = ".lineup";
 /* tslint:enable */
+const EVENTS_NS = ".lineup";
 
 /**
  * Thin wrapper around the lineup library
  */
 export class TableSorter {
-
-    /**
-     * A quick reference for the providers
-     */
-    public static PROVIDERS = {
-        JSON: JSONDataProvider
-    };
 
     /**
      * The list of events that we expose
@@ -46,37 +40,9 @@ export class TableSorter {
     };
 
     /**
-     * Represents the settings
-     */
-    public static DEFAULT_SETTINGS: ITableSorterSettings = {
-        selection: {
-            singleSelect: true,
-            multiSelect: false,
-        },
-        presentation: {
-            columnColors: <any>d3.scale.category20(),
-            stacked: true,
-            values: false,
-            histograms: true,
-            animation: true,
-            tooltips: false,
-        },
-    };
-
-    /**
-     * The default numbering format to use when formatting numbers to display in lineup
-     */
-    public static DEFAULT_NUMBER_FORMATTER = d3.format(".3n");
-
-    /**
-     * Returns true if the given object is numeric
-     */
-    private static isNumeric = (obj: any) => (obj - parseFloat(obj) + 1) >= 0;
-
-    /**
      * My lineup instance
      */
-    public lineupImpl: any;
+    public lineupImpl: ILineupImpl;
 
     /**
      * The dimensions
@@ -129,47 +95,6 @@ export class TableSorter {
     private destroyed: boolean;
 
     /**
-     * The template for the grid
-     */
-    private template: string = `
-        <div class="lineup-component">
-            <div class="nav">
-                <ul>
-                    <li class="clear-selection" title="Clear Selection">
-                        <a>
-                            <span class="fa-stack">
-                                <i class="fa fa-check fa-stack-1x"></i>
-                                <i class="fa fa-ban fa-stack-2x"></i>
-                            </span>
-                        </a>
-                    </li>
-                    <li class="add-column" title="Add Column">
-                        <a>
-                            <span class="fa-stack">
-                                <i class="fa fa-columns fa-stack-2x"></i>
-                                <i class="fa fa-plus-circle fa-stack-1x"></i>
-                            </span>
-                        </a>
-                    </li>
-                    <li class="add-stacked-column" title="Add Stacked Column">
-                        <a>
-                            <span class="fa-stack">
-                                <i class="fa fa-bars fa-stack-2x"></i>
-                                <i class="fa fa-plus-circle fa-stack-1x"></i>
-                            </span>
-                        </a>
-                    </li>
-                </ul>
-                <hr/>       
-            </div>
-            <div style="position:relative">
-                <div class="grid"></div>
-                <div class='load-spinner'><div>
-            </div>
-        </div>
-    `.trim();
-
-    /**
      * A boolean indicating whehter or not we are currently loading more data
      */
     private _loadingData = false;
@@ -191,30 +116,27 @@ export class TableSorter {
 
     private _selectedRows: ITableSorterRow[] = [];
     private _eventEmitter: EventEmitter;
-    private _settings: ITableSorterSettings = $.extend(true, {}, TableSorter.DEFAULT_SETTINGS);
+    private _settings: ITableSorterSettings = $.extend(true, {}, DEFAULT_TABLESORTER_SETTINGS);
+
     /**
      * The configuration for the lineup viewer
      */
     private lineUpConfig: ITableSorterSettings = <any>{
         svgLayout: {
-            mode: "separate"
+            mode: "separate",
         },
-        numberformat: (d: number) => {
-            const formatter =
-                this.settings.presentation.numberFormatter || TableSorter.DEFAULT_NUMBER_FORMATTER;
-            return formatter(d);
-        },
+        numberformat: (d: number) => (this.settings.presentation.numberFormatter || DEFAULT_NUMBER_FORMATTER)(d),
         interaction: {
-            multiselect: () => this.settings.selection.multiSelect
+            multiselect: () => this.settings.selection.multiSelect,
         },
         sorting: {
-            external: true
+            external: true,
         },
         filtering: {
-            external: true
+            external: true,
         },
         histograms: {
-            generator: (columnImpl: any, callback: Function) => this.generateHistogram(columnImpl, callback)
+            generator: (columnImpl: any, callback: Function) => this.generateHistogram(columnImpl, callback),
         },
     };
 
@@ -222,7 +144,7 @@ export class TableSorter {
      * Constructor for the lineups
      */
     constructor(element: JQuery, dataProvider?: IDataProvider) {
-        this.element = $(this.template);
+        this.element = $(template());
         this.element.find(".clear-selection").on("click", () => {
             this.lineupImpl.clearSelection();
             this.raiseClearSelection();
@@ -249,6 +171,7 @@ export class TableSorter {
         return this._dimensions;
     }
 
+    /* tslint:disable */
     /**
      * Resizer function to update lineups rendering
      */
@@ -257,6 +180,7 @@ export class TableSorter {
             this.lineupImpl.updateBody();
         }
     }, 100);
+    /* tslint:enable */
 
     /**
      * setter for the dimensions
@@ -341,7 +265,7 @@ export class TableSorter {
      * Sets the settings
      */
     public set settings(value: ITableSorterSettings) {
-        let newSettings: ITableSorterSettings = $.extend(true, {}, TableSorter.DEFAULT_SETTINGS, value);
+        let newSettings: ITableSorterSettings = $.extend(true, {}, DEFAULT_TABLESORTER_SETTINGS, value);
         newSettings.selection.singleSelect = !newSettings.selection.multiSelect;
 
         /** Apply the settings to lineup */
@@ -382,113 +306,10 @@ export class TableSorter {
 
         const primary = value && value.layout && value.layout.primary;
         if (primary) {
-            this.queryOptions.query = this.getFiltersFromLayout(primary);
+            this.queryOptions.query = convertFiltersFromLayout(primary);
         }
 
         this.applyConfigurationToLineup();
-    }
-
-    /**
-     * Derives the desciption for the given column
-     */
-    public static createConfigurationFromData(data: ITableSorterRow[]): ITableSorterConfiguration {
-        interface IMinMax {
-            min?: number;
-            max?: number;
-        }
-
-        const EXCLUDED_DATA_COLS = {
-            selected: true,
-            equals: true,
-        };
-
-        function getDataColumnNames(): string[] {
-            if (data && data.length) {
-                return Object.keys(data[0]).filter((k) => !EXCLUDED_DATA_COLS[k]);
-            }
-            return [];
-        }
-
-        function updateMinMax(minMax: IMinMax, value: number) {
-            if (+value > minMax.max) {
-                minMax.max = value;
-            } else if (+value < minMax.min) {
-                minMax.min = +value;
-            }
-        }
-
-        function isNumeric(v: any) {
-            // Assume that if null or undefined, it is numeric
-            /* tslint:disable */
-            return v === 0 || v === null || v === undefined || TableSorter.isNumeric(v);
-            /* tslint:enable */
-        }
-
-        function analyzeColumn(columnName: string) {
-            const minMax: IMinMax = { min: Number.MAX_VALUE, max: 0 };
-            const allNumeric = data.every((row) => isNumeric(row[columnName]));
-            if (allNumeric) {
-                data.forEach((row) => updateMinMax(minMax, row[columnName]));
-            }
-            return {allNumeric, minMax};
-        }
-
-        function createLineUpColumn(colName: string): ITableSorterColumn {
-            const result: ITableSorterColumn = { column: colName, type: "string" };
-            let { allNumeric, minMax } = analyzeColumn(colName);
-
-            if (allNumeric) {
-                result.type = "number";
-                result.domain = [minMax.min, minMax.max];
-            }
-
-            // If is a string, try to see if it is a category
-            if (result.type === "string") {
-                let sset = d3.set(data.map((row) => row[colName]));
-                if (sset.size() <= Math.max(20, data.length * 0.2)) { // at most 20 percent unique values
-                    result.type = "categorical";
-                    result.categories = sset.values().sort();
-                }
-            }
-            return result;
-        }
-
-        const columns: ITableSorterColumn[] = getDataColumnNames().map(createLineUpColumn);
-        return {
-            primaryKey: "id",
-            columns,
-        };
-    }
-
-    /**
-     * Gets the sort from lineup
-     */
-    public getSortFromLineUp(): ITableSorterSort {
-        if (this.lineupImpl && this.lineupImpl.storage) {
-            let primary = this.lineupImpl.storage.config.columnBundles.primary;
-            let col = primary.sortedColumn;
-            if (col) {
-                if (col.column) {
-                    return {
-                        column: col.column.column,
-                        asc: primary.sortingOrderAsc,
-                    };
-                }
-                let totalWidth = d3.sum(col.childrenWidths);
-                return {
-                    stack: {
-                        name: col.label,
-                        columns: col.children.map((a: any, i: number) => {
-                            return {
-                                column: a.column.column,
-                                weight: col.childrenWidths[i] / totalWidth,
-                            };
-                        }),
-                    },
-                    asc: primary.sortingOrderAsc,
-                };
-            }
-        }
     }
 
     /**
@@ -564,6 +385,7 @@ export class TableSorter {
             if (value) {
                 this.loadingData = true;
                 let promise = this.loadingPromise = this.dataProvider.query(this.queryOptions).then(r => {
+
                     // if this promise hasn't been cancelled
                     if ((!promise || !promise["cancel"]) && !this.destroyed) {
                         this.loadingPromise = undefined;
@@ -596,7 +418,7 @@ export class TableSorter {
 
         // derive a description file
         let config = this.configuration ?
-            $.extend(true, {}, this.configuration) : TableSorter.createConfigurationFromData(this._data);
+            $.extend(true, {}, this.configuration) : createConfigurationFromData(this._data);
 
         // Primary Key needs to always be ID
         config.primaryKey = "id";
@@ -610,7 +432,7 @@ export class TableSorter {
         this.applyConfigurationToLineup();
 
         // Store the configuration after it was possibly changed by load data
-        this.saveConfiguration();
+        this.updateConfigurationFromLineup();
     }
 
     /**
@@ -629,7 +451,7 @@ export class TableSorter {
             this.lineupImpl.changeDataStorage(spec);
         } else {
             let finalOptions = $.extend(true, this.lineUpConfig, {
-                renderingOptions: $.extend(true, {}, this.settings.presentation)
+                renderingOptions: $.extend(true, {}, this.settings.presentation),
             });
             this.lineupImpl = LineUpLib.create(spec, d3.select(this.element.find(".grid")[0]), finalOptions);
             this.dimensions = this.dimensions;
@@ -706,119 +528,17 @@ export class TableSorter {
     }
 
     /**
-     * Gets filters from a layout obj
-     */
-    private getFiltersFromLayout(layoutObj: any) {
-        if (layoutObj) {
-            let filters: ITableSorterFilter[] = [];
-            layoutObj.forEach((n: any) => {
-                if (n.filter) {
-                    filters.push({
-                        column: n.column,
-                        value: n.filter || undefined,
-                    });
-                } else if (n.domain) {
-                    filters.push({
-                        column: n.column,
-                        value: {
-                            domain: n.domain,
-                            range: n.range,
-                        },
-                    });
-                }
-            });
-            return filters;
-        }
-    }
-
-    /**
-     * Gets the current list of filters from lineup
-     */
-    private getFiltersFromLineup(filteredColumn?: any) {
-        let fDesc = filteredColumn && filteredColumn.description();
-        let descs = this.lineupImpl.storage.getColumnLayout()
-            .map(((d: any) => {
-                // Because of how we reload the data while filtering, the columns can get out of sync
-                let base = d.description();
-                if (fDesc && fDesc.column === base.column) {
-                    base = fDesc;
-                    d = filteredColumn;
-                }
-                if (d.scale) {
-                    base.domain = d.scale.domain();
-                }
-                return base;
-            }));
-        let filters: ITableSorterFilter[] = [];
-        descs.forEach((n: any) => {
-            if (n.filter) {
-                filters.push({
-                    column: n.column,
-                    value: n.filter || undefined,
-                });
-            } else if (n.domain) {
-                filters.push({
-                    column: n.column,
-                    value: {
-                        domain: n.domain,
-                        range: n.range,
-                    },
-                });
-            }
-        });
-        return filters;
-    }
-
-    /**
-     * Returns a configuration based on lineup settings
-     */
-    private getConfigurationFromLineup(filteredColumn?: any) {
-        // HACK: filteredColumn is ghetto fix, cause when we filter a column, we reload lineup with new data/columns
-        // but the UI remains open, and has a reference to an old column.
-        // full spec
-        let dataSpec: any = this.lineupImpl.spec.dataspec;
-        let s: ITableSorterConfiguration = $.extend(true, {}, {
-            columns: dataSpec.columns.map((n: any) => {
-                return _.merge({}, n, {
-                    // domain: [0, 40000]
-                });
-            }),
-            primaryKey: dataSpec.primaryKey,
-        });
-        // create current layout
-        let descs = this.lineupImpl.storage.getColumnLayout()
-            .map((d: any) => {
-                let base = d.description();
-                if (filteredColumn) {
-                    const fDesc = filteredColumn.description();
-                    if (fDesc.column === base.column) {
-                        base = fDesc;
-                        d = filteredColumn;
-                    }
-                }
-                let result = _.merge({}, base, {
-                    domain: d.scale ? d.scale.domain() : undefined
-                });
-                // If it is set to false or whatever, just remove it
-                if (!result.filter) {
-                    delete result.filter;
-                }
-                return result;
-            });
-        // s.filters = this.getFiltersFromLineup();
-        s.layout = _.groupBy(descs, (d: any) => d.columnBundle || "primary");
-        s.sort = this.getSortFromLineUp();
-        return s;
-    }
-
-    /**
      * Saves the current layout
      */
-    private saveConfiguration(filteredColumn?: any) {
+    private updateConfigurationFromLineup(filteredColumn?: any) {
         if (!this.savingConfiguration) {
             this.savingConfiguration = true;
-            this.configuration = this.getConfigurationFromLineup(filteredColumn);
-            this.raiseConfigurationChanged(this.configuration);
+            const nc = convertConfiguration(this.lineupImpl, filteredColumn);
+            const oc = this.configuration;
+            if (hasConfigurationChanged(nc, oc)) {
+                this.configuration = nc;
+                this.raiseConfigurationChanged(this.configuration);
+            }
             this.savingConfiguration = false;
         }
     }
@@ -828,7 +548,7 @@ export class TableSorter {
      */
     private applyConfigurationToLineup() {
         if (this.lineupImpl) {
-            let currentSort = this.getSortFromLineUp();
+            let currentSort = convertSort(this.lineupImpl);
             if (this.configuration && this.configuration.sort && (!currentSort || !_.isEqual(currentSort, this.configuration.sort))) {
                 this.sortingFromConfig = true;
                 let sort = this.configuration.sort;
@@ -842,7 +562,7 @@ export class TableSorter {
      * Listener for when the lineup columns are changed.
      */
     private onLineUpColumnsChanged() {
-        this.saveConfiguration();
+        this.updateConfigurationFromLineup();
     }
 
     /**
@@ -850,9 +570,9 @@ export class TableSorter {
      */
     private onLineUpSorted(column: string, asc: boolean) {
         if (!this.sortingFromConfig) {
-            this.saveConfiguration();
+            this.updateConfigurationFromLineup();
             this.raiseSortChanged(column, asc);
-            let newSort = this.getSortFromLineUp();
+            let newSort = convertSort(this.lineupImpl);
 
             // Set the new sort value
             this.queryOptions.sort = newSort ? [newSort] : undefined;
@@ -888,13 +608,13 @@ export class TableSorter {
             };
         }
 
-        const newFilters = this.getFiltersFromLineup(column);
+        const newFilters = convertFilters(this.lineupImpl, column);
         if (!_.isEqual(newFilters, this.queryOptions.query)) {
-            this.saveConfiguration(column);
+            this.updateConfigurationFromLineup(column);
             this.raiseFilterChanged(filter);
 
             // Set the new filter value
-            this.queryOptions.query = this.getFiltersFromLineup(column);
+            this.queryOptions.query = convertFilters(this.lineupImpl, column);
 
             if (this.dataProvider && this.dataProvider.filter) {
                 this.dataProvider.filter(filter);

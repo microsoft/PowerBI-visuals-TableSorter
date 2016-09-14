@@ -44,7 +44,7 @@ function parseColumnsFromDataView(dataView: powerbi.DataView, data: ITableSorter
         };
         if (c.type.numeric) {
             _.merge(base, {
-                domain: calcDomain(data, base.column)
+                domain: calcDomain(data, base.column),
             });
         }
         return base;
@@ -54,7 +54,7 @@ function parseColumnsFromDataView(dataView: powerbi.DataView, data: ITableSorter
 /**
  * Processes the existing config, removing unnecessary columns, and does some additional processing
  */
-function processExistingConfig(config: ITableSorterConfiguration, columns: ITableSorterColumn[]) {
+export function processExistingConfig(config: ITableSorterConfiguration, columns: ITableSorterColumn[]) {
     "use strict";
     let newColNames = columns.map(c => c.column);
     let oldConfig = _.merge({}, config);
@@ -68,7 +68,7 @@ function processExistingConfig(config: ITableSorterConfiguration, columns: ITabl
     // Override the domain, with the newest data
     oldCols.forEach(n => {
         let newCol = columns.filter(m => m.column === n.column)[0];
-        if (newCol.domain) {
+        if (newCol && newCol.domain) {
             // Reset the domain, cause we now have a new set of data
             n.domain = newCol.domain.slice(0) as any;
         }
@@ -112,11 +112,13 @@ function removeMissingColumns(config: ITableSorterConfiguration, columns: ITable
          */
         onAdd: (item) => {
             config.columns.push(item);
-            config.layout["primary"].push({
-                width: 100,
-                column: item.column,
-                type: item.type,
-            });
+            if (config.layout && config.layout.primary) {
+                config.layout["primary"].push({
+                    width: 100,
+                    column: item.column,
+                    type: item.type,
+                });
+            }
         },
     });
 }
@@ -172,7 +174,7 @@ export function syncLayoutColumns(layoutCols: ITableSorterLayoutColumn[], newCol
  */
 function isValidDomain(domain: number[]) {
     "use strict";
-    return domain && domain.length === 2 && domain[0] !== null && domain[0] !== undefined && domain[1] !== null && domain[1] !== undefined;
+    return domain && domain.length === 2 && domain[0] !== null && domain[0] !== undefined && domain[1] !== null && domain[1] !== undefined; // tslint:disable-line
 }
 
 /**

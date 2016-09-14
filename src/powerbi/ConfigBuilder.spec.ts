@@ -1,41 +1,53 @@
-import { syncLayoutColumns, calcDomain } from "./ConfigBuilder";
+import { syncLayoutColumns, calcDomain, processExistingConfig } from "./ConfigBuilder";
 import { expect } from "chai";
-import {  ITableSorterLayoutColumn } from "../models";
+import {  ITableSorterLayoutColumn, ITableSorterConfiguration } from "../models";
 describe("ConfigBuilder", () => {
+    describe("processExistingConfig", () => {
+        it("should not crash if a column has been removed", () => {
+            processExistingConfig(<ITableSorterConfiguration><any>{
+                columns: [{
+                    column: "SOME_COLUMN",
+                }],
+            },
+            <ITableSorterLayoutColumn[]>[{
+                column: "SOME_MISSING_COLUMN",
+            }]);
+        });
+    });
     describe("syncLayoutColumns", () => {
 
         const SIMPLE_COLUMNS = () => ([{
             column: "SOME_COLUMN",
             type: "string",
-        }, ]);
+        }]);
 
         const SIMPLE_LAYOUT_COLUMNS = () => ([{
             column: "SOME_COLUMN",
             type: "string",
-        }, ] as ITableSorterLayoutColumn[]);
+        }] as ITableSorterLayoutColumn[]);
 
         const SIMPLE_NUMERICAL_COLUMNS = () => ([{
             column: "SOME_COLUMN",
             type: "number",
             domain: [2, 5] as [number, number],
-        }, ]);
+        }]);
 
         const SIMPLE_NUMERICAL_LAYOUT_COLUMNS = () => ([{
             column: "SOME_COLUMN",
             type: "number",
             domain: [2, 5] as [number, number],
-        }, ] as ITableSorterLayoutColumn[]);
+        }] as ITableSorterLayoutColumn[]);
 
         const SIMPLE_NUMERICAL_2_LAYOUT_COLUMNS = () => ([{
             column: "SOME_COLUMN",
             type: "number",
             domain: [1, 3] as [number, number],
-        }, ] as ITableSorterLayoutColumn[]);
+        }] as ITableSorterLayoutColumn[]);
 
         const SIMPLE_2_COLUMNS = () => ([{
             column: "DIFFERENT_COLUMN",
             type: "string",
-        }, ]);
+        }]);
 
         const SIMPLE_2_STACKED_COLUMNS = () => ([{
             column: "STACK",
@@ -43,8 +55,8 @@ describe("ConfigBuilder", () => {
             children: [{
                 column: "SOME_COLUMN_2",
                 type: "string",
-            }, ],
-        }, ] as ITableSorterLayoutColumn[]);
+            }],
+        }] as ITableSorterLayoutColumn[]);
 
         const SIMPLE_STACKED_MULTIPLE_COLUMNS = () => ([{
             column: "STACK",
@@ -55,8 +67,8 @@ describe("ConfigBuilder", () => {
             }, {
                 column: "SOME_COLUMN_2",
                 type: "string",
-            }, ],
-        }, ] as ITableSorterLayoutColumn[]);
+            }],
+        }] as ITableSorterLayoutColumn[]);
 
         it("should remove missing columns", () => {
             // We switched from "SIMPLE_COLUMNS" to "SIMPLE_2_COLUMNS", with no common columns, so the layout is scrubbed
