@@ -46,4 +46,10 @@
     button:active {
         border-style: inset !important;
     }
+
+    .lineup .lu.lu-header .weightHandle {
+        fill: lightgray;
+        stroke-width: 1px;
+        stroke: #bbb;
+    }
 }
