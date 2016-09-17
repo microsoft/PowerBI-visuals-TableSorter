@@ -38,7 +38,7 @@ describe("TableSorter", () => {
     };
 
     const getHeaderNames = () => {
-        return getHeaders().map(n => $(n).find("title").text()).filter(n => n !== "Rank");
+        return getHeaders().map(n => $(n).find(".headerLabel").text()).filter(n => n !== "Rank");
     };
 
     const getFilterEle = (colName: string) => {
@@ -46,7 +46,7 @@ describe("TableSorter", () => {
     };
 
     const getColumnValues = (col: string) => {
-        const headerNames = getHeaders().map(n => $(n).find("title").text());
+        const headerNames = getHeaders().map(n => $(n).find(".headerLabel").text());
         const colIdx = headerNames.indexOf(col); // Returns the index that this header is in the list of headers
         // Find all the row values, and make sure they match
         return parentEle.find(".row")
@@ -233,7 +233,7 @@ describe("TableSorter", () => {
         let { instance, element, data, instanceInitialized } = loadInstanceWithStackedColumns();
 
         instanceInitialized = instanceInitialized.then((result) => {
-            let headerEle = element.find(".header:contains('STACKED_COLUMN')").find(".labelBG");
+            let headerEle = element.find(".header:contains('STACKED_COLUMN')");
             performClick(headerEle);
             return result;
         });
@@ -293,7 +293,7 @@ describe("TableSorter", () => {
      * sorts the given column
      */
     function sortColumn(column: { column: string; label: string }, asc = true) {
-        let headerEle = getHeader(column.column).find(".labelBG");
+        let headerEle = getHeader(column.column);
         performClick(headerEle);
         if (!asc) {
             performClick(headerEle);
@@ -387,7 +387,7 @@ describe("TableSorter", () => {
                 instance.dataProvider = providerInfo.provider;
                 return providerInfo.instanceInitialized.then(() => {
                     // Click on de header
-                    let headerEle = element.find(".header:contains('col1')").find(".labelBG");
+                    let headerEle = element.find(".header:contains('col1')");
                     performClick(headerEle);
 
                     expect(called).to.be.true;
@@ -404,7 +404,7 @@ describe("TableSorter", () => {
                 instance.dataProvider = providerInfo.provider;
                 return providerInfo.instanceInitialized.then(() => {
                     // // Click on de header
-                    let headerEle = element.find(".header:contains('col1')").find(".labelBG");
+                    let headerEle = element.find(".header:contains('col1')");
                     performClick(headerEle);
                 });
             });

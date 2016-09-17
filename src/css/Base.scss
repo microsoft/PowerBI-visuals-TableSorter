@@ -14,19 +14,19 @@
         /*stroke:white;*/
     }
 
-    .lu text.headerSort {
+    .lu .headerSort {
         @extend .smallFontSize !optional;
         @extend %smallFontSize;
     }
 
-    .lu .tableData {
+    .lineup .lu .tableData {
         @extend .regularFont !optional;
         @extend %regularFont;
         @extend .smallFontSize !optional;
         @extend %smallFontSize;
     }
 
-    .lu .tableData.action text {
+    .lu .tableData.action div {
         @extend .smallFontSize !optional;
         @extend %smallFontSize;
     }
@@ -39,7 +39,7 @@
         font-weight: 600;
     }
 
-    .lu .addColumnButton text {
+    .lu .addColumnButton div {
         @extend .semiboldFont !optional;
         @extend %semiboldFont;
         @extend .smallFontSize !optional;
@@ -51,7 +51,7 @@
         @extend %mediumFontSize;
     }
 
-    .lu .stackedOption text {
+    .lu .stackedOption div {
         @extend .smallFontSize !optional;
         @extend %smallFontSize;
     }
@@ -387,12 +387,6 @@
         }
 
         &.loading {
-            color: #ccc;
-
-            .lu-wrapper text {
-                stroke: #ccc;
-                fill: #ccc;
-            }
 
             .lu-wrapper {
                 position: relative;
@@ -416,7 +410,7 @@
         }
     }
 
-    .lu .fontawe, .lu text.headerSort {
+    .lu .fontawe, .lu div.headerSort {
         font-family: "table-sorter-font-awesome" !important;
     }
 
