@@ -1,6 +1,26 @@
+/*
+ * Copyright (C) 2016 Microsoft
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of
+ * this software and associated documentation files (the "Software"), to deal in
+ * the Software without restriction, including without limitation the rights to
+ * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+ * the Software, and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+ * FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+ * COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+ * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
 import { JSONDataProvider } from "../providers/JSONDataProvider";
-import { IQueryOptions, IQueryResult/*, ITableSorterSort, ITableSorterFilter*/} from "../models";
-// import { Promise } from "es6-promise";
+import { IQueryOptions, IQueryResult } from "../models";
 import { LOAD_COUNT } from "./TableSorterVisual.defaults";
 
 /**
@@ -8,19 +28,13 @@ import { LOAD_COUNT } from "./TableSorterVisual.defaults";
  */
 export default class MyDataProvider extends JSONDataProvider {
 
-    // private onLoadMoreData: (options: IQueryOptions, newQuery: boolean, sort: boolean, filter: boolean) => PromiseLike<any[]>;
     private hasMoreData: (newQuery: boolean) => boolean;
-    // private newQuery = false;
-    // private firstLoad = true;
-    // private sortChanged = false;
-    // private filterChanged = false;
 
     constructor(
         data: any[],
         hasMoreData: (newQuery: boolean) => boolean,
         onLoadMoreData: (options: IQueryOptions, newQuery: boolean, sort: boolean, filter: boolean) => PromiseLike<any[]>) {
         super(data, true, true, LOAD_COUNT);
-        // this.onLoadMoreData = onLoadMoreData;
         this.hasMoreData = hasMoreData;
     }
 
@@ -28,9 +42,6 @@ export default class MyDataProvider extends JSONDataProvider {
      * Determines if the dataset can be queried again
      */
     public canQuery(options: IQueryOptions): PromiseLike<boolean> {
-        // We are either loading our initial set, which of course you can query it, otherwise, see if there is more data available
-        // const canLoad = this.firstLoad;// || this.hasMoreData(false/*this.newQuery*/);
-        // return new Promise<boolean>((resolve) => resolve(canLoad));
         return super.canQuery(options);
     }
 
@@ -38,43 +49,6 @@ export default class MyDataProvider extends JSONDataProvider {
      * Runs a query against the server
      */
     public query(options: IQueryOptions): PromiseLike<IQueryResult> {
-        // // Since it is the first load, we are just loading the initial set of data
-        // if (this.firstLoad) {
-        //     this.firstLoad = false;
-        //     return super.query(options);
-        // }
-        // // Otherwise get more from the table sorter
-        // // const newQuery = false;//this.newQuery;
-        // // const filterChanged = this.filterChanged;
-        // // const sortChanged = this.sortChanged;
-        // this.filterChanged = this.sortChanged = this.newQuery = false;
-        // if (sortChanged || filterChanged) {
-            return super.query(options);
-        // } else {
-        //     return this.onLoadMoreData(options, newQuery, false, false/*sortChanged, filterChanged*/).then(n => {
-        //         this.data = n;
-        //         return super.query(options);
-        //     });
-        // }
+        return super.query(options);
     };
-
-    // /**
-    //  * Called when the data should be sorted
-    //  */
-    // public sort(sort?: ITableSorterSort) {
-    //     super.sort(sort);
-    //     this.newQuery = true;
-    //     this.sortChanged = true;
-    //     // this.sortChanged = this.onSorted(sort);
-    // }
-
-    // /**
-    //  * Called when the data is filtered
-    //  */
-    // public filter(filter?: ITableSorterFilter) {
-    //     super.filter(filter);
-    //     this.newQuery = true;
-    //     this.filterChanged = true;
-    //     // this.filterChanged = this.onFiltered(filter);
-    // }
 }

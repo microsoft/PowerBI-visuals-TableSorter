@@ -1,3 +1,24 @@
+/*
+ * Copyright (C) 2016 Microsoft
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of
+ * this software and associated documentation files (the "Software"), to deal in
+ * the Software without restriction, including without limitation the rights to
+ * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+ * the Software, and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+ * FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+ * COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+ * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
 import { default as EventEmitter } from "../base/EventEmitter";
 import * as _  from "lodash";
 import * as d3 from "d3";
@@ -227,7 +248,7 @@ export class TableSorter {
      * Gets the current set of data loaded into tablesorter
      */
     public get data() {
-        return this._data.slice(0);
+        return this._data && this._data.slice(0);
     }
 
     /**
@@ -296,11 +317,13 @@ export class TableSorter {
 
     /**
      * Sets the column configuration that is used
+     * *NOTE* This does not cause a data fetch, because it is just restoring state,
+     * if required, set the dataProvider property to refetch data. 
      */
     public set configuration(value: ITableSorterConfiguration) {
         this._configuration = value;
 
-        if (value.sort) {
+        if (value && value.sort) {
             this.queryOptions.sort = [value.sort];
         }
 
@@ -401,7 +424,12 @@ export class TableSorter {
                             }
                         }, 10);
                     }
-                }, () => this.loadingData = false);
+                }, () => this.loadingData = false)
+                .then(undefined, (err) => {
+                    console.log(err.message);
+                    console.error(err);
+                    throw err;
+                });
                 return promise;
             } else {
                 this.loadingData = false;
@@ -614,7 +642,7 @@ export class TableSorter {
             this.raiseFilterChanged(filter);
 
             // Set the new filter value
-            this.queryOptions.query = convertFilters(this.lineupImpl, column);
+            this.queryOptions.query = newFilters;
 
             if (this.dataProvider && this.dataProvider.filter) {
                 this.dataProvider.filter(filter);

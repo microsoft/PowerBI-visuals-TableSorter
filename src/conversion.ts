@@ -1,3 +1,24 @@
+/*
+ * Copyright (C) 2016 Microsoft
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of
+ * this software and associated documentation files (the "Software"), to deal in
+ * the Software without restriction, including without limitation the rights to
+ * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+ * the Software, and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+ * FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+ * COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+ * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
 import { ITableSorterFilter, ILineupImpl, ITableSorterConfiguration, ITableSorterSort } from "./models";
 
 /**
@@ -5,38 +26,40 @@ import { ITableSorterFilter, ILineupImpl, ITableSorterConfiguration, ITableSorte
  */
 export function convertFilters(lineupImpl: ILineupImpl, filteredColumn?: any) {
     "use strict";
-    let fDesc = filteredColumn && filteredColumn.description();
-    let descs = lineupImpl.storage.getColumnLayout()
-        .map(((d: any) => {
-            // Because of how we reload the data while filtering, the columns can get out of sync
-            let base = d.description();
-            if (fDesc && fDesc.column === base.column) {
-                base = fDesc;
-                d = filteredColumn;
+    if (lineupImpl) {
+        let fDesc = filteredColumn && filteredColumn.description();
+        let descs = lineupImpl.storage.getColumnLayout()
+            .map(((d: any) => {
+                // Because of how we reload the data while filtering, the columns can get out of sync
+                let base = d.description();
+                if (fDesc && fDesc.column === base.column) {
+                    base = fDesc;
+                    d = filteredColumn;
+                }
+                if (d.scale) {
+                    base.domain = d.scale.domain();
+                }
+                return base;
+            }));
+        let filters: ITableSorterFilter[] = [];
+        descs.forEach((n: any) => {
+            if (n.filter) {
+                filters.push({
+                    column: n.column,
+                    value: n.filter || undefined,
+                });
+            } else if (n.domain) {
+                filters.push({
+                    column: n.column,
+                    value: {
+                        domain: n.domain,
+                        range: n.range,
+                    },
+                });
             }
-            if (d.scale) {
-                base.domain = d.scale.domain();
-            }
-            return base;
-        }));
-    let filters: ITableSorterFilter[] = [];
-    descs.forEach((n: any) => {
-        if (n.filter) {
-            filters.push({
-                column: n.column,
-                value: n.filter || undefined,
-            });
-        } else if (n.domain) {
-            filters.push({
-                column: n.column,
-                value: {
-                    domain: n.domain,
-                    range: n.range,
-                },
-            });
-        }
-    });
-    return filters;
+        });
+        return filters;
+    }
 }
 
 
@@ -72,8 +95,8 @@ export function convertFiltersFromLayout(layoutObj: any) {
  */
 export function convertConfiguration(lineupImpl: ILineupImpl, filteredColumn?: any) {
     "use strict";
-    // HACK: filteredColumn is ghetto fix, cause when we filter a column, we reload lineup with new data/columns
-    // but the UI remains open, and has a reference to an old column.
+    // TODO: filteredColumn is not a great fix.  The problem is when we filter a column, we reload lineup with new data/columns
+    // but the UI remains open, and has a reference to an old column. filteredColumn is that old column.
     // full spec
     let dataSpec: any = lineupImpl.spec.dataspec;
     let s: ITableSorterConfiguration = $.extend(true, {}, {
