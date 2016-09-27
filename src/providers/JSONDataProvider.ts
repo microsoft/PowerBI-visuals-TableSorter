@@ -20,7 +20,16 @@
  */
 
 import { Promise } from "es6-promise";
-import { IDataProvider, IQueryOptions, IQueryResult, ITableSorterColumn, ITableSorterSort, ITableSorterFilter } from "../models";
+import {
+    IDataProvider,
+    IQueryOptions,
+    IQueryResult,
+    ITableSorterColumn,
+    ITableSorterSort,
+    ITableSorterFilter,
+    INumericalFilter,
+    IExplicitFilter,
+} from "../models";
 import { logger } from "essex.powerbi.base";
 
 const log = logger("essex:widget:tablesorter:JSONDataProvider");
@@ -47,9 +56,17 @@ export class JSONDataProvider implements IDataProvider {
     /**
      * A filter for numeric values
      */
-    private static checkNumberFilter(data: { [key: string]: number }, filter: { column: string; value: { domain: [number, number]; } }) {
+    private static checkNumberFilter(data: { [key: string]: number }, filter: { column: string; value: INumericalFilter }) {
         let value = data[filter.column] || 0;
         return value >= filter.value.domain[0] && value <= filter.value.domain[1];
+    }
+
+    /**
+     * A filter for explicit items
+     */
+    private static checkExplicitFilter(data: { [key: string]: number }, filter: { column: string; value: IExplicitFilter}) {
+        let value = data[filter.column] || 0;
+        return (filter.value.values || []).indexOf(value) >= 0;
     }
 
     constructor(data: any[], handleSort = true, handleFilter = true, count = 100) {
@@ -140,9 +157,16 @@ export class JSONDataProvider implements IDataProvider {
 
         if (this.handleFilter && options.query && options.query.length) {
             options.query.forEach((filter) => {
-                let filterMethod: any =
-                    typeof filter.value === "string" ? JSONDataProvider.checkStringFilter : JSONDataProvider.checkNumberFilter;
-                final = final.filter((item) => filterMethod(item, filter));
+                let filterMethod = JSONDataProvider.checkStringFilter as any;
+                if (filter.value) {
+                    const explictValues = filter.value && (<IExplicitFilter>filter.value).values;
+                    if (explictValues) {
+                        filterMethod = JSONDataProvider.checkExplicitFilter as any;
+                    } else if (filter.value && (<INumericalFilter>filter.value).domain) {
+                        filterMethod = JSONDataProvider.checkNumberFilter as any;
+                    }
+                    final = final.filter((item) => filterMethod(item, filter));
+                }
             });
         }
 

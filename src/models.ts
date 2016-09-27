@@ -245,12 +245,31 @@ export interface IDataProvider {
  */
 export interface ITableSorterFilter {
     column: string;
-    value: string | INumericalFilter;
+    value: string | INumericalFilter | IExplicitFilter;
 }
 
 export interface INumericalFilter {
+    /**
+     * The domain to filter to
+     */
     domain: [number, number];
+
+    /**
+     * The range of the filter
+     */
     range: [number, number];
+
+    /**
+     * The specific values to filter to
+     */
+    values?: number[];
+}
+
+export interface IExplicitFilter {
+    /**
+     * The specific values to filter to
+     */
+    values: number[];
 }
 
 export interface IQueryOptions {

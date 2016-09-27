@@ -444,6 +444,7 @@
     line-height: 2em;
     vertical-align: middle;
     padding-top: .2em;
+    // -webkit-backface-visibility: hidden;
     }
     .fa-stack-1x, .fa-stack-2x {
     position: absolute;
@@ -451,6 +452,7 @@
     width: 100%;
     text-align: center;
     margin-left: -.2em;
+    // -webkit-backface-visibility: hidden;
     }
     .fa-stack-1x { line-height: inherit; }
     .fa-stack-2x { font-size: 2em; }

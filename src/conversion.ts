@@ -44,10 +44,20 @@ export function convertFilters(lineupImpl: ILineupImpl, filteredColumn?: any) {
         let filters: ITableSorterFilter[] = [];
         descs.forEach((n: any) => {
             if (n.filter) {
-                filters.push({
-                    column: n.column,
-                    value: n.filter || undefined,
-                });
+                // These can be arrays or strings
+                if (typeof n.filter === "string") {
+                    filters.push({
+                        column: n.column,
+                        value: n.filter || undefined,
+                    });
+                } else {
+                    filters.push({
+                        column: n.column,
+                        value: {
+                            values: n.filter || undefined,
+                        },
+                    });
+                }
             } else if (n.domain) {
                 filters.push({
                     column: n.column,
@@ -72,10 +82,20 @@ export function convertFiltersFromLayout(layoutObj: any) {
         let filters: ITableSorterFilter[] = [];
         layoutObj.forEach((n: any) => {
             if (n.filter) {
-                filters.push({
-                    column: n.column,
-                    value: n.filter || undefined,
-                });
+                // These can be arrays or strings
+                if (typeof n.filter === "string") {
+                    filters.push({
+                        column: n.column,
+                        value: n.filter || undefined,
+                    });
+                } else {
+                    filters.push({
+                        column: n.column,
+                        value: {
+                            values: n.filter || undefined,
+                        },
+                    });
+                }
             } else if (n.domain) {
                 filters.push({
                     column: n.column,

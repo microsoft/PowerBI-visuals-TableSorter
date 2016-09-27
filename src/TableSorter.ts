@@ -627,6 +627,7 @@ export class TableSorter {
                 value: {
                     domain: column.scale.domain(),
                     range: column.scale.range(),
+                    values: column.filter,
                 },
             };
         } else {
