@@ -1,6 +1,6 @@
 {
   "name": "essex.widget.tablesorter",
-  "version": "0.9.17",
+  "version": "0.9.18",
   "description": "",
   "main": "src/index.js",
   "typings": "src/index.d.ts",
