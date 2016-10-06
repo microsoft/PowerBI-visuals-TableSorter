@@ -1,6 +1,7 @@
 import { Promise } from "es6-promise";
 import { IDataProvider, IQueryOptions, IQueryResult, ITableSorterColumn, ITableSorterSort, ITableSorterFilter } from "../models";
 import { logger } from "essex.powerbi.base";
+import * as d3 from "d3";
 
 const log = logger("essex:widget:tablesorter:JSONDataProvider");
 
@@ -15,13 +16,6 @@ export class JSONDataProvider implements IDataProvider {
     private count = 100;
     private offset = 0;
 
-    constructor(data: any[], handleSort = true, handleFilter = true, count = 100) {
-        this.data = data;
-        this.handleSort = handleSort;
-        this.handleFilter = handleFilter;
-        this.count = count;
-    }
-
     /**
      * A filter for string values
      */
@@ -35,6 +29,13 @@ export class JSONDataProvider implements IDataProvider {
     private static checkNumberFilter(data: { [key: string] : number }, filter: { column: string; value: { domain: [number, number]; } }) {
         let value = data[filter.column] || 0;
         return value >= filter.value.domain[0] && value <= filter.value.domain[1];
+    }
+
+    constructor(data: any[], handleSort = true, handleFilter = true, count = 100) {
+        this.data = data;
+        this.handleSort = handleSort;
+        this.handleFilter = handleFilter;
+        this.count = count;
     }
 
     /**

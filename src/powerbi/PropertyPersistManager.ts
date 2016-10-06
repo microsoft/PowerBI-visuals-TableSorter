@@ -2,7 +2,7 @@ import { logger } from "essex.powerbi.base";
 /* tslint:disable */
 const log = logger("essex:widget:TableSorterVisual:PropertyPesistManager");
 /* tslint:enable */
-import { PropertyPersister } from "essex.powerbi.base/src/lib/Utils";
+import { PropertyPersister } from "essex.powerbi.base";
 import VisualObjectInstance = powerbi.VisualObjectInstance;
 import SQExprBuilder = powerbi.data.SQExprBuilder;
 import SelectionManager = powerbi.visuals.utility.SelectionManager;

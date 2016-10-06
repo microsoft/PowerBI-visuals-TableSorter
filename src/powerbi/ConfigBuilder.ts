@@ -1,5 +1,5 @@
 import { ITableSorterColumn, ITableSorterRow, ITableSorterConfiguration } from "../models";
-import { default as Utils } from "essex.powerbi.base/src/lib/Utils";
+import { listDiff } from "essex.powerbi.base";
 import * as _ from "lodash";
 /* tslint:disable */
 const ldget = require("lodash.get");
@@ -99,16 +99,16 @@ function processExistingConfig(config: ITableSorterConfiguration, columns: ITabl
 
 function removeMissingColumns(config: ITableSorterConfiguration, columns: ITableSorterColumn[]) {
     "use strict";
-    Utils.listDiff<ITableSorterColumn>(config.columns.slice(0), columns, {
+    listDiff<ITableSorterColumn>(config.columns.slice(0), columns, {
         /**
          * Returns true if item one equals item two
          */
-        equals: (one, two) => one.label === two.label,
+        equals: (one: ITableSorterColumn, two: ITableSorterColumn) => one.label === two.label,
 
         /**
          * Gets called when the given item was removed
          */
-        onRemove: (item) => {
+        onRemove: (item: ITableSorterColumn) => {
             for (let i = 0; i < config.columns.length; i++) {
                 if (config.columns[i].label === item.label) {
                     config.columns.splice(i, 1);
@@ -120,7 +120,7 @@ function removeMissingColumns(config: ITableSorterConfiguration, columns: ITable
         /**
          * Gets called when the given item was added
          */
-        onAdd: (item) => {
+        onAdd: (item: ITableSorterColumn) => {
             config.columns.push(item);
             config.layout["primary"].push({
                 width: 100,

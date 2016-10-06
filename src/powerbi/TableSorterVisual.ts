@@ -1,6 +1,11 @@
-import { Visual, logger } from "essex.powerbi.base";
+import {
+    Visual,
+    logger,
+    updateTypeGetter,
+    UpdateType,
+    createPropertyPersister,
+} from "essex.powerbi.base";
 import { StatefulVisual, IDimensions } from "pbi-stateful";
-import { updateTypeGetter, UpdateType, createPropertyPersister } from "essex.powerbi.base/src/lib/Utils";
 import { TableSorter  } from "../TableSorter";
 import {
     publishChange,
@@ -37,6 +42,21 @@ const log = logger("essex:widget:TableSorterVisual");
 const colors = require("essex.powerbi.base/src/colors");
 const ldget = require("lodash.get");
 /* tslint:enable */
+
+
+function hashString(input: string): number {
+  "use strict";
+  let hash = 0;
+  if (input.length === 0) {
+    return hash;
+  }
+  for (let i = 0, len = input.length; i < len; i++) {
+    const chr   = input.charCodeAt(i);
+    hash  = ((hash << 5) - hash) + chr;
+    hash |= 0; // Convert to 32bit integer
+  }
+  return hash;
+}
 
 @Visual(require("../build.json").output.PowerBI)
 export default class TableSorterVisual extends StatefulVisual<ITableSorterState> {
@@ -100,7 +120,7 @@ export default class TableSorterVisual extends StatefulVisual<ITableSorterState>
     /**
      * The constructor for the visual
      */
-    public constructor(noCss: boolean = false, initialSettings?: ITableSorterSettings, updateTypeGetterOverride?: () => UpdateType) {
+    constructor(noCss: boolean = false, initialSettings?: ITableSorterSettings, updateTypeGetterOverride?: () => UpdateType) {
         super(noCss, "TableSorter");
         log("Constructing TableSorter");
         this.initialSettings = initialSettings || {
@@ -111,6 +131,14 @@ export default class TableSorterVisual extends StatefulVisual<ITableSorterState>
         this.numberFormatConfig = new NumberFormatConfig();
         this.updateType = updateTypeGetterOverride ? updateTypeGetterOverride : updateTypeGetter(this);
         this.tableSorter = new TableSorter(this.element.find(".lineup"));
+    }
+
+    public areEqual(state1: ITableSorterState, state2: ITableSorterState): boolean {
+        return _.isEqual(state1, state2);
+    }
+
+    public getHashCode(state: ITableSorterState): number {
+        return hashString(JSON.stringify(state));
     }
 
     protected generateState(): ITableSorterState {
@@ -217,7 +245,7 @@ export default class TableSorterVisual extends StatefulVisual<ITableSorterState>
             /* tslint:enable */
             objectName: options.objectName,
             properties: {},
-        }, ];
+        }];
         $.extend(true, instances[0].properties, this.tableSorter.settings[options.objectName]);
         if (options.objectName === "presentation") {
             $.extend(true, instances[0].properties, {
@@ -356,7 +384,7 @@ export default class TableSorterVisual extends StatefulVisual<ITableSorterState>
         this.propertyPersistManager.updateSelection(rows, this.isMultiSelect);
         if (!this.isHandlingSetState) {
             this.clearState();
-            publishChange(this, "Selection Changed", this.state);
+            publishChange(this, "Change Selection", this.state);
         }
     }
 
@@ -365,7 +393,7 @@ export default class TableSorterVisual extends StatefulVisual<ITableSorterState>
         this.propertyPersistManager.updateSelection([], this.isMultiSelect);
         if (!this.isHandlingSetState) {
             this.clearState();
-            publishChange(this, "Selection Cleared", this.state);
+            publishChange(this, "Clear Selection", this.state);
         }
     }
 
@@ -395,18 +423,18 @@ export default class TableSorterVisual extends StatefulVisual<ITableSorterState>
                 if (newLayout.length === oldLayout.length &&
                     !_.isEqual(newFilters, oldFilters)) {
                     log("Filter Changed", newFilters, oldFilters);
-                    updates.push("Filter changed");
+                    updates.push("Change Filter");
                     isNewState = true;
                 } else if (!_.isEqual(newLayout, oldLayout)) {
                     log("Layout Changed", newLayout, oldLayout);
-                    updates.push("Layout changed");
+                    updates.push("Change Layout");
                     // isNewState = true;
                 }
             }
             if (!updates.length) {
                 isNewState = true;
                 log("Configuration Updated");
-                updates.push("Configuration updated");
+                updates.push("Update Configuration");
                 // Replace State
             }
             const method = isNewState ? publishChange : publishReplace;

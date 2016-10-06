@@ -642,6 +642,8 @@ export class TableSorter {
 
         // Store the configuration after it was possibly changed by load data
         this.saveConfiguration();
+
+        this.bodyUpdater();
     }
 
     /**
