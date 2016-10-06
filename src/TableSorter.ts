@@ -126,7 +126,11 @@ export class TableSorter {
     /**
      * Setter for if we are loading data
      */
-    private _toggleClass = _.debounce(() => this.element.toggleClass("loading", this.loadingData), 100);
+    private _toggleClass = _.debounce(() => {
+        if (!this.destroyed) {
+            this.element.toggleClass("loading", this.loadingData);
+        }
+    }, 100);
     private set loadingData(value: boolean) {
         this._loadingData = value;
         if (value) {
@@ -197,7 +201,7 @@ export class TableSorter {
      * Resizer function to update lineups rendering
      */
     private bodyUpdater = _.debounce(() => {
-        if (this.lineupImpl) {
+        if (this.lineupImpl && !this.destroyed) {
             this.lineupImpl.updateBody();
         }
     }, 100);
@@ -358,7 +362,6 @@ export class TableSorter {
      * Function to destroy itself
      */
     public destroy() {
-        this.destroyed = true;
         if (this.lineupImpl) {
             /* tslint:disable */ 
             if (this.lineupImpl.listeners) {
@@ -367,7 +370,9 @@ export class TableSorter {
             this.lineupImpl.scrolled = () => {};
             /* tslint:enable */
             this.lineupImpl.destroy();
+            delete this.lineupImpl;
         }
+        this.destroyed = true;
     }
 
     /**

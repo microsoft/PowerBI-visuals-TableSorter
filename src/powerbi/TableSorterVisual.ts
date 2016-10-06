@@ -84,6 +84,10 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
 
     public tableSorter: TableSorter;
     private dataViewTable: DataViewTable;
+    /**
+     * The list of listeners on the table sorter
+     */
+    private listeners: { destroy: () => void }[] = [];
     private dataView: powerbi.DataView;
     private host: IVisualHostServices;
     private selectionManager: SelectionManager;
@@ -92,6 +96,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
     private handlingUpdate: boolean;
     private updateType: () => UpdateType;
     private propertyPersister: PropertyPersister;
+    private destroyed = false;
 
     // Stores our current set of data.
     private _data: { data: ITableSorterVisualRow[], cols: string[] };
@@ -306,67 +311,72 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
 
     /** This is called once when the visual is initialially created */
     public init(options: VisualInitOptions): void {
-        super.init(options);
+        if (!this.destroyed) {
+            super.init(options);
 
-        const className = this.myCssModule && this.myCssModule.locals && this.myCssModule.locals.className;
-        if (className) {
-            this.element.addClass(className);
-        }
-
-        this.host = options.host;
-
-        this.propertyPersister = createPropertyPersister(this.host, 100);
-        this.selectionManager = new SelectionManager({
-            hostServices: options.host,
-        });
-        this.tableSorter = new TableSorter(this.element.find(".lineup"));
-        this.tableSorter.settings = this.initialSettings;
-        this.tableSorter.events.on("selectionChanged", (rows: ITableSorterVisualRow[]) => this.onSelectionChanged(rows));
-        this.tableSorter.events.on(TableSorter.EVENTS.CLEAR_SELECTION, () => this.onSelectionChanged());
-        this.tableSorter.events.on("configurationChanged", (config: any) => {
-            if (!this.handlingUpdate) {
-                this.configurationUpdater();
+            const className = this.myCssModule && this.myCssModule.locals && this.myCssModule.locals.className;
+            if (className) {
+                this.element.addClass(className);
             }
-        });
 
-        this.dimensions = { width: options.viewport.width, height: options.viewport.height };
+            this.host = options.host;
+
+            this.propertyPersister = createPropertyPersister(this.host, 100);
+            this.selectionManager = new SelectionManager({
+                hostServices: options.host,
+            });
+            this.tableSorter = new TableSorter(this.element.find(".lineup"));
+            this.tableSorter.settings = this.initialSettings;
+            this.listeners = [
+                this.tableSorter.events.on("selectionChanged", (rows: ITableSorterVisualRow[]) => this.onSelectionChanged(rows)),
+                this.tableSorter.events.on(TableSorter.EVENTS.CLEAR_SELECTION, () => this.onSelectionChanged()),
+                this.tableSorter.events.on("configurationChanged", (config: any) => {
+                if (!this.handlingUpdate) {
+                    this.configurationUpdater();
+                }
+            })];
+
+            this.dimensions = { width: options.viewport.width, height: options.viewport.height };
+        }
     }
 
     /** Update is called for data updates, resizes & formatting changes */
     public update(options: VisualUpdateOptions) {
-        const updateType = this.updateType();
-        this.handlingUpdate = true;
-        this.dataView = options.dataViews && options.dataViews[0];
-        this.dataViewTable = this.dataView && this.dataView.table;
-        log("Update Type: ", updateType);
-        super.update(options);
+        if (!this.destroyed) {
+            const updateType = this.updateType();
+            this.handlingUpdate = true;
+            this.dataView = options.dataViews && options.dataViews[0];
+            this.dataViewTable = this.dataView && this.dataView.table;
+            log("Update Type: ", updateType);
+            super.update(options);
 
-        // Assume that data updates won't happen when resizing
-        const newDims = { width: options.viewport.width, height: options.viewport.height };
-        if ((updateType & UpdateType.Resize)) {
-            this.dimensions = newDims;
+            // Assume that data updates won't happen when resizing
+            const newDims = { width: options.viewport.width, height: options.viewport.height };
+            if ((updateType & UpdateType.Resize)) {
+                this.dimensions = newDims;
+            }
+
+            if (updateType & UpdateType.Settings) {
+                this.loadSettingsFromPowerBI();
+            }
+
+            if (updateType & UpdateType.Data ||
+                // If the layout has changed, we need to reload table sorter
+                this.hasLayoutChanged(updateType, options) ||
+
+                // The data may not have changed, but we are loading
+                // Necessary because sometimes the user "changes" the filter, but it doesn't actually change the dataset. 
+                // ie. If the user selects the min value and the max value of the dataset as a filter.
+                this.loadResolver) {
+                // If we explicitly are loading more data OR If we had no data before, then data has been loaded
+                this.waitingForMoreData = false;
+                this.waitingForSort = false;
+
+                this.loadDataFromPowerBI();
+            }
+
+            this.handlingUpdate = false;
         }
-
-        if (updateType & UpdateType.Settings) {
-            this.loadSettingsFromPowerBI();
-        }
-
-        if (updateType & UpdateType.Data ||
-            // If the layout has changed, we need to reload table sorter
-            this.hasLayoutChanged(updateType, options) ||
-
-            // The data may not have changed, but we are loading
-            // Necessary because sometimes the user "changes" the filter, but it doesn't actually change the dataset. 
-            // ie. If the user selects the min value and the max value of the dataset as a filter.
-            this.loadResolver) {
-            // If we explicitly are loading more data OR If we had no data before, then data has been loaded
-            this.waitingForMoreData = false;
-            this.waitingForSort = false;
-
-            this.loadDataFromPowerBI();
-        }
-
-        this.handlingUpdate = false;
     }
 
     /**
@@ -388,6 +398,23 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
             });
         }
         return options.objectName === "layout" ? <any>{} : instances;
+    }
+
+    /**
+     * Destroys this visual
+     */
+    public destroy() {
+        if (!this.destroyed) {
+            if (this.listeners) {
+                this.listeners.forEach(n => n.destroy());
+                this.listeners.length = 0;
+            }
+            if (this.tableSorter) {
+                this.tableSorter.destroy();
+                delete this.tableSorter;
+            }
+            this.destroyed = true;
+        }
     }
 
     /**
