@@ -179,6 +179,7 @@ describe("conversion", () => {
                     primary: [{
                         column: "FAKE_COLUMN",
                         filter: "FAKE_FILTER",
+                        domain: undefined,
                     }],
                 },
                 sort: {

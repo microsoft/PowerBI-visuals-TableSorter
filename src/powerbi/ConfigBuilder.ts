@@ -20,7 +20,7 @@
  */
 
 import { ITableSorterColumn, ITableSorterRow, ITableSorterConfiguration, ITableSorterLayoutColumn } from "../models";
-import { default as Utils } from "essex.powerbi.base/src/lib/Utils";
+import { listDiff } from "essex.powerbi.base";
 import * as _ from "lodash";
 
 /**
@@ -110,7 +110,7 @@ export function processExistingConfig(config: ITableSorterConfiguration, columns
 
 function removeMissingColumns(config: ITableSorterConfiguration, columns: ITableSorterColumn[]) {
     "use strict";
-    Utils.listDiff<ITableSorterColumn>(config.columns.slice(0), columns, {
+    listDiff<ITableSorterColumn>(config.columns.slice(0), columns, {
         /**
          * Returns true if item one equals item two
          */

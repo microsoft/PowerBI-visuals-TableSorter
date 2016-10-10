@@ -19,8 +19,17 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-import { VisualBase, Visual, logger } from "essex.powerbi.base";
-import { updateTypeGetter, UpdateType, createPropertyPersister, PropertyPersister } from "essex.powerbi.base/src/lib/Utils";
+import {
+    VisualBase,
+    Visual,
+    logger,
+    colors,
+    updateTypeGetter,
+    UpdateType,
+    createPropertyPersister,
+    PropertyPersister,
+} from "essex.powerbi.base";
+import * as $ from "jquery";
 import { TableSorter  } from "../TableSorter";
 import { dateTimeFormatCalculator } from "./Utils";
 import {
@@ -54,7 +63,6 @@ import IValueFormatter = powerbi.visuals.IValueFormatter;
 
 /* tslint:disable */
 const log = logger("essex:widget:TableSorterVisual");
-const colors = require("essex.powerbi.base/src/colors");
 const CSS_MODULE = require("!css!sass!./css/TableSorterVisual.scss");
 /* tslint:enable */
 
