@@ -50,7 +50,7 @@ module.exports = function (gulp: any) {
      */
     gulp.task(`${buildName}:scripts`, [`${buildName}:package_css`], function() {
         var output = config.output.PowerBI;
-        var webpackConfig = require(baseDir + 'webpack.config.powerbi');
+        var webpackConfig = require(path.join(baseDir, "webpack.config"));
         webpackConfig.entry = path.join(baseDir, 'src', output.entry.replace(".ts", ".js"));
         return gulp.src(paths.scripts)
             .pipe(webpack(webpackConfig))
