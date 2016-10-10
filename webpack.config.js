@@ -22,7 +22,8 @@ module.exports = {
         jquery: "jQuery",
         d3: "d3",
         underscore: "_",
-        "lodash": "_"
+        "lodash": "_",
+        "powerbi-visuals/lib/powerbi-visuals": "powerbi",
     },
     plugins: [
         new webpack.optimize.OccurenceOrderPlugin(),
