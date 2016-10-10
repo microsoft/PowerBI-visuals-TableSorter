@@ -1,6 +1,4 @@
-const gulp = require('gulp');
 require("ts-node/register");
-require("./tasks/build")(gulp);
-require("./tasks/release")(gulp);
-require("./tasks/sync")(gulp);
-gulp.task('default', ['build']);
+const gulp = require('gulp');
+const configure = require("essex.powerbi.base/build_scripts").default;
+configure(gulp, __dirname);

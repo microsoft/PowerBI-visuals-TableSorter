@@ -39,7 +39,7 @@ import PropertyPersistManager from "./PropertyPersistManager";
 
 /* tslint:disable */
 const log = logger("essex:widget:TableSorterVisual");
-const colors = require("essex.powerbi.base/src/colors");
+const colors = require("essex.powerbi.base/dist/lib/colors");
 const ldget = require("lodash.get");
 /* tslint:enable */
 
