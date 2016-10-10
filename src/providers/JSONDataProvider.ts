@@ -31,6 +31,7 @@ import {
     IExplicitFilter,
 } from "../models";
 import { logger } from "essex.powerbi.base";
+import * as d3 from "d3";
 
 const log = logger("essex:widget:tablesorter:JSONDataProvider");
 

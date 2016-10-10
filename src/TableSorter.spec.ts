@@ -24,6 +24,7 @@ import "essex.powerbi.base/spec/visualHelpers";
 // import "../base/testSetup";
 /* tslint:enable */
 import { expect } from "chai";
+
 import {
     ITableSorterSettings,
     ITableSorterRow,

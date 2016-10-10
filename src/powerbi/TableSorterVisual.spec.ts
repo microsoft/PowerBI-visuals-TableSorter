@@ -27,7 +27,7 @@ global['powerbi'].visuals.valueFormatter = {
 };
 /* tslint:enable */
 import { Utils as SpecUtils } from "essex.powerbi.base/spec/visualHelpers";
-import { UpdateType } from "essex.powerbi.base/src/lib/Utils";
+import { UpdateType } from "essex.powerbi.base";
 import { expect } from "chai";
 import { default as TableSorterVisual  } from "./TableSorterVisual";
 import * as $ from "jquery";

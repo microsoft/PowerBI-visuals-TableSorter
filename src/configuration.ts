@@ -20,6 +20,7 @@
  */
 
 import { ITableSorterConfiguration, ITableSorterRow, ITableSorterColumn } from "./models";
+import * as d3 from "d3";
 
 /**
  * Returns true if the given object is numeric
