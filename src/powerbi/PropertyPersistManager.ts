@@ -117,7 +117,7 @@ export default class PropertyPersistManager {
                     objectName: "general",
                     selector: undefined,
                     properties: {
-                        "selfFilter": filter
+                        "selfFilter": filter,
                     },
                 },
             ],
