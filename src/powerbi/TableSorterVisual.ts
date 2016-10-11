@@ -1,7 +1,6 @@
 import {
     Visual,
     logger,
-    updateTypeGetter,
     UpdateType,
     createPropertyPersister,
 } from "essex.powerbi.base";
@@ -120,8 +119,8 @@ export default class TableSorterVisual extends StatefulVisual<ITableSorterState>
     /**
      * The constructor for the visual
      */
-    constructor(noCss: boolean = false, initialSettings?: ITableSorterSettings, updateTypeGetterOverride?: () => UpdateType) {
-        super(noCss, "TableSorter");
+    constructor(noCss: boolean = false, initialSettings?: ITableSorterSettings) {
+        super("TableSorter", noCss);
         log("Constructing TableSorter");
         this.initialSettings = initialSettings || {
             presentation: {
@@ -129,7 +128,6 @@ export default class TableSorterVisual extends StatefulVisual<ITableSorterState>
             },
         };
         this.numberFormatConfig = new NumberFormatConfig();
-        this.updateType = updateTypeGetterOverride ? updateTypeGetterOverride : updateTypeGetter(this);
         this.tableSorter = new TableSorter(this.element.find(".lineup"));
     }
 
@@ -170,7 +168,7 @@ export default class TableSorterVisual extends StatefulVisual<ITableSorterState>
     }
 
     protected onSetDimensions(value: IDimensions): void {
-        log("dimensions set");
+        log("dimensions set", value);
         if (this.tableSorter) {
             this.tableSorter.dimensions = value;
         }
@@ -184,8 +182,6 @@ export default class TableSorterVisual extends StatefulVisual<ITableSorterState>
             createPropertyPersister(this.host, 100),
             this.selectionManager
         );
-        const { width, height } = options.viewport;
-        this.dimensions = { width, height };
 
         // Wire up the table sorter
         this.tableSorter.settings = this.initialSettings;
@@ -197,7 +193,7 @@ export default class TableSorterVisual extends StatefulVisual<ITableSorterState>
     protected onUpdate(options: VisualUpdateOptions, updateType: UpdateType): void {
         log("update", options);
         const isSettingsUpdate = updateType & UpdateType.Settings;
-        const isDataUpdate = updateType & UpdateType.Data;
+        const isDataUpdate = true;
         const dataView = ldget(options, "dataViews[0]");
         const dataViewTable = ldget(dataView, "table");
 
