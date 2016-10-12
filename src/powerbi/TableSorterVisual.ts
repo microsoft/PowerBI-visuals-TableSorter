@@ -192,11 +192,30 @@ export default class TableSorterVisual extends StatefulVisual<ITableSorterState>
     }
 
     protected onUpdate(options: VisualUpdateOptions, updateType: UpdateType): void {
-        log("update", options);
         const isSettingsUpdate = updateType & UpdateType.Settings;
-        const isDataUpdate = true;
         const dataView = ldget(options, "dataViews[0]");
         const dataViewTable = ldget(dataView, "table");
+        const isDataUpdate = updateType & UpdateType.Data;
+
+        // If the layout has changed, we need to reload table sorter
+        // TODO: Put this behind an arrow-function to defer execution
+        const hasLayoutChanged = this.hasLayoutChanged(updateType, options);
+
+        const isLayoutRequestRequired = this.isWaitingForInitialPBIConfiguration && this.dataView;
+        const isDataRequestRequired = isDataUpdate || hasLayoutChanged
+            // The data may not have changed, but we are in the middle of loading.
+            // Necessary because sometimes the user "changes" the filter, but it doesn't actually change the dataset.
+            // ie. If the user selects the min value and the max value of the dataset as a filter.
+            || this.loadResolver;
+
+        log("update [type=%s] [isData? %s] [isLayout? %s] [isSettings? %s] [dataRequestRequired? %s] [layoutRequestRequired? %s]",
+          updateType,
+          isDataUpdate,
+          hasLayoutChanged,
+          isSettingsUpdate,
+          isDataRequestRequired,
+          isLayoutRequestRequired
+        );
 
         this.dataView = dataView;
         this.dataViewTable = dataViewTable;
@@ -211,14 +230,7 @@ export default class TableSorterVisual extends StatefulVisual<ITableSorterState>
             this.loadLayoutFromPowerBI();
         }
 
-        if (isDataUpdate ||
-            // If the layout has changed, we need to reload table sorter
-            this.hasLayoutChanged(updateType, options) ||
-
-            // The data may not have changed, but we are loading
-            // Necessary because sometimes the user "changes" the filter, but it doesn't actually change the dataset.
-            // ie. If the user selects the min value and the max value of the dataset as a filter.
-            this.loadResolver) {
+        if (isDataRequestRequired) {
             // If we explicitly are loading more data OR If we had no data before, then data has been loaded
             this.waitingForMoreData = false;
             this.waitingForSort = false;
@@ -434,11 +446,12 @@ export default class TableSorterVisual extends StatefulVisual<ITableSorterState>
                 updates.push("Update Configuration");
                 // Replace State
             }
-            const method = isNewState ? publishChange : publishReplace;
 
             this.clearState();
             this.propertyPersistManager.updateConfiguration(this.state.configuration);
-            method(this, updates.join(", "), this.state);
+            const method = isNewState ? publishChange : publishReplace;
+            log("publishing state alteration on ", this);
+            method(this, updates.join(", "), this.generateState());
         }
     }
 
