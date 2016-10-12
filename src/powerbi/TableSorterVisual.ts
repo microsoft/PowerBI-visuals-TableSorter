@@ -4,7 +4,8 @@ import {
     UpdateType,
     createPropertyPersister,
 } from "essex.powerbi.base";
-import { StatefulVisual, IDimensions } from "pbi-stateful";
+import { StatefulVisual } from "pbi-stateful";
+import { receiveDimensions, IDimensions } from "essex.powerbi.base/dist/lib/Utils/receiveDimensions";
 import { TableSorter  } from "../TableSorter";
 import {
     publishChange,
@@ -42,7 +43,6 @@ const colors = require("essex.powerbi.base/dist/lib/colors");
 const ldget = require("lodash.get");
 /* tslint:enable */
 
-
 function hashString(input: string): number {
   "use strict";
   let hash = 0;
@@ -57,6 +57,7 @@ function hashString(input: string): number {
   return hash;
 }
 
+@receiveDimensions
 @Visual(require("../build.json").output.PowerBI)
 export default class TableSorterVisual extends StatefulVisual<ITableSorterState> {
     /**
@@ -167,7 +168,7 @@ export default class TableSorterVisual extends StatefulVisual<ITableSorterState>
         }
     }
 
-    protected onSetDimensions(value: IDimensions): void {
+    public setDimensions(value: IDimensions): void {
         log("dimensions set", value);
         if (this.tableSorter) {
             this.tableSorter.dimensions = value;
