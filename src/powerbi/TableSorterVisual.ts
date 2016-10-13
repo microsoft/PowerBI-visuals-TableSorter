@@ -5,7 +5,6 @@ import {
     createPropertyPersister,
 } from "essex.powerbi.base";
 import { StatefulVisual } from "pbi-stateful";
-import { receiveDimensions, IDimensions } from "essex.powerbi.base/dist/lib/Utils/receiveDimensions";
 import { TableSorter  } from "../TableSorter";
 import {
     publishChange,
@@ -57,7 +56,6 @@ function hashString(input: string): number {
   return hash;
 }
 
-@receiveDimensions
 @Visual(require("../build.json").output.PowerBI)
 export default class TableSorterVisual extends StatefulVisual<ITableSorterState> {
     /**
@@ -168,8 +166,7 @@ export default class TableSorterVisual extends StatefulVisual<ITableSorterState>
         }
     }
 
-    public setDimensions(value: IDimensions): void {
-        log("dimensions set", value);
+    public setDimensions(value: { width: number, height: number }): void {
         if (this.tableSorter) {
             this.tableSorter.dimensions = value;
         }
@@ -189,6 +186,8 @@ export default class TableSorterVisual extends StatefulVisual<ITableSorterState>
         this.tableSorter.events.on("selectionChanged", this.handleTableSorterSelectionChange.bind(this));
         this.tableSorter.events.on(TableSorter.EVENTS.CLEAR_SELECTION, this.handleTableSorterSelectionClear.bind(this));
         this.tableSorter.events.on(TableSorter.EVENTS.CONFIG_CHANGED, this.handleTableSorterConfigChange.bind(this));
+
+        this.setDimensions(options.viewport);
     }
 
     protected onUpdate(options: VisualUpdateOptions, updateType: UpdateType): void {
@@ -237,6 +236,10 @@ export default class TableSorterVisual extends StatefulVisual<ITableSorterState>
 
             // const layoutText = ldget(this.dataView, "metadata.objects.layout.layout");
             this.loadDataFromPowerBI();
+        }
+
+        if (options.viewport) {
+            this.setDimensions(options.viewport);
         }
     }
 
@@ -381,7 +384,7 @@ export default class TableSorterVisual extends StatefulVisual<ITableSorterState>
                 };
             });
             args = {
-                sortDescriptors: sortDescriptors
+                sortDescriptors,
             };
         }
         this.waitingForSort = true;
