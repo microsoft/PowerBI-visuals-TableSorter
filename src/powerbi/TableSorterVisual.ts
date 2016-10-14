@@ -16,15 +16,16 @@ import {
     ITableSorterConfiguration,
 } from "../models";
 import { Promise } from "es6-promise";
-import capabilities from "./TableSorterVisual.capabilities";
+import { capabilities } from "essex.powerbi.base/dist/lib/utils/capabilities";
+import capabilitiesData from "./TableSorterVisual.capabilities";
 import MyDataProvider from "./TableSorterVisual.dataProvider";
 import buildConfig from "./ConfigBuilder";
 import { ITableSorterVisualRow, ITableSorterState } from "./interfaces";
+import { IDimensions, receiveDimensions } from "essex.powerbi.base/dist/lib/Utils/receiveDimensions";
 
 import * as _ from "lodash";
 import DataViewTable = powerbi.DataViewTable;
 import IVisualHostServices = powerbi.IVisualHostServices;
-import VisualCapabilities = powerbi.VisualCapabilities;
 import VisualInitOptions = powerbi.VisualInitOptions;
 import VisualUpdateOptions = powerbi.VisualUpdateOptions;
 import VisualObjectInstance = powerbi.VisualObjectInstance;
@@ -57,12 +58,9 @@ function hashString(input: string): number {
 }
 
 @Visual(require("../build.json").output.PowerBI)
+@receiveDimensions
+@capabilities(capabilitiesData)
 export default class TableSorterVisual extends StatefulVisual<ITableSorterState> {
-    /**
-     * The set of capabilities for the visual
-     */
-    public static capabilities: VisualCapabilities = capabilities;
-
     /**
      * The default settings for the visual
      */
@@ -166,7 +164,7 @@ export default class TableSorterVisual extends StatefulVisual<ITableSorterState>
         }
     }
 
-    public setDimensions(value: { width: number, height: number }): void {
+    public setDimensions(value: IDimensions): void {
         if (this.tableSorter) {
             this.tableSorter.dimensions = value;
         }
@@ -186,8 +184,6 @@ export default class TableSorterVisual extends StatefulVisual<ITableSorterState>
         this.tableSorter.events.on("selectionChanged", this.handleTableSorterSelectionChange.bind(this));
         this.tableSorter.events.on(TableSorter.EVENTS.CLEAR_SELECTION, this.handleTableSorterSelectionClear.bind(this));
         this.tableSorter.events.on(TableSorter.EVENTS.CONFIG_CHANGED, this.handleTableSorterConfigChange.bind(this));
-
-        this.setDimensions(options.viewport);
     }
 
     protected onUpdate(options: VisualUpdateOptions, updateType: UpdateType): void {
@@ -236,10 +232,6 @@ export default class TableSorterVisual extends StatefulVisual<ITableSorterState>
 
             // const layoutText = ldget(this.dataView, "metadata.objects.layout.layout");
             this.loadDataFromPowerBI();
-        }
-
-        if (options.viewport) {
-            this.setDimensions(options.viewport);
         }
     }
 
