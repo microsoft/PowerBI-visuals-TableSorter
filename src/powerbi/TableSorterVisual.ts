@@ -43,20 +43,6 @@ const colors = require("essex.powerbi.base/dist/lib/colors");
 const ldget = require("lodash.get");
 /* tslint:enable */
 
-function hashString(input: string): number {
-  "use strict";
-  let hash = 0;
-  if (input.length === 0) {
-    return hash;
-  }
-  for (let i = 0, len = input.length; i < len; i++) {
-    const chr   = input.charCodeAt(i);
-    hash  = ((hash << 5) - hash) + chr;
-    hash |= 0; // Convert to 32bit integer
-  }
-  return hash;
-}
-
 @Visual(require("../build.json").output.PowerBI)
 @receiveDimensions
 @capabilities(capabilitiesData)
@@ -126,14 +112,6 @@ export default class TableSorterVisual extends StatefulVisual<ITableSorterState>
         };
         this.numberFormatConfig = new NumberFormatConfig();
         this.tableSorter = new TableSorter(this.element.find(".lineup"));
-    }
-
-    public areEqual(state1: ITableSorterState, state2: ITableSorterState): boolean {
-        return _.isEqual(state1, state2);
-    }
-
-    public getHashCode(state: ITableSorterState): number {
-        return hashString(JSON.stringify(state));
     }
 
     protected generateState(): ITableSorterState {
