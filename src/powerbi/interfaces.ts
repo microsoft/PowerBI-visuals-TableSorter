@@ -14,6 +14,7 @@ export interface ITableSorterState {
         id: string,
         serializedFilter: Object,
     }[];
+    scrollPosition: [number, number];
 }
 
 /**

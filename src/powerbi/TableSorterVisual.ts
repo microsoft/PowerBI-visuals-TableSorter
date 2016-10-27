@@ -119,7 +119,8 @@ export default class TableSorterVisual extends StatefulVisual<ITableSorterState>
         const settings = _.assign({}, this.tableSorter.settings);
         const configuration = _.assign({}, this.tableSorter.configuration);
         const selection = this.tableSorter.selection.map(DataFactory.convertRowSelectionToState);
-        return { settings, configuration, selection };
+        const scrollPosition = this.tableSorter.scrollPosition;
+        return { settings, configuration, selection, scrollPosition };
     }
 
     protected onSetState(value: ITableSorterState, oldValue: ITableSorterState): void {
@@ -136,6 +137,7 @@ export default class TableSorterVisual extends StatefulVisual<ITableSorterState>
                     this.isMultiSelect
                 );
             }
+            this.tableSorter.scrollPosition = value.scrollPosition;
             log("SetState Invoking ConfigurationUpdater", value);
         } else {
             log("TODO: Undefined State Injected");
@@ -159,9 +161,10 @@ export default class TableSorterVisual extends StatefulVisual<ITableSorterState>
 
         // Wire up the table sorter
         this.tableSorter.settings = this.initialSettings;
-        this.tableSorter.events.on("selectionChanged", this.handleTableSorterSelectionChange.bind(this));
+        this.tableSorter.events.on(TableSorter.EVENTS.SELECTION_CHANGED, this.handleTableSorterSelectionChange.bind(this));
         this.tableSorter.events.on(TableSorter.EVENTS.CLEAR_SELECTION, this.handleTableSorterSelectionClear.bind(this));
         this.tableSorter.events.on(TableSorter.EVENTS.CONFIG_CHANGED, this.handleTableSorterConfigChange.bind(this));
+        this.tableSorter.events.on(TableSorter.EVENTS.SCROLLED, this.handleTableSorterScrollChanged.bind(this));
     }
 
     protected onUpdate(options: VisualUpdateOptions, updateType: UpdateType): void {
@@ -379,6 +382,12 @@ export default class TableSorterVisual extends StatefulVisual<ITableSorterState>
         }
     }
 
+    private handleTableSorterScrollChanged(scrollPosition: [number, number]) {
+        const newState = Object["assign"]({}, this.state, { scrollPosition });
+        const positionText = scrollPosition[1] ? `(${scrollPosition[0]}, ${scrollPosition[1]})` : `${scrollPosition[0]}`;
+        publishChange(this, `Scroll to ${positionText}`, newState);
+    }
+
     private handleTableSorterConfigChange(config: ITableSorterConfiguration, oldConfig: ITableSorterConfiguration) {
         log("handleTableSorterConfigChange", config, oldConfig);
         if (!this.isHandlingUpdate && !this.isHandlingSetState) {
@@ -429,7 +438,7 @@ export default class TableSorterVisual extends StatefulVisual<ITableSorterState>
     }
 
     private loadLayoutFromPowerBI() {
-        log("loadLayoutFromPowerBI")
+        log("loadLayoutFromPowerBI");
         if (this.dataView) {
             this.isWaitingForInitialPBIConfiguration = false;
             const layoutText = ldget(this.dataView, "metadata.objects.layout.layout");

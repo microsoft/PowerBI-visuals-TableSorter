@@ -30,7 +30,7 @@ export class TableSorter {
      * A quick reference for the providers
      */
     public static PROVIDERS = {
-        JSON: JSONDataProvider
+        JSON: JSONDataProvider,
     };
 
     /**
@@ -43,6 +43,7 @@ export class TableSorter {
         SELECTION_CHANGED: "selectionChanged",
         LOAD_MORE_DATA: "loadMoreData",
         CLEAR_SELECTION: "clearSelection",
+        SCROLLED: "scrolled",
     };
 
     /**
@@ -197,7 +198,7 @@ export class TableSorter {
      */
     private lineUpConfig: ITableSorterSettings = <any>{
         svgLayout: {
-            mode: "separate"
+            mode: "separate",
         },
         numberformat: (d: number) => {
             const formatter =
@@ -208,10 +209,10 @@ export class TableSorter {
             multiselect: () => this.settings.selection.multiSelect
         },
         sorting: {
-            external: true
+            external: true,
         },
         filtering: {
-            external: true
+            external: true,
         },
         histograms: {
             generator: (columnImpl: any, callback: Function) => this.generateHistogram(columnImpl, callback)
@@ -246,6 +247,10 @@ export class TableSorter {
         if (dataProvider) {
             this.dataProvider = dataProvider;
         }
+    }
+
+    private get tableElement(): HTMLDivElement {
+        return this.element.find(".lu-wrapper").get()[0] as HTMLDivElement;
     }
 
     /**
@@ -341,6 +346,17 @@ export class TableSorter {
         if (this.lineupImpl) {
             this.lineupImpl.select(value);
         }
+    }
+
+    public get scrollPosition(): [number, number] {
+        const top = this.tableElement.scrollTop;
+        const left = this.tableElement.scrollLeft;
+        return [top, left];
+    }
+
+    public set scrollPosition(value: [number, number]) {
+        this.tableElement.scrollTop = value[0];
+        this.tableElement.scrollLeft = value[1];
     }
 
     /**
@@ -696,11 +712,13 @@ export class TableSorter {
         this.lineupImpl.listeners.on(`columns-changed${EVENTS_NS}`, () => this.onLineUpColumnsChanged());
         this.lineupImpl.listeners.on(`change-filter${EVENTS_NS}`, (x: JQuery, column: any) => this.onLineUpFiltered(column));
         let scrolled = this.lineupImpl.scrolled;
+        const raiseScrolled = _.debounce(this.raiseScrolled.bind(this), 500);
         let me = this;
 
         // The use of `function` here is intentional, we need to pass along the correct scope
         this.lineupImpl.scrolled = function(...args: any[]) {
             me.checkLoadMoreData(true);
+            raiseScrolled(args as any);
             return scrolled.apply(this, args);
         };
     }
@@ -949,5 +967,12 @@ export class TableSorter {
      */
     private raiseClearSelection() {
         this.events.raiseEvent(TableSorter.EVENTS.CLEAR_SELECTION);
+    }
+
+    /**
+     * Raises the load more data event
+     */
+    private raiseScrolled(position: [number, number]) {
+        this.events.raiseEvent(TableSorter.EVENTS.SCROLLED, position);
     }
 }

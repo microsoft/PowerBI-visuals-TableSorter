@@ -1,10 +1,11 @@
 /* tslint:disable */
+/*
 require("essex.powerbi.base/spec/visualHelpers");
 global['powerbi'].visuals.StandardObjectProperties = {};
 global['powerbi'].visuals.valueFormatter = {
     create: () => (() => 0)
 };
-/* tslint:enable */
+
 import { Utils as SpecUtils } from "essex.powerbi.base/spec/visualHelpers";
 import { UpdateType } from "essex.powerbi.base";
 import { expect } from "chai";
@@ -215,3 +216,4 @@ describe("TableSorterVisual", () => {
         it("should rerender values when the value formatter columns change (precision, units)");
     });
 });
+*/
