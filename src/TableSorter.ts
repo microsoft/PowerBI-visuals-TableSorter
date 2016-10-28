@@ -349,14 +349,19 @@ export class TableSorter {
     }
 
     public get scrollPosition(): [number, number] {
-        const top = this.tableElement.scrollTop;
-        const left = this.tableElement.scrollLeft;
-        return [top, left];
+        const tableElement = this.tableElement;
+        if (tableElement) {
+            return [tableElement.clientTop, tableElement.clientLeft];
+        } else {
+            return [0, 0];
+        }
     }
 
     public set scrollPosition(value: [number, number]) {
-        this.tableElement.scrollTop = value[0];
-        this.tableElement.scrollLeft = value[1];
+        if (this.tableElement) {
+            this.tableElement.scrollTop = value[0];
+            this.tableElement.scrollLeft = value[1];
+        }
     }
 
     /**
