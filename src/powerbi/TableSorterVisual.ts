@@ -72,6 +72,7 @@ export default class TableSorterVisual extends StatefulVisual<ITableSorterState>
     private waitingForSort: boolean;
     private isWaitingForInitialPBIConfiguration = true;
     private propertyPersistManager: PropertyPersistManager;
+    private lastScrollPosition: [number, number] = [0, 0];
 
     // Stores our current set of data.
     private _data: DataFactory.ITableData;
@@ -115,11 +116,15 @@ export default class TableSorterVisual extends StatefulVisual<ITableSorterState>
     }
 
     protected generateState(): ITableSorterState {
+        return this.doGenerateState(true);
+    }
+
+    protected doGenerateState(modelScroll: boolean): ITableSorterState {
         log("generating state");
         const settings = _.assign({}, this.tableSorter.settings);
         const configuration = _.assign({}, this.tableSorter.configuration);
-        const selection = this.tableSorter.selection.map(DataFactory.convertRowSelectionToState);
-        const scrollPosition = this.tableSorter.scrollPosition;
+        const selection = (this.tableSorter.selection || []).map(DataFactory.convertRowSelectionToState);
+        const scrollPosition = modelScroll ? this.lastScrollPosition : this.state.scrollPosition;
         return { settings, configuration, selection, scrollPosition };
     }
 
@@ -130,17 +135,16 @@ export default class TableSorterVisual extends StatefulVisual<ITableSorterState>
             this.loadDataFromPowerBI(value.configuration); // Sets the configuration and loads from PBI
             this.propertyPersistManager.updateConfiguration(value.configuration);
 
-            if (value.selection) {
-                this.tableSorter.selection = value.selection.map(DataFactory.convertStateRowSelectionToControl);
-                this.propertyPersistManager.updateSelection(
-                    this.tableSorter.selection as ITableSorterVisualRow[],
-                    this.isMultiSelect
-                );
-            }
+            this.tableSorter.selection = (value.selection || []).map(DataFactory.convertStateRowSelectionToControl);
+            this.propertyPersistManager.updateSelection(
+                this.tableSorter.selection as ITableSorterVisualRow[],
+                this.isMultiSelect
+            );
             this.tableSorter.scrollPosition = value.scrollPosition;
-            log("SetState Invoking ConfigurationUpdater", value);
         } else {
             log("TODO: Undefined State Injected");
+            this.tableSorter.selection = [];
+            this.tableSorter.scrollPosition = [0, 0];
         }
     }
 
@@ -164,7 +168,7 @@ export default class TableSorterVisual extends StatefulVisual<ITableSorterState>
         this.tableSorter.events.on(TableSorter.EVENTS.SELECTION_CHANGED, this.handleTableSorterSelectionChange.bind(this));
         this.tableSorter.events.on(TableSorter.EVENTS.CLEAR_SELECTION, this.handleTableSorterSelectionClear.bind(this));
         this.tableSorter.events.on(TableSorter.EVENTS.CONFIG_CHANGED, this.handleTableSorterConfigChange.bind(this));
-        this.tableSorter.events.on(TableSorter.EVENTS.SCROLLED, this.handleTableSorterScrollChanged.bind(this));
+        this.tableSorter.events.on(TableSorter.EVENTS.SCROLLED, this.handleScrolled.bind(this));
     }
 
     protected onUpdate(options: VisualUpdateOptions, updateType: UpdateType): void {
@@ -364,12 +368,17 @@ export default class TableSorterVisual extends StatefulVisual<ITableSorterState>
         this.host.onCustomSort(args);
     }
 
+    private get publishableState() {
+        const scrollPosition = this.lastScrollPosition;
+        return Object["assign"]({}, this.state, { scrollPosition });
+    }
+
     private handleTableSorterSelectionChange(rows: ITableSorterVisualRow[]) {
         log("handleTableSorterSelectionChange", rows);
         this.propertyPersistManager.updateSelection(rows, this.isMultiSelect);
         if (!this.isHandlingSetState) {
             this.clearState();
-            publishChange(this, "Change Selection", this.state);
+            publishChange(this, "Change Selection", this.publishableState);
         }
     }
 
@@ -378,14 +387,8 @@ export default class TableSorterVisual extends StatefulVisual<ITableSorterState>
         this.propertyPersistManager.updateSelection([], this.isMultiSelect);
         if (!this.isHandlingSetState) {
             this.clearState();
-            publishChange(this, "Clear Selection", this.state);
+            publishChange(this, "Clear Selection", this.publishableState);
         }
-    }
-
-    private handleTableSorterScrollChanged(scrollPosition: [number, number]) {
-        const newState = Object["assign"]({}, this.state, { scrollPosition });
-        const positionText = scrollPosition[1] ? `(${scrollPosition[0]}, ${scrollPosition[1]})` : `${scrollPosition[0]}`;
-        publishChange(this, `Scroll to ${positionText}`, newState);
     }
 
     private handleTableSorterConfigChange(config: ITableSorterConfiguration, oldConfig: ITableSorterConfiguration) {
@@ -433,7 +436,7 @@ export default class TableSorterVisual extends StatefulVisual<ITableSorterState>
             this.propertyPersistManager.updateConfiguration(this.state.configuration);
             const method = isNewState ? publishChange : publishReplace;
             log("publishing state alteration on ", this);
-            method(this, updates.join(", "), this.generateState());
+            method(this, updates.join(", "), this.doGenerateState(isNewState));
         }
     }
 
@@ -492,8 +495,12 @@ export default class TableSorterVisual extends StatefulVisual<ITableSorterState>
             delete newSettings.presentation.numberFormatter;
             delete newSettings.presentation.columnColors;
             if (!_.isEqual(oldSettings, newSettings)) {
-                publishReplace(this, "Settings Updated", this.state);
+                publishReplace(this, "Settings Updated", this.publishableState);
             }
         }
+    }
+
+    private handleScrolled(position: [number, number]) {
+        this.lastScrollPosition = position;
     }
 }

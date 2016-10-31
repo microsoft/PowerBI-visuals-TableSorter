@@ -70,11 +70,6 @@ export class TableSorter {
     public static DEFAULT_NUMBER_FORMATTER = d3.format(".3n");
 
     /**
-     * Returns true if the given object is numeric
-     */
-    private static isNumeric = (obj: any) => (obj - parseFloat(obj) + 1) >= 0;
-
-    /**
      * My lineup instance
      */
     public lineupImpl: any;
@@ -220,6 +215,20 @@ export class TableSorter {
     };
 
     /**
+     * Resizer function to update lineups rendering
+     */
+    private bodyUpdater = _.debounce(() => {
+        if (this.lineupImpl) {
+            this.lineupImpl.updateBody();
+        }
+    }, 100);
+
+    /**
+     * Returns true if the given object is numeric
+     */
+    private static isNumeric = (obj: any) => (obj - parseFloat(obj) + 1) >= 0;
+
+    /**
      * Constructor for the lineups
      */
     constructor(element: JQuery, dataProvider?: IDataProvider) {
@@ -259,15 +268,6 @@ export class TableSorter {
     public get dimensions() {
         return this._dimensions;
     }
-
-    /**
-     * Resizer function to update lineups rendering
-     */
-    private bodyUpdater = _.debounce(() => {
-        if (this.lineupImpl) {
-            this.lineupImpl.updateBody();
-        }
-    }, 100);
 
     /**
      * setter for the dimensions
@@ -717,7 +717,7 @@ export class TableSorter {
         this.lineupImpl.listeners.on(`columns-changed${EVENTS_NS}`, () => this.onLineUpColumnsChanged());
         this.lineupImpl.listeners.on(`change-filter${EVENTS_NS}`, (x: JQuery, column: any) => this.onLineUpFiltered(column));
         let scrolled = this.lineupImpl.scrolled;
-        const raiseScrolled = _.debounce(this.raiseScrolled.bind(this), 500);
+        const raiseScrolled = _.debounce(this.raiseScrolled.bind(this), 100);
         let me = this;
 
         // The use of `function` here is intentional, we need to pass along the correct scope
