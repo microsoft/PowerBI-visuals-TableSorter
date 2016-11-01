@@ -154,6 +154,19 @@ export default class TableSorterVisual extends StatefulVisual<ITableSorterState>
         }
     }
 
+    public areEqual(s1: ITableSorterState, s2: ITableSorterState) {
+        return super.areEqual(
+            s1 && _.omit(s1, ["scrollPosition"]) as ITableSorterState,
+            s2 && _.omit(s2, ["scrollPosition"]) as ITableSorterState
+        );
+    }
+
+    public getHashCode(state: ITableSorterState) {
+        return super.getHashCode(
+            state && _.omit(state, ["scrollPosition"]) as ITableSorterState
+        );
+    }
+
     protected onInit(options: VisualInitOptions): void {
         log("init", options);
         this.host = options.host;
