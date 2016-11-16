@@ -20,7 +20,7 @@
  */
 
 /* tslint:disable */
-import "essex.powerbi.base/spec/visualHelpers";
+import "essex.powerbi.base/dist/spec/visualHelpers";
 // import "../base/testSetup";
 /* tslint:enable */
 import { expect } from "chai";
@@ -413,7 +413,7 @@ describe("TableSorter", () => {
 
                         const wrapper = mockLineup.$container.node().find(".lu-wrapper");
                         // This one is different, cause it just fills this container
-                        // expect(pxStrToNum(wrapper.css("width"))).to.be.equal(200);  
+                        // expect(pxStrToNum(wrapper.css("width"))).to.be.equal(200);
                         expect(pxStrToNum(wrapper.css("height"))).to.be.closeTo(400, 20);
 
                         // We need to wait for the debounce

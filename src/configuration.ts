@@ -21,6 +21,7 @@
 
 import { ITableSorterConfiguration, ITableSorterRow, ITableSorterColumn } from "./models";
 import * as d3 from "d3";
+import * as _ from "lodash";
 
 /**
  * Returns true if the given object is numeric

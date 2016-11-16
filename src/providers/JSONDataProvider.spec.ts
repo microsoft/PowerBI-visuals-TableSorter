@@ -20,7 +20,7 @@
  */
 
 // import "../../base/testSetup";
-import "essex.powerbi.base/spec/visualHelpers";
+import "essex.powerbi.base/dist/spec/visualHelpers";
 
 import { expect } from "chai";
 import { JSONDataProvider } from "./JSONDataProvider";

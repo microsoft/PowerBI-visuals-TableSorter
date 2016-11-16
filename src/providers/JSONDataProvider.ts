@@ -32,6 +32,7 @@ import {
 } from "../models";
 import { logger } from "essex.powerbi.base";
 import * as d3 from "d3";
+import * as _ from "lodash";
 
 const log = logger("essex:widget:tablesorter:JSONDataProvider");
 
@@ -51,7 +52,7 @@ export class JSONDataProvider implements IDataProvider {
      * A filter for string values
      */
     private static checkStringFilter(data: { [key: string]: string }, filter: { column: string; value: string }) {
-        return (data[filter.column] || "").match(new RegExp(filter.value));
+        return ((data[filter.column] || "") + "").match(new RegExp(filter.value));
     }
 
     /**

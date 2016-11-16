@@ -58,6 +58,7 @@ export class TableSorter {
         SELECTION_CHANGED: "selectionChanged",
         LOAD_MORE_DATA: "loadMoreData",
         CLEAR_SELECTION: "clearSelection",
+        LOAD_LINEUP: "loadLineup",
     };
 
     /**
@@ -150,7 +151,10 @@ export class TableSorter {
         svgLayout: {
             mode: "separate",
         },
-        numberformat: (d: number) => (this.settings.presentation.numberFormatter || DEFAULT_NUMBER_FORMATTER)(d),
+        numberformat: (d: number, row: any, column: any) => {
+            const formatter = <any>(this.settings.presentation.numberFormatter || DEFAULT_NUMBER_FORMATTER);
+            return formatter(d, row, column);
+        },
         interaction: {
             multiselect: () => this.settings.selection.multiSelect,
         },
@@ -293,6 +297,8 @@ export class TableSorter {
         let newSettings: ITableSorterSettings = $.extend(true, {}, DEFAULT_TABLESORTER_SETTINGS, value);
         newSettings.selection.singleSelect = !newSettings.selection.multiSelect;
 
+        this.lineUpConfig["cellFormatter"] = newSettings.presentation.cellFormatter;
+
         /** Apply the settings to lineup */
         if (this.lineupImpl) {
             let presProps = newSettings.presentation;
@@ -322,7 +328,7 @@ export class TableSorter {
     /**
      * Sets the column configuration that is used
      * *NOTE* This does not cause a data fetch, because it is just restoring state,
-     * if required, set the dataProvider property to refetch data. 
+     * if required, set the dataProvider property to refetch data.
      */
     public set configuration(value: ITableSorterConfiguration) {
         this._configuration = value;
@@ -363,7 +369,7 @@ export class TableSorter {
      */
     public destroy() {
         if (this.lineupImpl) {
-            /* tslint:disable */ 
+            /* tslint:disable */
             if (this.lineupImpl.listeners) {
                 this.lineupImpl.listeners.on(EVENTS_NS, null);
             }
@@ -472,6 +478,8 @@ export class TableSorter {
      * Loads the actual lineup impl from the given spec document
      */
     private loadLineup(config: ITableSorterConfiguration) {
+        this.raiseLoadLineup(config);
+
         let spec: any = {};
         // spec.name = name;
         spec.dataspec = config;
@@ -699,5 +707,12 @@ export class TableSorter {
      */
     private raiseClearSelection() {
         this.events.raiseEvent(TableSorter.EVENTS.CLEAR_SELECTION);
+    }
+
+    /**
+     * Raises the event when loading lineup
+     */
+    private raiseLoadLineup(config: ITableSorterConfiguration) {
+        this.events.raiseEvent(TableSorter.EVENTS.LOAD_LINEUP, config);
     }
 }

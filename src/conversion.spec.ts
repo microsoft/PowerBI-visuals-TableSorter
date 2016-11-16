@@ -20,6 +20,7 @@
  */
 
 import { expect } from "chai";
+import * as _ from "lodash";
 import { convertFiltersFromLayout, convertFilters, convertSort, convertConfiguration } from "./conversion";
 
 describe("conversion", () => {
@@ -179,7 +180,6 @@ describe("conversion", () => {
                     primary: [{
                         column: "FAKE_COLUMN",
                         filter: "FAKE_FILTER",
-                        domain: undefined,
                     }],
                 },
                 sort: {

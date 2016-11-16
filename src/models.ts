@@ -96,6 +96,16 @@ export interface ITableSorterColumn {
     categories?: string[];
 
     /**
+     * The color of the column
+     */
+    color?: string;
+
+    /**
+     * The width of the column
+     */
+    width?: number;
+
+    /**
      * The histogram of the column
      */
     histogram?: {
@@ -125,7 +135,7 @@ export interface ITableSorterLayoutColumn extends ITableSorterColumn {
  * INFO ===
  * There are two real parts to the configuration
  * 1. columns - This is the list of the raw columns that are in the dataset, and their associated domains
- * 2. layout - This is how the columns are visually layed out in Table Sorter, ie single...stacked, whatever, and the 
+ * 2. layout - This is how the columns are visually layed out in Table Sorter, ie single...stacked, whatever, and the
  *   `domain` that it is filtered to, this CAN differ from the domain in the columns array, which indicates that the column is filtered.
  */
 export interface ITableSorterConfiguration {
@@ -206,7 +216,12 @@ export interface ITableSorterSettings {
         /**
          * Formatter for numbers
          */
-        numberFormatter?: (num: number) => string;
+        numberFormatter?: (num: number, row?: any, col?: any) => string;
+
+        /**
+         * The raw cell formatter, will be called for all text cells
+         */
+        cellFormatter?: (cellSelection: d3.Selection<ICellFormatterObject>) => void;
     };
 }
 
@@ -215,7 +230,7 @@ export interface ITableSorterSettings {
  */
 export interface IDataProvider {
     /**
-     * Returns true if the data provider can be queried with the given set of options, 
+     * Returns true if the data provider can be queried with the given set of options,
      * this allows for data sources which don't know their total counts to query
      */
     canQuery(options: IQueryOptions): PromiseLike<boolean>;
@@ -327,4 +342,90 @@ export interface ILineupImpl {
     changeInteractionOption: (key: string, value: any) => void;
     changeDataStorage: (spec: any) => void;
     sortBy: (colName: string, asc: boolean) => void;
+}
+
+export interface ICellFormatterObject extends HasRow, HasLayoutColumn {
+    /**
+     * True if the column is a rank column
+     */
+    isRank: boolean;
+
+    /**
+     * The value to display in the cell
+     */
+    label: any;
+}
+
+export interface HasRow {
+    row: ITableSorterRow;
+}
+
+export interface HasLayoutColumn {
+    column: ILayoutColumn;
+}
+
+export interface ILayoutColumn {
+    column?: ILineupColumn;
+}
+
+export interface ILineupColumn {
+
+    /**
+     * The property name in each of the rows
+     */
+    column: string;
+
+    /**
+     * The initial configuration passed to lineup for this column
+     */
+    config?: any;
+}
+
+/**
+ * Represents the mode to color things
+ */
+export enum ColorMode {
+    Gradient = 1,
+    Instance = 2
+}
+
+export interface IGradientSettings {
+
+    /**
+     * If the gradient color scheme should be used when coloring the values in the slicer
+     */
+    startColor?: string;
+
+    /**
+     * If the gradient color scheme should be used when coloring the values in the slicer
+     */
+    endColor?: string;
+
+    /**
+     * The value to use as the start color
+     */
+    startValue?: number;
+
+    /**
+     * The value to use as the end color
+     */
+    endValue?: number;
+}
+
+export interface IColorSettings {
+
+    /**
+     * Represents the color mode to use
+     */
+    colorMode?: ColorMode;
+
+    /**
+     * The gradient settings
+     */
+    rankGradients?: IGradientSettings;
+
+    /**
+     * Provides a mapping from ranks to colors
+     */
+    rankInstanceColors?: { [rank: string]: string; };
 }

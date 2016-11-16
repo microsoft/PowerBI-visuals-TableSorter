@@ -21,6 +21,7 @@
 
 import * as $ from "jquery";
 import * as d3 from "d3";
+import * as _ from "lodash";
 import { ITableSorterFilter, ILineupImpl, ITableSorterConfiguration, ITableSorterSort } from "./models";
 
 /**
