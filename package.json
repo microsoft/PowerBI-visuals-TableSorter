@@ -11,6 +11,7 @@
     "lint": "tslint 'src/**/*[!.d].{ts,tsx}'",
     "karma:tdd": "karma start --tdd",
     "karma:once": "karma start",
+    "docs": "typedoc --out docs --ignoreCompilerErrors ./ --externalPattern **/node_modules/**/*.* --exclude **/src/**/*.spec.ts",
     "test": "npm-run-all --sequential clean tsc --parallel lint karma:once",
     "test:slim": "npm-run-all --sequential tsc karma:once",
     "compile": "npm-run-all --sequential tsc pbibundle",
