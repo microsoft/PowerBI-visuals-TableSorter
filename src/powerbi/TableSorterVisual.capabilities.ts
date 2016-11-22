@@ -35,6 +35,7 @@ export default $.extend(true, {}, VisualBase.capabilities, {
         name: "Rank",
         kind: VisualDataRoleKind.GroupingOrMeasure,
         displayName: "Rank",
+        description: "Causes TableSorter to create ranking information based on the contents of the column. *Note* This should be a numeric column", //tslint:disable-line
     }],
     dataViewMappings: [{
         conditions: [
