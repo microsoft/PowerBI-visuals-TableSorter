@@ -58,7 +58,7 @@ const config = module.exports = {
 };
 
 if (process.env.NODE_ENV !== "production") {
-    config.devtool = "eval";    
+    config.devtool = "eval";
 } else {
     var banner = new webpack.BannerPlugin(fs.readFileSync("LICENSE").toString());
     var uglify = new webpack.optimize.UglifyJsPlugin({
@@ -67,10 +67,10 @@ if (process.env.NODE_ENV !== "production") {
         compress: false,
         beautify: false,
         output: {
-            ascii_only: true, // Necessary, otherwise it screws up the unicode characters that lineup is using for font-awesome 
+            ascii_only: true, // Necessary, otherwise it screws up the unicode characters that lineup is using for font-awesome
             comments: false,
         }
     });
     config.plugins.push(uglify);
-    // config.plugins.push(banner);
+    config.plugins.push(banner);
 }
