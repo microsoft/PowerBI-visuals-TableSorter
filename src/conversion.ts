@@ -156,7 +156,6 @@ export function convertConfiguration(lineupImpl: ILineupImpl, filteredColumn?: a
     return s;
 }
 
-
 /**
  * Gets the sort from lineup
  */

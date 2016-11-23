@@ -71,6 +71,9 @@ const log = logger("essex:widget:TableSorterVisual");
 const CSS_MODULE = require("!css!sass!./css/TableSorterVisual.scss");
 /* tslint:enable */
 
+/**
+ * The visual which wraps TableSorter
+ */
 @Visual(require("../build.json").output.PowerBI)
 export default class TableSorterVisual extends VisualBase implements IVisual {
 

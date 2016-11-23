@@ -26,6 +26,9 @@ import TSSettings from "./settings";
 import * as $ from "jquery";
 import * as _ from "lodash";
 
+/**
+ * The set of capabilities for the table sorter
+ */
 export default $.extend(true, {}, VisualBase.capabilities, {
     dataRoles: [{
         name: "Values",

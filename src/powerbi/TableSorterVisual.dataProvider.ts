@@ -24,7 +24,7 @@ import { IQueryOptions, IQueryResult } from "../models";
 import { LOAD_COUNT } from "./TableSorterVisual.defaults";
 
 /**
- * The data provider for our lineup instance
+ * The data provider for our table sorter
  */
 export default class MyDataProvider extends JSONDataProvider {
 

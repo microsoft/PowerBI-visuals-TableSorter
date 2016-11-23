@@ -24,7 +24,11 @@
 
 import { boolSetting as bool } from "essex.powerbi.base";
 
+/**
+ * The set of settings related to selection
+ */
 export default class SelectionSettings {
+
     /**
      * If true, multiple rows can be selected
      */

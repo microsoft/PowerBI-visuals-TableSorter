@@ -32,6 +32,7 @@ import {
      composeInstance,
      getObjectsForColumn,
      createObjectSelectorForColumn,
+     IGradient,
 } from "essex.powerbi.base";
 import { IColorSettings, ColorMode } from "../../models";
 import { calculateRankingInfo } from "../ConfigBuilder";
@@ -58,7 +59,7 @@ export function hasRankInfo(dataView: powerbi.DataView) {
 /**
  * Represents a set of gradient settings
  */
-export class GradientSettings {
+export class GradientSettings implements IGradient {
 
     /**
      * If the gradient color scheme should be used when coloring the values in the slicer

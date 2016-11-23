@@ -34,6 +34,7 @@ export function dateTimeFormatCalculator() {
     let showSeconds = false;
     let showMilliseconds = false;
     return {
+
         /**
          * Adds the given date instance to the calculation
          */

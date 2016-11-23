@@ -44,7 +44,7 @@ const LineUpLib = require("lineup-v1");
 const EVENTS_NS = ".lineup";
 
 /**
- * Thin wrapper around the lineup library
+ * A wrapper around the lineup library
  */
 export class TableSorter {
 

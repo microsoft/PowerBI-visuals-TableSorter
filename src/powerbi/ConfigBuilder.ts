@@ -32,10 +32,19 @@ import * as _ from "lodash";
 import * as d3 from "d3";
 const naturalSort = require("javascript-natural-sort"); // tslint:disable-line
 const ldget = require("lodash/get"); // tslint:disable-line
+
+/**
+ * The prefix for the generated rank column names
+ */
 const GENERATED_COLUMN_NAME_PREFIX = "GENERATED_RANK_LEVEL_";
 
 /**
- * Gets a lineup config from the data view
+ * Generates a table sorter compatible configuration from a dataView
+ * @param dataView The dataView to generate the configuration from
+ * @param data The set of data parsed from the data view
+ * @param colorSettings The color settings to use when coloring rank columns
+ * @param resetRankLayout If true the generated rank column layouts will be reset
+ * @param reverseRankingColumns If true, the generated rank column order will be reversed
  */
 export default function(
     dataView: powerbi.DataView,
@@ -45,7 +54,11 @@ export default function(
     reverseRankingColumns = false): ITableSorterConfiguration {
     "use strict";
     if (dataView) {
-        let newColArr = parseColumnsFromDataView(dataView, data);
+
+        // Initially parse all of the columns from the data view so we know the valid columns
+        let validColumns = parseColumnsFromDataView(dataView, data);
+
+        // Attempt to load the existing table sorter config from powerbi
         let config: ITableSorterConfiguration;
         if (dataView.metadata && dataView.metadata.objects && dataView.metadata.objects["layout"]) {
             let configStr = dataView.metadata.objects["layout"]["layout"];
@@ -54,10 +67,10 @@ export default function(
             }
         }
 
-        // Generate the "rank" columns
+        // Generate the "rank" columns and append them to the set of valid columns
         const rankResult = parseRankColumns(dataView, colorSettings, reverseRankingColumns);
         if (rankResult) {
-            newColArr.some(c => {
+            validColumns.some(c => {
                 if (c.column === rankResult.info.column.displayName) {
                     c.type = "string";
                     delete c["domain"];
@@ -65,18 +78,22 @@ export default function(
                 }
             });
 
-            newColArr = newColArr.concat(rankResult.columns);
+            validColumns = validColumns.concat(rankResult.columns);
         }
 
+        // If we don't have a config, then just create a simple one
         if (!config) {
             config = {
-                primaryKey: newColArr[0].label,
-                columns: newColArr,
+                primaryKey: validColumns[0].label,
+                columns: validColumns,
             };
         } else {
-            processExistingConfig(config, newColArr);
+
+            // Otherwise we need to do some additional processing
+            processExistingConfig(config, validColumns);
         }
 
+        // Process the configuration with the current rank information
         processConfigWithRankResult(config, rankResult, resetRankLayout);
 
         return config;
@@ -86,6 +103,8 @@ export default function(
 /**
  * Parses the rank columns from the dataview (if necessary)
  * @param dataView The DataView to parse the rank columns from
+ * @param colorSettings The settings to use when coloring the rank columns
+ * @param reverseRankingColumns If true, the generated rank columns will be reversed
  */
 function parseRankColumns(dataView: powerbi.DataView, colorSettings: IColorSettings, reverseRankingColumns = false) {
     "use strict";
@@ -116,6 +135,8 @@ function parseRankColumns(dataView: powerbi.DataView, colorSettings: IColorSetti
 
 /**
  * Parses columns from a data view
+ * @param dataView The dataView to get the columns from
+ * @param data The data set that is being loaded
  */
 function parseColumnsFromDataView(dataView: powerbi.DataView, data: ITableSorterRow[]) {
     "use strict";
@@ -142,6 +163,9 @@ function parseColumnsFromDataView(dataView: powerbi.DataView, data: ITableSorter
 
 /**
  * Processes the configuration with the given rank result
+ * @param config The configuration being loaded
+ * @param rankResult The result from the rank generation
+ * @param resetRankLayout If true, the layout for the generated rank columns will be reset
  */
 function processConfigWithRankResult(config: ITableSorterConfiguration, rankResult: any, resetRankLayout: boolean) {
     "use strict";
@@ -182,6 +206,8 @@ function processConfigWithRankResult(config: ITableSorterConfiguration, rankResu
 
 /**
  * Processes the existing config, removing unnecessary columns, and does some additional processing
+ * @param config The config to process
+ * @param columns The set of valid columns
  */
 export function processExistingConfig(config: ITableSorterConfiguration, columns: ITableSorterColumn[]) {
     "use strict";
@@ -219,6 +245,11 @@ export function processExistingConfig(config: ITableSorterConfiguration, columns
     removeMissingColumns(config, columns);
 }
 
+/**
+ * Removes all missing columns from the configuration
+ * @param config The config to remove columns from
+ * @param columns The set of valid columns
+ */
 function removeMissingColumns(config: ITableSorterConfiguration, columns: ITableSorterColumn[]) {
     "use strict";
     listDiff<ITableSorterColumn>(config.columns.slice(0), columns, {
@@ -352,6 +383,7 @@ export function calcDomain (data: any[], name: string) {
 
 /**
  * Calculates all of the ranking values from the given dataview
+ * @param dataView The dataView to calculate the ranking info for
  */
 export function calculateRankingInfo(dataView: powerbi.DataView) {
     "use strict";
