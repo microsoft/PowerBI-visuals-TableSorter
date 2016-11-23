@@ -220,8 +220,9 @@ export class TableSorter {
         this._dimensions = value;
         if (this.lineupImpl && this.lineupImpl.$container && value) {
             const wrapper = $(this.lineupImpl.$container.node()).find("div.lu-wrapper");
+            const headerHeight = wrapper.offset().top - this.element.offset().top;
             wrapper.css({
-                height: (value.height - wrapper.offset().top - 2) + "px",
+                height: (value.height - headerHeight - 2) + "px",
                 width: "100%",
             });
         }
