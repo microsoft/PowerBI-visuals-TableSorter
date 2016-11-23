@@ -25,9 +25,9 @@ import * as _ from "lodash";
 import { ITableSorterFilter, ILineupImpl, ITableSorterConfiguration, ITableSorterSort } from "./models";
 
 /**
- * Gets the current list of filters from lineup
+ * Converts the current set of lineup filters into ones compatible with table sorter
  */
-export function convertFilters(lineupImpl: ILineupImpl, filteredColumn?: any) {
+export function convertFilters(lineupImpl: ILineupImpl, filteredColumn?: any): ITableSorterFilter[] {
     "use strict";
     if (lineupImpl) {
         let fDesc = filteredColumn && filteredColumn.description();
@@ -75,9 +75,9 @@ export function convertFilters(lineupImpl: ILineupImpl, filteredColumn?: any) {
     }
 }
 
-
 /**
- * Gets filters from a layout obj
+ * Converts the current set of lineup filters on the layout object into ones compatible with table sorter
+ * @param layoutObj The layout object to extract the filters from
  */
 export function convertFiltersFromLayout(layoutObj: any) {
     "use strict";
@@ -114,9 +114,11 @@ export function convertFiltersFromLayout(layoutObj: any) {
 }
 
 /**
- * Returns a configuration based on lineup settings
+ * Converts a table sorter compatible configuration from the given lineup instance
+ * @param lineupImpl The lineup instance to create from
+ * @param filteredColumn The filtered column that caused this conversion to occur.
  */
-export function convertConfiguration(lineupImpl: ILineupImpl, filteredColumn?: any) {
+export function convertConfiguration(lineupImpl: ILineupImpl, filteredColumn?: any): ITableSorterConfiguration {
     "use strict";
     // TODO: filteredColumn is not a great fix.  The problem is when we filter a column, we reload lineup with new data/columns
     // but the UI remains open, and has a reference to an old column. filteredColumn is that old column.
@@ -157,7 +159,8 @@ export function convertConfiguration(lineupImpl: ILineupImpl, filteredColumn?: a
 }
 
 /**
- * Gets the sort from lineup
+ * Converts the current lineup sort into one compatible with table sorter
+ * @param lineupImpl The lineup instance to get the sort from
  */
 export function convertSort(lineupImpl: ILineupImpl): ITableSorterSort {
     "use strict";

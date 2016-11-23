@@ -164,7 +164,8 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
     }, 100);
 
     /**
-     * Selects the given rows
+     * A debounced version of the selection changed event listener
+     * @param rows The rows that are selected
      */
     private onSelectionChanged = _.debounce((rows?: ITableSorterVisualRow[]) => {
         let filter: powerbi.data.SemanticFilter;
@@ -210,6 +211,9 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
 
     /**
      * The constructor for the visual
+     * @param noCss If true, no css will be loaded
+     * @param initialSettings The initial set of settings to use
+     * @param updateTypeGetterOverride An override for the update type gettter.
      */
     public constructor(noCss: boolean = false, initialSettings?: ITableSorterSettings, updateTypeGetterOverride?: () => UpdateType) {
         super("TableSorter", noCss);
@@ -263,6 +267,9 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
 
     /**
      * Converts the data from power bi to a data we can use
+     * @param view The dataview to load
+     * @param selectedIds The list of selected ids
+     * @param settings The color settings to use when converting the dataView
      */
     private static converter(view: DataView, selectedIds: any, settings?: IColorSettings) {
         let data: ITableSorterVisualRow[] = [];
@@ -329,7 +336,10 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
         };
     }
 
-    /** This is called once when the visual is initialially created */
+    /**
+     * The IVIsual.init function
+     * Called when the visual is being initialized
+     */
     public init(options: VisualInitOptions): void {
         if (!this.destroyed) {
             super.init(options);
@@ -364,7 +374,11 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
         }
     }
 
-    /** Update is called for data updates, resizes & formatting changes */
+    /**
+     * The IVisual.update function
+     * Called when the visual is being initialized.
+     * Update is called for data updates, resizes & formatting changes
+     */
     public update(options: VisualUpdateOptions) {
         if (!this.destroyed) {
             const updateType = this.updateType();
@@ -411,6 +425,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
     }
 
     /**
+     * The IVisual.enumerateObjectInstances function
      * Enumerates the instances for the objects that appear in the power bi panel
      */
     public enumerateObjectInstances(options: EnumerateVisualObjectInstancesOptions): VisualObjectInstance[] {
@@ -424,6 +439,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
     }
 
     /**
+     * The IVisual.destroy function
      * Destroys this visual
      */
     public destroy() {
@@ -449,6 +465,8 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
 
     /**
      * Returns true if the layout has changed in the PBI settings
+     * @param updateType The current update type that caused this check
+     * @param options The update options that caused this check
      */
     private hasLayoutChanged(updateType: UpdateType, options: VisualUpdateOptions) {
         if (updateType & UpdateType.Settings &&
@@ -466,7 +484,9 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
     }
 
     /**
-     * Event listener for when the visual data's changes
+     * Handles all of the data loading required from power bi during an update call
+     * @param oldSettings The settings before the update
+     * @param updateType The type of update being performed
      */
     private loadDataFromPowerBI(oldSettings: TSSettings, updateType: UpdateType) {
         if (this.dataViewTable) {
@@ -504,7 +524,38 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
     }
 
     /**
+     * Loads the settings object from PBI during an update call
+     * @param oldState The state before the update call
+     * @param newState The state during the update call
+     */
+    private loadSettingsFromPowerBI(oldState: TSSettings, newState: TSSettings) {
+        if (this.dataView) {
+            // Make sure we have the default values
+            let updatedSettings: ITableSorterSettings =
+                $.extend(true,
+                    {},
+                    this.tableSorter.settings,
+                    TableSorterVisual.VISUAL_DEFAULT_SETTINGS,
+                    this.initialSettings || { },
+                    newState.toJSONObject());
+
+            if (oldState.presentation.labelPrecision !== newState.presentation.labelPrecision ||
+                oldState.presentation.labelDisplayUnits !== newState.presentation.labelDisplayUnits) {
+                this.numberFormatter = valueFormatterFactory({
+                    value: newState.presentation.labelDisplayUnits || 0,
+                    format: "0",
+                    precision: newState.presentation.labelPrecision || undefined,
+                });
+                this.tableSorter.rerenderValues();
+            }
+
+            this.tableSorter.settings = updatedSettings;
+        }
+    }
+
+    /**
      * Creates a data provider with the given set of data
+     * @param newData The data to load
      */
     private createDataProvider(newData: { data: any[] }) {
         let firstLoad = true;
@@ -535,6 +586,11 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
             });
     }
 
+    /**
+     * Handles the sort from the data provider by emitting it to powerbi
+     * * Note * Not currently used
+     * @param rawSort The sort being performed
+     */
     private handleSort(rawSort: ITableSorterSort) {
         /* tslint:disable */
         let args: powerbi.CustomSortEventArgs = null;
@@ -567,6 +623,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
 
     /**
      * Builds a self filter for PBI from the list of filters
+     * @param filters The set of filters that table sorter has applied
      */
     private buildSelfFilter(filters: ITableSorterFilter[]) {
         let operation = "remove";
@@ -606,35 +663,8 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
     }
 
     /**
-     * Listener for when the visual settings changed
-     */
-    private loadSettingsFromPowerBI(oldState: TSSettings, newState: TSSettings) {
-        if (this.dataView) {
-            // Make sure we have the default values
-            let updatedSettings: ITableSorterSettings =
-                $.extend(true,
-                    {},
-                    this.tableSorter.settings,
-                    TableSorterVisual.VISUAL_DEFAULT_SETTINGS,
-                    this.initialSettings || { },
-                    newState.toJSONObject());
-
-            if (oldState.presentation.labelPrecision !== newState.presentation.labelPrecision ||
-                oldState.presentation.labelDisplayUnits !== newState.presentation.labelDisplayUnits) {
-                this.numberFormatter = valueFormatterFactory({
-                    value: newState.presentation.labelDisplayUnits || 0,
-                    format: "0",
-                    precision: newState.presentation.labelPrecision || undefined,
-                });
-                this.tableSorter.rerenderValues();
-            }
-
-            this.tableSorter.settings = updatedSettings;
-        }
-    }
-
-    /**
      * The cell formatter for TableSorter
+     * @param selection The d3 selection for the cells being formatted.
      */
     private cellFormatter(selection: d3.Selection<ICellFormatterObject>) {
         if (this._data && this._data.rankingInfo) {
@@ -659,18 +689,9 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
 }
 
 /**
- * The lineup data
- */
-interface ITableSorterVisualRow extends ITableSorterRow, powerbi.visuals.SelectableDataPoint {
-
-    /**
-     * The expression that will exactly match this row
-     */
-    filterExpr: powerbi.data.SQExpr;
-}
-
-/**
- * Updates all of the ranking columns
+ * Updates the data to have the current values of the ranking info, by taking into account filtering and sorting.
+ * @param rankingInfo The ranking info to use when updating the column values
+ * @param data The current set of data
  */
 function updateRankingColumns(rankingInfo: IRankingInfo, data: ITableSorterRow[]) {
     "use strict";
@@ -709,16 +730,10 @@ function updateRankingColumns(rankingInfo: IRankingInfo, data: ITableSorterRow[]
     }
 }
 
-interface IRankingInfo {
-    column: powerbi.DataViewMetadataColumn;
-    values: any[];
-    colors: {
-        [rank: string]: string;
-    };
-}
-
 /**
  * Returns true if any of the color settings have changed.
+ * @param state The previous state
+ * @param newState The new state
  */
 function hasColorSettingsChanged(state: TSSettings, newState: TSSettings) {
     "use strict";
@@ -745,4 +760,27 @@ function hasColorSettingsChanged(state: TSSettings, newState: TSSettings) {
         return changed;
     }
     return true;
+}
+
+
+/**
+ * A simple interface to describe the data requirements for the table sorter visual row
+ */
+interface ITableSorterVisualRow extends ITableSorterRow, powerbi.visuals.SelectableDataPoint {
+
+    /**
+     * The expression that will exactly match this row
+     */
+    filterExpr: powerbi.data.SQExpr;
+}
+
+/**
+ * A simple interface to describe the ranking info calculated from a dataView
+ */
+interface IRankingInfo {
+    column: powerbi.DataViewMetadataColumn;
+    values: any[];
+    colors: {
+        [rank: string]: string;
+    };
 }

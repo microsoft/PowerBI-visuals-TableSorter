@@ -170,7 +170,9 @@ export class TableSorter {
     };
 
     /**
-     * Constructor for the lineups
+     * Constructor for the table sorter
+     * @param element The element to attach the table sorter to
+     * @param dataProvider The data provider to use when querying for data
      */
     constructor(element: JQuery, dataProvider?: IDataProvider) {
         this.element = $(template());
@@ -383,6 +385,7 @@ export class TableSorter {
 
     /**
      * Checks to see if more data should be loaded based on the viewport
+     * @param scroll If true, a scrolling behavior caused this check
      */
     protected checkLoadMoreData(scroll: boolean) {
         if (!this.destroyed) {
@@ -400,6 +403,7 @@ export class TableSorter {
 
     /**
      * Runs the current query against the data provider
+     * @param newQuery If true, a change in the query (filter/sort) caused this run, as opposed to infinite scrolling
      */
     private runQuery(newQuery: boolean) {
         // If there is already a thing goin, stop it
@@ -450,6 +454,7 @@ export class TableSorter {
 
     /**
      * Loads data from a query result
+     * @param r The query result to load the data from
      */
     private loadDataFromQueryResult(r: IQueryResult) {
         this._data = this._data || [];
@@ -476,6 +481,7 @@ export class TableSorter {
 
     /**
      * Loads the actual lineup impl from the given spec document
+     * @param config The configuration to use when loading lineup
      */
     private loadLineup(config: ITableSorterConfiguration) {
         this.raiseLoadLineup(config);
@@ -537,6 +543,8 @@ export class TableSorter {
 
     /**
      * Generates the histogram for lineup
+     * @param columnImpl The lineup column to generate the histogram for
+     * @param callback The callback for when the generation is complete
      */
     private generateHistogram(columnImpl: any, callback: Function) {
         let column = this.getColumnByName(columnImpl.column.column);
@@ -570,6 +578,7 @@ export class TableSorter {
 
     /**
      * Saves the current layout
+     * @param filteredColumn The column that is being filtered
      */
     private updateConfigurationFromLineup(filteredColumn?: any) {
         if (!this.savingConfiguration) {
@@ -608,6 +617,8 @@ export class TableSorter {
 
     /**
      * Listener for line up being sorted
+     * @param column The column being sorted
+     * @param asc If true the sort is ascending
      */
     private onLineUpSorted(column: string, asc: boolean) {
         if (!this.sortingFromConfig) {
@@ -629,6 +640,7 @@ export class TableSorter {
 
     /**
      * Listener for lineup being filtered
+     * @param column The lineup column being filtered
      */
     private onLineUpFiltered(column: any) {
         let colName = column.column && column.column.column;

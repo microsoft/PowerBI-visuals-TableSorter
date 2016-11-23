@@ -37,6 +37,7 @@ export function dateTimeFormatCalculator() {
 
         /**
          * Adds the given date instance to the calculation
+         * @param date The date to add
          */
         addToCalculation(date: Date) {
             if (prevDate && date) {

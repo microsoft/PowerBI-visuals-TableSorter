@@ -40,6 +40,7 @@ export default class MyDataProvider extends JSONDataProvider {
 
     /**
      * Determines if the dataset can be queried again
+     * @param options The query options to control how the query is performed
      */
     public canQuery(options: IQueryOptions): PromiseLike<boolean> {
         return super.canQuery(options);
@@ -47,6 +48,7 @@ export default class MyDataProvider extends JSONDataProvider {
 
     /**
      * Runs a query against the server
+     * @param options The query options to control how the query is performed
      */
     public query(options: IQueryOptions): PromiseLike<IQueryResult> {
         return super.query(options);

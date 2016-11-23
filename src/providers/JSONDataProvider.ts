@@ -37,7 +37,7 @@ import * as _ from "lodash";
 const log = logger("essex:widget:tablesorter:JSONDataProvider");
 
 /**
- * A Data provider for a simple json array
+ * A Data provider for lineup that uses a data array as its store
  */
 export class JSONDataProvider implements IDataProvider {
     protected data: any[];
@@ -50,6 +50,8 @@ export class JSONDataProvider implements IDataProvider {
 
     /**
      * A filter for string values
+     * @param data The data item to check
+     * @param filter The filter being applied
      */
     private static checkStringFilter(data: { [key: string]: string }, filter: { column: string; value: string }) {
         return ((data[filter.column] || "") + "").match(new RegExp(filter.value));
@@ -57,6 +59,8 @@ export class JSONDataProvider implements IDataProvider {
 
     /**
      * A filter for numeric values
+     * @param data The data item to check
+     * @param filter The filter being applied
      */
     private static checkNumberFilter(data: { [key: string]: number }, filter: { column: string; value: INumericalFilter }) {
         let value = data[filter.column] || 0;
@@ -65,12 +69,17 @@ export class JSONDataProvider implements IDataProvider {
 
     /**
      * A filter for explicit items
+     * @param data The data item to check
+     * @param filter The filter being applied
      */
     private static checkExplicitFilter(data: { [key: string]: number }, filter: { column: string; value: IExplicitFilter}) {
         let value = data[filter.column] || 0;
         return (filter.value.values || []).indexOf(value) >= 0;
     }
 
+    /**
+     * Constructor for the JSONDataProvider
+     */
     constructor(data: any[], handleSort = true, handleFilter = true, count = 100) {
         this.data = data;
         this.handleSort = handleSort;
@@ -80,13 +89,15 @@ export class JSONDataProvider implements IDataProvider {
 
     /**
      * Determines if the dataset can be queried again
+     * @param options The options to use when querying
      */
     public canQuery(options: IQueryOptions): PromiseLike<boolean> {
         return new Promise<boolean>((resolve) => resolve(this.initialQuery || (this.offset < this.data.length)));
     }
 
     /**
-     * Runs a query against the server
+     * Runs a query against the data provider
+     * @param options The options to use when querying
      */
     public query(options: IQueryOptions): PromiseLike<IQueryResult> {
         return new Promise<IQueryResult>((resolve, reject) => {
@@ -111,7 +122,8 @@ export class JSONDataProvider implements IDataProvider {
     };
 
     /**
-     * Called when the data should be sorted
+     * Called when the data is about to be sorted
+     * @param sort The sort being applied
      */
     public sort(sort?: ITableSorterSort) {
         if (this.handleSort) {
@@ -121,7 +133,8 @@ export class JSONDataProvider implements IDataProvider {
     }
 
     /**
-     * Called when the data is filtered
+     * Called when the data is about to be filtered
+     * @param filter The filter being applied
      */
     public filter(filter?: ITableSorterFilter) {
         if (this.handleFilter) {
@@ -131,7 +144,9 @@ export class JSONDataProvider implements IDataProvider {
     }
 
     /**
-     * Generates a histogram for this data set
+     * Generates a histogram for the dataset formed by using the given query options
+     * @param column The column to generate the histogram for
+     * @param options The query to use when generating the histogram.
      */
     public generateHistogram(column: ITableSorterColumn, options: IQueryOptions): PromiseLike<number[]> {
         return new Promise<number[]>((resolve) => {
@@ -152,11 +167,13 @@ export class JSONDataProvider implements IDataProvider {
     }
 
     /**
-     * Gets the data filtered
+     * Gets a subset of the data that has been filtered by the given query options
+     * @param options The query being performed
      */
     private getFilteredData(options: IQueryOptions) {
         let final = this.data.slice(0);
 
+        // If we are handling filtering, and their is a filter being applied
         if (this.handleFilter && options.query && options.query.length) {
             options.query.forEach((filter) => {
                 let filterMethod = JSONDataProvider.checkStringFilter as any;
@@ -172,6 +189,7 @@ export class JSONDataProvider implements IDataProvider {
             });
         }
 
+        // If we are handling sort, and there is a sort applied to tablesorter
         if (this.handleSort && options.sort && options.sort.length) {
             let sortItem = options.sort[0];
             const basicSort = (aValue: any, bValue: any, asc: boolean) => {
