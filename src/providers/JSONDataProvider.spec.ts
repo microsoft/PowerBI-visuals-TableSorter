@@ -26,6 +26,7 @@ import { expect } from "chai";
 import { JSONDataProvider } from "./JSONDataProvider";
 import { Promise } from "es6-promise";
 import * as d3 from "d3";
+import { IQueryResult } from "../models";
 
 describe("JSONDataProvider", () => {
     const TEST_CASE_ONE = [
@@ -224,6 +225,23 @@ describe("JSONDataProvider", () => {
     });
 
     describe("query", () => {
+        it("should correctly filter columns with negative values and the filter is 0", () => {
+            const { instance } = createInstance(TEST_CASE_WITH_NEGATIVES_AND_ZERO);
+            const result = instance.query({
+                query: [{
+                    column: "negative_numbers",
+                    value: {
+                        domain: [0, 5],
+                        range: [1, 1],
+                    },
+                }],
+            });
+
+            return result.then(r => {
+                // There should only be the first two items, since those are the only two between 0 and 5
+                expect(r.results).to.be.deep.equal(TEST_CASE_WITH_NEGATIVES_AND_ZERO.slice(0, 2));
+            });
+        });
         it("should not filter out 'null' values if the filtered domain isn't different from the actual domain", () => {
             const { instance } = createInstance(TEST_DATA_WITH_ALL_SOME_NULLS);
             const result = instance.query({
@@ -274,6 +292,24 @@ describe("JSONDataProvider", () => {
                 // Only the last item has no null values
                 expect(r.results).to.be.deep.equal([TEST_DATA_WITH_ALL_SOME_NULLS[2]]);
             });
+        });
+        it("should not crash if passed an empty column in a filter", () => {
+            const { instance } = createInstance(TEST_DATA_WITH_ALL_SOME_NULLS);
+            const result = instance.query({
+                query: [{
+                    column: undefined,
+                    value: {
+                        domain: [0, 1], // this is the actual domain
+                        range: [1, 1],
+                    },
+                }],
+            }) as Promise<IQueryResult>;
+
+            return result
+                .then((r) => {
+                    expect(r.results).to.be.ok;
+                })/*
+                .catch(e => { throw e; })*/;
         });
     });
 

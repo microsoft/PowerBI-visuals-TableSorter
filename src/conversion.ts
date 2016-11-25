@@ -46,29 +46,9 @@ export function convertFilters(lineupImpl: ILineupImpl, filteredColumn?: any): I
             }));
         let filters: ITableSorterFilter[] = [];
         descs.forEach((n: any) => {
-            if (n.filter) {
-                // These can be arrays or strings
-                if (typeof n.filter === "string") {
-                    filters.push({
-                        column: n.column,
-                        value: n.filter || undefined,
-                    });
-                } else {
-                    filters.push({
-                        column: n.column,
-                        value: {
-                            values: n.filter || undefined,
-                        },
-                    });
-                }
-            } else if (n.domain) {
-                filters.push({
-                    column: n.column,
-                    value: {
-                        domain: n.domain,
-                        range: n.range,
-                    },
-                });
+            const filter = convertFilterFromDesc(n);
+            if (filter) {
+                filters.push(filter);
             }
         });
         return filters;
@@ -84,32 +64,47 @@ export function convertFiltersFromLayout(layoutObj: any) {
     if (layoutObj) {
         let filters: ITableSorterFilter[] = [];
         layoutObj.forEach((n: any) => {
-            if (n.filter) {
-                // These can be arrays or strings
-                if (typeof n.filter === "string") {
-                    filters.push({
-                        column: n.column,
-                        value: n.filter || undefined,
-                    });
-                } else {
-                    filters.push({
-                        column: n.column,
-                        value: {
-                            values: n.filter || undefined,
-                        },
-                    });
-                }
-            } else if (n.domain) {
-                filters.push({
-                    column: n.column,
-                    value: {
-                        domain: n.domain,
-                        range: n.range,
-                    },
-                });
+            const filter = convertFilterFromDesc(n);
+            if (filter) {
+                filters.push(filter);
             }
         });
         return filters;
+    }
+}
+
+/**
+ * Converts a filter from the given lineup description
+ * @param desc The description to get the filter from
+ */
+export function convertFilterFromDesc(desc: any) {
+    "use strict";
+    // A filter without a column is kind of useless
+    if (desc && desc.column) {
+        if (desc.filter) {
+            // These can be arrays or strings
+            if (typeof desc.filter === "string") {
+                return {
+                    column: desc.column,
+                    value: desc.filter || undefined,
+                };
+            } else {
+                return {
+                    column: desc.column,
+                    value: {
+                        values: desc.filter || undefined,
+                    },
+                };
+            }
+        } else if (desc.domain) {
+            return {
+                column: desc.column,
+                value: {
+                    domain: desc.domain,
+                    range: desc.range,
+                },
+            };
+        }
     }
 }
 

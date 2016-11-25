@@ -113,6 +113,7 @@ export class JSONDataProvider implements IDataProvider {
                 log(`Returning ${newData.length} results from query`);
             } catch (e) {
                 log(`Error Returning: ${e}`);
+                throw e;
             }
             setTimeout(() => {
                 resolve({
@@ -179,7 +180,9 @@ export class JSONDataProvider implements IDataProvider {
         if (this.handleFilter && options.query && options.query.length) {
             options.query.forEach((filter) => {
                 let filterMethod = JSONDataProvider.checkStringFilter as any;
-                if (filter.value) {
+
+                // There HAS to be some value and a column for us to be able to filter correctly
+                if (filter.value && filter.column) {
                     const explictValues = filter.value && (<IExplicitFilter>filter.value).values;
                     const filteredDomain = filter.value && (<INumericalFilter>filter.value).domain;
                     if (explictValues) {

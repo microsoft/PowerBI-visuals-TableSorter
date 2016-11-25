@@ -526,7 +526,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
                 log("Loading data into MyDataProvider");
                 const domainInfo = config.columns
                     .filter(n => !!n.domain)
-                    .map(n => ({ [n.column]: n.domain }));
+                    .reduce((a, b) => { a[b.column] = b.domain; return a; }, {});
                 this.tableSorter.dataProvider = this.createDataProvider(newData, domainInfo);
             }
             this.tableSorter.selection = selectedRows;
