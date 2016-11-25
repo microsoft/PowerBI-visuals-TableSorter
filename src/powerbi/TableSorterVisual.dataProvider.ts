@@ -19,7 +19,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-import { JSONDataProvider } from "../providers/JSONDataProvider";
+import { JSONDataProvider, IColumnDomainInfo } from "../providers/JSONDataProvider";
 import { IQueryOptions, IQueryResult } from "../models";
 import { LOAD_COUNT } from "./TableSorterVisual.defaults";
 
@@ -32,9 +32,10 @@ export default class MyDataProvider extends JSONDataProvider {
 
     constructor(
         data: any[],
+        domains: IColumnDomainInfo,
         hasMoreData: (newQuery: boolean) => boolean,
         onLoadMoreData: (options: IQueryOptions, newQuery: boolean, sort: boolean, filter: boolean) => PromiseLike<any[]>) {
-        super(data, true, true, LOAD_COUNT);
+        super(data, domains, true, true, LOAD_COUNT);
         this.hasMoreData = hasMoreData;
     }
 

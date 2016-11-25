@@ -41,6 +41,7 @@ const log = logger("essex:widget:tablesorter:JSONDataProvider");
  */
 export class JSONDataProvider implements IDataProvider {
     protected data: any[];
+    protected domains: IColumnDomainInfo;
     protected filteredData: any[];
     private handleSort = true;
     private handleFilter = true;
@@ -63,8 +64,8 @@ export class JSONDataProvider implements IDataProvider {
      * @param filter The filter being applied
      */
     private static checkNumberFilter(data: { [key: string]: number }, filter: { column: string; value: INumericalFilter }) {
-        let value = data[filter.column] || 0;
-        return value >= filter.value.domain[0] && value <= filter.value.domain[1];
+        let value = data[filter.column];
+        return (value === null || value === undefined) ? false : value >= filter.value.domain[0] && value <= filter.value.domain[1]; // tslint:disable-line
     }
 
     /**
@@ -80,8 +81,9 @@ export class JSONDataProvider implements IDataProvider {
     /**
      * Constructor for the JSONDataProvider
      */
-    constructor(data: any[], handleSort = true, handleFilter = true, count = 100) {
+    constructor(data: any[], domains: IColumnDomainInfo, handleSort = true, handleFilter = true, count = 100) {
         this.data = data;
+        this.domains = domains;
         this.handleSort = handleSort;
         this.handleFilter = handleFilter;
         this.count = count;
@@ -179,12 +181,27 @@ export class JSONDataProvider implements IDataProvider {
                 let filterMethod = JSONDataProvider.checkStringFilter as any;
                 if (filter.value) {
                     const explictValues = filter.value && (<IExplicitFilter>filter.value).values;
+                    const filteredDomain = filter.value && (<INumericalFilter>filter.value).domain;
                     if (explictValues) {
                         filterMethod = JSONDataProvider.checkExplicitFilter as any;
-                    } else if (filter.value && (<INumericalFilter>filter.value).domain) {
-                        filterMethod = JSONDataProvider.checkNumberFilter as any;
+
+                    // A numerical filter
+                    } else if (filteredDomain) {
+                        const actualDomain = this.domains[filter.column];
+
+                        // If the filtered domain is ACTUALLY different from the full domain, then filter
+                        // This case is specifically for null values, if the dataset contains null values
+                        // and we apply a filter with the same domain as the actual domain, then null values get filtered
+                        // out since they don't actually fall within the domain
+                        if (filteredDomain[0] !== actualDomain[0] || filteredDomain[1] !== actualDomain[1]) {
+                            filterMethod = JSONDataProvider.checkNumberFilter as any;
+                        } else {
+
+                            // Otherwise, we don't need a filter
+                            filterMethod = undefined;
+                        }
                     }
-                    final = final.filter((item) => filterMethod(item, filter));
+                    final = final.filter((item) => !filterMethod || filterMethod(item, filter));
                 }
             });
         }
@@ -209,19 +226,23 @@ export class JSONDataProvider implements IDataProvider {
                 let columns = sortToCheck.stack.columns;
                 if (columns) {
                     let sortVal = columns.reduce((a, v) => {
-
                         /**
                          * This calculates the percent that this guy is of the max value
                          */
+                        const min = minMax[v.column].min || 0;
                         let value = item[v.column];
-                        const range = minMax[v.column].range;
-                        const valueOffset = value - minMax[v.column].min;
-
-                        // If the data has some sort of range, and the value isn't the minimum value
-                        if (range > 0 && valueOffset > 0) {
-                            value = valueOffset / range;
+                        if (value === null || value === undefined) { // tslint:disable-line
+                            value = min - 1;
                         } else {
-                            value = 0;
+                            const range = minMax[v.column].range;
+                            const valueOffset = value - min;
+
+                            // If the data has some sort of range, and the value isn't the minimum value
+                            if (range > 0 && valueOffset > 0) {
+                                value = valueOffset / range;
+                            } else {
+                                value = 0;
+                            }
                         }
 
                         return a + (value * v.weight);
@@ -234,8 +255,7 @@ export class JSONDataProvider implements IDataProvider {
             let maxValues: { [col: string]: { min: number, max: number, range: number }};
             if (sortItem.stack) {
                  maxValues = sortItem.stack.columns.reduce((a, b) => {
-                    const max = d3.max(this.data, (i) => i[b.column]);
-                    const min = d3.min(this.data, (i) => i[b.column]);
+                    const [min, max] = this.domains[b.column];
                     a[b.column] = {
                         max: max,
                         min: min,
@@ -254,4 +274,11 @@ export class JSONDataProvider implements IDataProvider {
         }
         return final;
     }
+}
+
+/**
+ * A mapping between columns and domains
+ */
+export interface IColumnDomainInfo {
+    [column: string]: [number, number];
 }

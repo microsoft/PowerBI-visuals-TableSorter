@@ -219,7 +219,14 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
         super("TableSorter", noCss);
         this.initialSettings = initialSettings || {
             presentation: {
-                numberFormatter: (d: number, row: any, col: any) => this.numberFormatter.format(d),
+                numberFormatter: (numVal: number, row: any, col: any) => {
+                    const colName = col && col.column && col.column.column;
+                    const actualVal = colName && row[colName];
+                    if (colName && (actualVal === null || actualVal === undefined)) { // tslint:disable-line
+                        numVal = actualVal;
+                    }
+                    return this.numberFormatter.format(numVal);
+                },
                 cellFormatter: this.cellFormatter.bind(this),
             },
         };
@@ -517,7 +524,10 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
                 resolver(newData.data);
             } else {
                 log("Loading data into MyDataProvider");
-                this.tableSorter.dataProvider = this.createDataProvider(newData);
+                const domainInfo = config.columns
+                    .filter(n => !!n.domain)
+                    .map(n => ({ [n.column]: n.domain }));
+                this.tableSorter.dataProvider = this.createDataProvider(newData, domainInfo);
             }
             this.tableSorter.selection = selectedRows;
         }
@@ -557,10 +567,11 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
      * Creates a data provider with the given set of data
      * @param newData The data to load
      */
-    private createDataProvider(newData: { data: any[] }) {
+    private createDataProvider(newData: { data: any[] }, domainInfo: any) {
         let firstLoad = true;
         return new MyDataProvider(
             newData.data,
+            domainInfo,
             (newQuery) => {
                 // If it is a new query
                 const canLoadMore = firstLoad || newQuery || !!this.dataView.metadata.segment;
