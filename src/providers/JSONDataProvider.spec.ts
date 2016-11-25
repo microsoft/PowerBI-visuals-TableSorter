@@ -382,6 +382,40 @@ describe("JSONDataProvider", () => {
             })
             .catch(done);
         });
+        it("should sort correctly with a column with some null values in descending", (done) => {
+            let { instance } = createInstance(TEST_DATA_WITH_ALL_SOME_NULLS);
+            let result = instance.query({
+                // offset: 0,
+                // count: 100,
+                sort: [{
+                    asc: false,
+                    stack: {
+                        name: "someName",
+                        columns: [{
+                            column: "col1",
+                            weight: .5,
+                        }, {
+                            column: "some_null_col",
+                            weight: .5,
+                        }],
+                    },
+                }],
+            }) as Promise<any>;
+
+            result.then((sorted) => {
+                const mappedResult = sorted.results.map((n: any) => n.col1);
+                const mapped = TEST_DATA_WITH_ALL_SOME_NULLS.map(n => n.col1);
+
+                expect(mappedResult).to.be.deep.equal([
+                    mapped[1], // This has the lowest value
+                    mapped[0], // This has the second lowest value
+                    mapped[2], // This has the highest value
+                ]);
+
+                done();
+            })
+            .catch(done);
+        });
         it("should sort correctly with a column with some null values but with all other equal values", (done) => {
             let { instance } = createInstance(TEST_DATA_WITH_ALL_SOME_NULLS_BUT_SAME_VALUES);
             let result = instance.query({

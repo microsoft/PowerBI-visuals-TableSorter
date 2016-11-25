@@ -234,9 +234,9 @@ export class JSONDataProvider implements IDataProvider {
                          */
                         const min = minMax[v.column].min || 0;
                         let value = item[v.column];
-                        if (value === null || value === undefined) { // tslint:disable-line
-                            value = min - 1;
-                        } else {
+
+                        // We only need to do the actual weighting with items that have values
+                        if (value !== null && value !== undefined) { //tslint:disable-line
                             const range = minMax[v.column].range;
                             const valueOffset = value - min;
 
@@ -246,9 +246,11 @@ export class JSONDataProvider implements IDataProvider {
                             } else {
                                 value = 0;
                             }
+                            return a + (value * v.weight);
                         }
 
-                        return a + (value * v.weight);
+                        // Null/undefined values have no value, so just ignore them
+                        return a;
                     }, 0);
                     return sortVal;
                 }
