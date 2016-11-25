@@ -29,6 +29,7 @@ import * as d3 from "d3";
 import { IQueryResult } from "../models";
 
 describe("JSONDataProvider", () => {
+    //
     const TEST_CASE_ONE = [
         {
             "id": 1,
@@ -373,9 +374,9 @@ describe("JSONDataProvider", () => {
                 const mapped = TEST_DATA_WITH_ALL_SOME_NULLS.map(n => n.col1);
 
                 expect(mappedResult).to.be.deep.equal([
-                    mapped[2], // This has the lowest value
-                    mapped[0], // This has the second lowest value
-                    mapped[1], // This has the highest value
+                    mapped[0], // This has the lowest value
+                    mapped[1], // This has the second lowest value
+                    mapped[2], // This has the highest value
                 ]);
 
                 done();
@@ -407,9 +408,9 @@ describe("JSONDataProvider", () => {
                 const mapped = TEST_DATA_WITH_ALL_SOME_NULLS.map(n => n.col1);
 
                 expect(mappedResult).to.be.deep.equal([
-                    mapped[1], // This has the lowest value
-                    mapped[0], // This has the second lowest value
-                    mapped[2], // This has the highest value
+                    mapped[2], // This has the lowest value
+                    mapped[1], // This has the second lowest value
+                    mapped[0], // This has the highest value
                 ]);
 
                 done();
@@ -484,7 +485,7 @@ describe("JSONDataProvider", () => {
             .catch(done);
         });
 
-        it ("should sort TEST_CASE_1 correctly", () => {
+        it("should sort TEST_CASE_1 correctly", () => {
             let { instance } = createInstance(TEST_CASE_ONE);
             let result = instance.query({
                 sort: [{

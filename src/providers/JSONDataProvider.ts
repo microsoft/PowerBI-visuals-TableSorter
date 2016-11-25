@@ -225,30 +225,28 @@ export class JSONDataProvider implements IDataProvider {
             const calcStackedValue = (
                 item: any,
                 sortToCheck: ITableSorterSort,
-                minMax: { [col: string]: { min: number, max: number, range: number }}) => {
+                minMax: { [col: string]: { min: number, max: number }}) => {
                 let columns = sortToCheck.stack.columns;
                 if (columns) {
                     let sortVal = columns.reduce((a, v) => {
                         /**
                          * This calculates the percent that this guy is of the max value
                          */
-                        const min = minMax[v.column].min || 0;
+                        let min = minMax[v.column].min || 0;
+                        let max = minMax[v.column].max || min;
                         let value = item[v.column];
 
                         // We only need to do the actual weighting with items that have values
                         if (value !== null && value !== undefined) { //tslint:disable-line
-                            const range = minMax[v.column].range;
-                            const valueOffset = value - min;
-
-                            // If the data has some sort of range, and the value isn't the minimum value
-                            if (range > 0 && valueOffset > 0) {
-                                value = valueOffset / range;
+                            // The max is the min, in this case, the value should be 100% (or 1)
+                            if (max === min) {
+                                value = 1;
                             } else {
-                                value = 0;
+                                value = ((value - min) / (max - min));
                             }
+                            value = (value * .8) + .2;
                             return a + (value * v.weight);
                         }
-
                         // Null/undefined values have no value, so just ignore them
                         return a;
                     }, 0);
@@ -257,14 +255,13 @@ export class JSONDataProvider implements IDataProvider {
                 return 0;
             };
 
-            let maxValues: { [col: string]: { min: number, max: number, range: number }};
+            let maxValues: { [col: string]: { min: number, max: number }};
             if (sortItem.stack) {
                  maxValues = sortItem.stack.columns.reduce((a, b) => {
                     const [min, max] = this.domains[b.column];
                     a[b.column] = {
                         max: max,
                         min: min,
-                        range: max - min,
                     };
                     return a;
                 }, <any>{});
