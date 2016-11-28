@@ -244,7 +244,6 @@ export class JSONDataProvider implements IDataProvider {
                             } else {
                                 value = ((value - min) / (max - min));
                             }
-                            // value = (value * .8) + .2;
                             return a + (value * v.weight);
                         }
                         // Null/undefined values have no value, so just ignore them
