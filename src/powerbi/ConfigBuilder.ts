@@ -280,7 +280,8 @@ function removeMissingColumns(config: ITableSorterConfiguration, columns: ITable
                 let idx: number;
                 if (item["isConfidence"]) {
                     config.layout.primary.some((c: ITableSorterLayoutColumn, i: number) => {
-                        if (c.column.indexOf(GENERATED_COLUMN_NAME_PREFIX) >= 0) {
+                        // The column may not have a 'column' property if it is a stacked column
+                        if (c.column && c.column.indexOf(GENERATED_COLUMN_NAME_PREFIX) >= 0) {
                             const bucket = parseFloat(c.column.split(GENERATED_COLUMN_NAME_PREFIX)[1]);
                             if (bucket >= item["bucket"]) {
                                 idx = i;
@@ -442,5 +443,5 @@ export function calculateRankColors(ranks: number[], colorSettings?: IColorSetti
  */
 export function isRankColumn(column: powerbi.DataViewMetadataColumn) {
     "use strict";
-    return !!(column && column.roles["Rank"]);
+    return !!(column && column.roles["Rank"] && column.type.numeric);
 }
