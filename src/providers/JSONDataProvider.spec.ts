@@ -117,16 +117,22 @@ describe("JSONDataProvider", () => {
     /* tslint:disable */
     const TEST_DATA_WITH_ALL_SOME_NULLS = [{
         id: 1,
-        col1: 12,
-        some_null_col: null
+        col1: 12,  // (12 - 10) / (45 - 10) = .057...
+        some_null_col: null // 0
+
+        // .057
     }, {
         id: 2,
-        col1: 45,
-        some_null_col: null
+        col1: 45, // 1
+        some_null_col: null  // 0
+
+        // 1
     }, {
         id: 3,
-        col1: 10,
-        some_null_col: 1
+        col1: 10, // 0
+        some_null_col: 1  // 1
+
+        // 1
     }];
     /* tslint:enable */
 
@@ -408,8 +414,8 @@ describe("JSONDataProvider", () => {
                 const mapped = TEST_DATA_WITH_ALL_SOME_NULLS.map(n => n.col1);
 
                 expect(mappedResult).to.be.deep.equal([
-                    mapped[2], // This has the lowest value
-                    mapped[1], // This has the second lowest value
+                    mapped[1], // This has the lowest value
+                    mapped[2], // This has the second lowest value
                     mapped[0], // This has the highest value
                 ]);
 
