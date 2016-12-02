@@ -36,7 +36,8 @@ export default class PresentationSettings {
      * The display units for the values
      */
     @setting({
-        displayName: "Display Units",
+        displayName: "Units",
+        description: "The units to use when formatting numbers within TableSorter",
         config: {
             type: powerbi.visuals.StandardObjectProperties.labelDisplayUnits.type,
         },
@@ -48,7 +49,8 @@ export default class PresentationSettings {
      * The precision to use with the values
      */
     @setting({
-        displayName: "Display Precision",
+        displayName: "Precision",
+        description: "The decimal precision to use when formatting numbers within TableSorter",
         config: {
             type: powerbi.visuals.StandardObjectProperties.labelPrecision.type,
         },
