@@ -46,7 +46,7 @@ import {
 import { Promise } from "es6-promise";
 import capabilities from "./TableSorterVisual.capabilities";
 import MyDataProvider from "./TableSorterVisual.dataProvider";
-import { default as buildConfig, calculateRankingInfo, calculateRankColors } from "./ConfigBuilder";
+import { default as buildConfig, calculateRankingInfo, calculateRankColors, LOWER_NUMBER_HIGHER_VALUE } from "./ConfigBuilder";
 import { DEFAULT_TABLESORTER_SETTINGS } from "../TableSorter.defaults";
 
 import * as _ from "lodash";
@@ -680,13 +680,19 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
     private cellFormatter(selection: d3.Selection<ICellFormatterObject>) {
         if (this._data && this._data.rankingInfo) {
             const { values, column, colors } = this._data.rankingInfo;
+            const getColumnColor = (d: ICellFormatterObject) => {
+                const colName = d.column && d.column.column && d.column.column.column;
+                return colName !== column.displayName && !d.isRank ?
+                    undefined :
+                    colors[d.row[column.displayName]];
+            };
             selection
                 .style({
-                    "background-color": (d) => {
-                        const colName = d.column && d.column.column && d.column.column.column;
-                        return colName !== column.displayName && !d.isRank ?
-                            undefined :
-                            colors[d.row[column.displayName]];
+                    "background-color": getColumnColor,
+                    "color": (d) => {
+                        const color = getColumnColor(d) || "#ffffff";
+                        const d3Color = d3.hcl(color);
+                        return d3Color.l <= 60 ? "#ececec" : "#333333";
                     },
                 })
                 .text((d) => {
@@ -714,7 +720,7 @@ function updateRankingColumns(rankingInfo: IRankingInfo, data: ITableSorterRow[]
         data.forEach(result => {
             const itemRank = result[rankingInfo.column.displayName];
             ranks.forEach(rank => {
-                if (itemRank >= rank) {
+                if (LOWER_NUMBER_HIGHER_VALUE ? (itemRank <= rank) : (itemRank >= rank)) {
                     rankCounts[rank] = (rankCounts[rank] || 0) + 1;
                 }
             });
@@ -730,7 +736,7 @@ function updateRankingColumns(rankingInfo: IRankingInfo, data: ITableSorterRow[]
                 const positionInBucket = runningRankTotal[rank] = runningRankTotal[rank] || 0;
                 const propName = `GENERATED_RANK_LEVEL_${rank}`;
                 let value = 0;
-                if (itemRank >= ranks[i]) {
+                if (LOWER_NUMBER_HIGHER_VALUE ? (itemRank <= rank) : (itemRank >= rank)) {
                     const position = ((rankCounts[rank] - runningRankTotal[rank]) / rankCounts[rank]) * 100;
                     value = parseFloat(position.toFixed(precision));
                     runningRankTotal[rank] = positionInBucket + 1;

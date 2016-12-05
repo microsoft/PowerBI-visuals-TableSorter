@@ -39,6 +39,12 @@ const ldget = require("lodash/get"); // tslint:disable-line
 const GENERATED_COLUMN_NAME_PREFIX = "GENERATED_RANK_LEVEL_";
 
 /**
+ * Indicates that a lower number rank is actually of higher value
+ * i.e. Positions in a race, #1 is better than #5
+ */
+export const LOWER_NUMBER_HIGHER_VALUE = true;
+
+/**
  * Generates a table sorter compatible configuration from a dataView
  * @param dataView The dataView to generate the configuration from
  * @param data The set of data parsed from the data view
@@ -117,7 +123,7 @@ function parseRankColumns(dataView: powerbi.DataView, colorSettings: IColorSetti
         return {
             columns: ci.values.map((n, i) => {
                 return {
-                    label: `${i < ci.values.length - 1 ? ">" : ""}= ${n}`,
+                    label: `${(LOWER_NUMBER_HIGHER_VALUE ? i > 0 : i < ci.values.length - 1) ? "≥" : ""} ${n}`,
                     column: `${GENERATED_COLUMN_NAME_PREFIX}${n}`,
                     bucket: n,
                     type: "string",
