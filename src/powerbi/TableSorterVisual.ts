@@ -678,30 +678,30 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
      * @param selection The d3 selection for the cells being formatted.
      */
     private cellFormatter(selection: d3.Selection<ICellFormatterObject>) {
-        if (this._data && this._data.rankingInfo) {
-            const { values, column, colors } = this._data.rankingInfo;
-            const getColumnColor = (d: ICellFormatterObject) => {
+        const getColumnColor = (d: ICellFormatterObject) => {
+            if (this._data && this._data.rankingInfo) {
+                const { values, column, colors } = this._data.rankingInfo;
                 const colName = d.column && d.column.column && d.column.column.column;
                 return colName !== column.displayName && !d.isRank ?
                     undefined :
                     colors[d.row[column.displayName]];
-            };
-            selection
-                .style({
-                    "background-color": getColumnColor,
-                    "color": (d) => {
-                        const color = getColumnColor(d) || "#ffffff";
-                        const d3Color = d3.hcl(color);
-                        return d3Color.l <= 60 ? "#ececec" : "#333333";
-                    },
-                })
-                .text((d) => {
-                    // Path: Object -> Layout Column -> Lineup Column -> Config
-                    const config = get(d, v => v.column.column.config, {});
-                    const isConfidence = config.isConfidence;
-                    return isConfidence && (d.label + "") === "0" ? " - " : d.label;
-                });
-        }
+            }
+        };
+        selection
+            .style({
+                "background-color": getColumnColor,
+                "color": (d) => {
+                    const color = getColumnColor(d) || "#ffffff";
+                    const d3Color = d3.hcl(color);
+                    return d3Color.l <= 60 ? "#ececec" : "#333333";
+                },
+            })
+            .text((d) => {
+                // Path: Object -> Layout Column -> Lineup Column -> Config
+                const config = get(d, v => v.column.column.config, {});
+                const isConfidence = config.isConfidence;
+                return isConfidence && (d.label + "") === "0" ? " - " : d.label;
+            });
     }
 }
 
