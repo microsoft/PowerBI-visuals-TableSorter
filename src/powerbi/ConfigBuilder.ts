@@ -120,10 +120,11 @@ function parseRankColumns(dataView: powerbi.DataView, colorSettings: IColorSetti
         if (reverseRankingColumns) {
             ci.values.reverse();
         }
+        const toCompare = d3.extent(ci.values)[LOWER_NUMBER_HIGHER_VALUE ? 0 : 1];
         return {
             columns: ci.values.map((n, i) => {
                 return {
-                    label: `${(LOWER_NUMBER_HIGHER_VALUE ? i > 0 : i < ci.values.length - 1) ? "≥" : ""} ${n}`,
+                    label: `${ n !== toCompare ? "≥" : ""} ${n}`,
                     column: `${GENERATED_COLUMN_NAME_PREFIX}${n}`,
                     bucket: n,
                     type: "string",
