@@ -425,6 +425,11 @@ export interface IColorSettings {
     rankGradients?: IGradientSettings;
 
     /**
+     * Whether or not to show the histogram
+     */
+    histogram?: boolean;
+
+    /**
      * Provides a mapping from ranks to colors
      */
     rankInstanceColors?: { [rank: string]: string; };

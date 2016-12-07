@@ -125,6 +125,16 @@ export default class RankSettings implements IColorSettings {
     public reverseBars: boolean;
 
     /**
+     * If true, a histogram will be shown across the bars indicating
+     */
+    @bool({
+        displayName: "Histogram",
+        description: "If true, a histogram will be shown across the rank columns",
+        defaultValue: false,
+    })
+    public histogram: boolean;
+
+    /**
      * The gradient settings
      */
     @settings<RankSettings>(GradientSettings, {

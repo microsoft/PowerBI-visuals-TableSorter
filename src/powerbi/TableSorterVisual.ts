@@ -69,6 +69,14 @@ import TSSettings from "./settings";
 /* tslint:disable */
 const log = logger("essex:widget:TableSorterVisual");
 const CSS_MODULE = require("!css!sass!./css/TableSorterVisual.scss");
+const vendorPrefix = (function getVendorPrefix() {
+  const styles = window.getComputedStyle(document.documentElement, "");
+  return (Array.prototype.slice
+          .call(styles)
+          .join("")
+          .match(/-(moz|webkit|ms)-/) || (styles["OLink"] === "" && ["", "-o-"])
+         )[0];
+})();
 /* tslint:enable */
 
 /**
@@ -549,6 +557,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
                     this.initialSettings || { },
                     newState.toJSONObject());
 
+            let doRender = false;
             if (oldState.presentation.labelPrecision !== newState.presentation.labelPrecision ||
                 oldState.presentation.labelDisplayUnits !== newState.presentation.labelDisplayUnits) {
                 this.numberFormatter = valueFormatterFactory({
@@ -556,6 +565,12 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
                     format: "0",
                     precision: newState.presentation.labelPrecision || undefined,
                 });
+                doRender = true;
+            }
+
+            doRender = doRender || (oldState.rankSettings.histogram !== newState.rankSettings.histogram);
+
+            if (doRender) {
                 this.tableSorter.rerenderValues();
             }
 
@@ -681,27 +696,35 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
         const getColumnColor = (d: ICellFormatterObject) => {
             if (this._data && this._data.rankingInfo) {
                 const { values, column, colors } = this._data.rankingInfo;
-                const colName = d.column && d.column.column && d.column.column.column;
-                return colName !== column.displayName && !d.isRank ?
-                    undefined :
-                    colors[d.row[column.displayName]];
+                const cellColName = d.column && d.column.column && d.column.column.column;
+                const rankColName = column.displayName;
+
+                // If this is  the column we are ranking, then color it
+                return cellColName === rankColName ? colors[d.row[rankColName]] : undefined;
             }
+        };
+        const rankHistogram = this.visualSettings.rankSettings.histogram;
+        const isConfidence = (d: ICellFormatterObject) => {
+            // Path: Object -> Layout Column -> Lineup Column -> Config
+            const config = get(d, v => v.column.column.config, {});
+            return config.isConfidence;
         };
         selection
             .style({
-                "background-color": getColumnColor,
+                "background": (d) => {
+                    return rankHistogram && isConfidence(d) && d.label > 1 ?
+                        vendorPrefix + `linear-gradient(bottom, rgba(0,0,0,.2) ${d.label}%, rgba(0,0,0,0) ${d.label}%)` :
+                        getColumnColor(d);
+                },
+                "width": (d) => `${d["width"] + (rankHistogram && isConfidence(d) ? 2 : 0)}px`,
+                "margin-left": (d) => rankHistogram && isConfidence(d) ? `-1px` : undefined,
                 "color": (d) => {
                     const color = getColumnColor(d) || "#ffffff";
                     const d3Color = d3.hcl(color);
                     return d3Color.l <= 60 ? "#ececec" : "#333333";
                 },
             })
-            .text((d) => {
-                // Path: Object -> Layout Column -> Lineup Column -> Config
-                const config = get(d, v => v.column.column.config, {});
-                const isConfidence = config.isConfidence;
-                return isConfidence && (d.label + "") === "0" ? " - " : d.label;
-            });
+            .text((d) => isConfidence(d) && (d.label + "") === "0" ? " - " : d.label);
     }
 }
 
