@@ -30,11 +30,11 @@ import {
     INumericalFilter,
     IExplicitFilter,
 } from "../models";
-import { logger } from "essex.powerbi.base";
 import * as d3 from "d3";
 import * as _ from "lodash";
 
-const log = logger("essex:widget:tablesorter:JSONDataProvider");
+const debug = require("debug"); // tslint:disable-line
+const log = debug("essex:widget:tablesorter:JSONDataProvider");
 
 /**
  * A Data provider for lineup that uses a data array as its store

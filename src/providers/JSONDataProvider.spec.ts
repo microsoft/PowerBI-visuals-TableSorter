@@ -18,10 +18,6 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-
-// import "../../base/testSetup";
-import "essex.powerbi.base/dist/spec/visualHelpers";
-
 import { expect } from "chai";
 import { JSONDataProvider } from "./JSONDataProvider";
 import { Promise } from "es6-promise";
