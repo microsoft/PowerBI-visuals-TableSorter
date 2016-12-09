@@ -245,6 +245,7 @@ export class TableSorter {
         // Reset query vars
         this.loadingData = false;
         this.lastQuery = undefined;
+        this.queryOptions = {};
 
         this._dataProvider = dataProvider;
         if (this._dataProvider) {

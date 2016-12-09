@@ -812,6 +812,42 @@ describe("TableSorter", () => {
                 let { instance } = createInstance();
                 expect(instance.getQueryOptions()).to.be.deep.equal({});
             });
+
+            // This is an issue, because if you switch data providers (with a different dataset), then it will try to
+            // reuse the same filters/sorts from the previous dataset, which is incorrect.
+            it("should clear filters if the dataProvider is changed", () => {
+                let { instance, data, instanceInitialized, stubs } = loadInstanceWithData();
+                const cols = data.stringColumns;
+
+                return instanceInitialized
+                    .then(() => {
+                        const FAKE_FILTER = {
+                            column: cols[0].column,
+                            value: "SOME_FAKE_FILTER",
+                        };
+
+                        // Set up the fake conversion from lineup
+                        stubs.conversion.convertFiltersFromLayout.returns([FAKE_FILTER]);
+
+                        // Set the new config
+                        instance.configuration = {
+                            columns: data.columns.slice(0),
+                            layout: {
+                                // Go through all the columns and apply a "filter to them"
+                                primary: [{
+                                    column: FAKE_FILTER.column,
+                                    filter: FAKE_FILTER.value,
+                                }],
+                            },
+                            primaryKey: "primary",
+                        };
+
+                        instance.dataProvider = createProvider([]).provider;
+
+                        // Make sure the existing query options are updated
+                        expect(instance.getQueryOptions().query).to.be.empty;
+                    });
+            });
         });
 
         describe("rerenderValues", () => {
