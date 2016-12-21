@@ -95,6 +95,7 @@
     "style-loader": "0.13.0",
     "ts-node": "0.5.5",
     "tslint": "^3.15.1",
+    "typedoc": "^0.5.1",
     "typescript": "^2.0.3",
     "underscore": "1.8.3",
     "wallaby-webpack": "0.0.16",
@@ -103,8 +104,5 @@
   },
   "peerDependencies": {
     "lineup-v1": "^0.1.2"
-  },
-  "publishConfig": {
-    "registry": "http://essex-private-npm.westus.cloudapp.azure.com:4873/"
   }
 }
