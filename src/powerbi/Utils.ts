@@ -34,8 +34,10 @@ export function dateTimeFormatCalculator() {
     let showSeconds = false;
     let showMilliseconds = false;
     return {
+
         /**
          * Adds the given date instance to the calculation
+         * @param date The date to add
          */
         addToCalculation(date: Date) {
             if (prevDate && date) {

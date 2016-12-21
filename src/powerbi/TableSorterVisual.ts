@@ -28,9 +28,11 @@ import {
     UpdateType,
     createPropertyPersister,
     PropertyPersister,
+    get,
 } from "essex.powerbi.base";
 import * as $ from "jquery";
-import { TableSorter  } from "../TableSorter";
+import * as d3 from "d3";
+import { TableSorter } from "../TableSorter";
 import { dateTimeFormatCalculator } from "./Utils";
 import {
     ITableSorterRow,
@@ -38,11 +40,13 @@ import {
     ITableSorterSort,
     ITableSorterFilter,
     INumericalFilter,
+    ICellFormatterObject,
+    IColorSettings,
 } from "../models";
 import { Promise } from "es6-promise";
 import capabilities from "./TableSorterVisual.capabilities";
 import MyDataProvider from "./TableSorterVisual.dataProvider";
-import buildConfig from "./ConfigBuilder";
+import { default as buildConfig, calculateRankingInfo, calculateRankColors, LOWER_NUMBER_HIGHER_VALUE } from "./ConfigBuilder";
 import { DEFAULT_TABLESORTER_SETTINGS } from "../TableSorter.defaults";
 
 import * as _ from "lodash";
@@ -60,12 +64,24 @@ import SelectionManager = powerbi.visuals.utility.SelectionManager;
 import SQExprBuilder = powerbi.data.SQExprBuilder;
 import valueFormatterFactory = powerbi.visuals.valueFormatter.create;
 import IValueFormatter = powerbi.visuals.IValueFormatter;
+import TSSettings from "./settings";
 
 /* tslint:disable */
 const log = logger("essex:widget:TableSorterVisual");
 const CSS_MODULE = require("!css!sass!./css/TableSorterVisual.scss");
+const vendorPrefix = (function getVendorPrefix() {
+  const styles = window.getComputedStyle(document.documentElement, "");
+  return (Array.prototype.slice
+          .call(styles)
+          .join("")
+          .match(/-(moz|webkit|ms)-/) || (styles["OLink"] === "" && ["", "-o-"])
+         )[0];
+})();
 /* tslint:enable */
 
+/**
+ * The visual which wraps TableSorter
+ */
 @Visual(require("../build.json").output.PowerBI)
 export default class TableSorterVisual extends VisualBase implements IVisual {
 
@@ -107,7 +123,11 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
     private destroyed = false;
 
     // Stores our current set of data.
-    private _data: { data: ITableSorterVisualRow[], cols: string[] };
+    private _data: {
+        data: ITableSorterVisualRow[],
+        cols: string[],
+        rankingInfo: IRankingInfo,
+    };
 
     /**
      * My css module
@@ -120,16 +140,6 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
     private initialSettings: ITableSorterSettings;
 
     /**
-     * The display units for the values
-     */
-    private labelDisplayUnits = 0;
-
-    /**
-     * The precision to use with the values
-     */
-    private labelPrecision: number;
-
-    /**
      * The formatter to use for numbers
      */
     private numberFormatter: IValueFormatter;
@@ -138,6 +148,8 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
      * The current load promise
      */
     private loadResolver: (data: any[]) => void;
+
+    private visualSettings: TSSettings;
 
     /**
      * A simple debounced function to update the configuration
@@ -160,7 +172,8 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
     }, 100);
 
     /**
-     * Selects the given rows
+     * A debounced version of the selection changed event listener
+     * @param rows The rows that are selected
      */
     private onSelectionChanged = _.debounce((rows?: ITableSorterVisualRow[]) => {
         let filter: powerbi.data.SemanticFilter;
@@ -206,12 +219,23 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
 
     /**
      * The constructor for the visual
+     * @param noCss If true, no css will be loaded
+     * @param initialSettings The initial set of settings to use
+     * @param updateTypeGetterOverride An override for the update type gettter.
      */
     public constructor(noCss: boolean = false, initialSettings?: ITableSorterSettings, updateTypeGetterOverride?: () => UpdateType) {
-        super(noCss);
+        super("TableSorter", noCss);
         this.initialSettings = initialSettings || {
             presentation: {
-                numberFormatter: (d: number) => this.numberFormatter.format(d),
+                numberFormatter: (numVal: number, row: any, col: any) => {
+                    const colName = col && col.column && col.column.column;
+                    const actualVal = colName && row[colName];
+                    if (colName && (actualVal === null || actualVal === undefined)) { // tslint:disable-line
+                        numVal = actualVal;
+                    }
+                    return this.numberFormatter.format(numVal);
+                },
+                cellFormatter: this.cellFormatter.bind(this),
             },
         };
 
@@ -221,11 +245,11 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
         }
 
         this.numberFormatter = valueFormatterFactory({
-            value: this.labelDisplayUnits,
+            value: 0,
             format: "0",
-            precision: this.labelPrecision,
         });
         this.updateType = updateTypeGetterOverride ? updateTypeGetterOverride : updateTypeGetter(this);
+        this.visualSettings = TSSettings.create<TSSettings>();
     }
 
     /* tslint:disable */
@@ -258,12 +282,21 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
 
     /**
      * Converts the data from power bi to a data we can use
+     * @param view The dataview to load
+     * @param selectedIds The list of selected ids
+     * @param settings The color settings to use when converting the dataView
      */
-    private static converter(view: DataView, selectedIds: any) {
+    private static converter(view: DataView, selectedIds: any, settings?: IColorSettings) {
         let data: ITableSorterVisualRow[] = [];
         let cols: string[];
+        let rankingInfo: IRankingInfo;
         if (view && view.table) {
             let table = view.table;
+            let baseRi = calculateRankingInfo(view);
+            if (baseRi) {
+                rankingInfo = <any>baseRi;
+                rankingInfo.colors = calculateRankColors(baseRi.values, settings);
+            }
             const dateCols = table.columns.map((n, i) => ({ idx: i, col: n })).filter(n => n.col.type.dateTime).map(n => {
                 return {
                     idx: n.idx,
@@ -271,7 +304,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
                     calculator: dateTimeFormatCalculator(),
                 };
             });
-            cols = table.columns.filter(n => !!n).map(n => n.displayName);
+            cols = table.columns.filter(n => !!n)/*.filter(n => !n.roles["Confidence"])*/.map(n => n.displayName);
             table.rows.forEach((row, rowIndex) => {
                 let identity: any;
                 let newId: any;
@@ -314,10 +347,14 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
         return {
             data,
             cols,
+            rankingInfo,
         };
     }
 
-    /** This is called once when the visual is initialially created */
+    /**
+     * The IVIsual.init function
+     * Called when the visual is being initialized
+     */
     public init(options: VisualInitOptions): void {
         if (!this.destroyed) {
             super.init(options);
@@ -338,6 +375,10 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
             this.listeners = [
                 this.tableSorter.events.on("selectionChanged", (rows: ITableSorterVisualRow[]) => this.onSelectionChanged(rows)),
                 this.tableSorter.events.on(TableSorter.EVENTS.CLEAR_SELECTION, () => this.onSelectionChanged()),
+                this.tableSorter.events.on(TableSorter.EVENTS.LOAD_LINEUP, () => {
+                    // We use this.tableSorter.data where because this data is after it has been sorted/filtered...
+                    updateRankingColumns(this._data.rankingInfo, this.tableSorter.data);
+                }),
                 this.tableSorter.events.on("configurationChanged", (config: any) => {
                 if (!this.handlingUpdate) {
                     this.configurationUpdater();
@@ -348,7 +389,11 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
         }
     }
 
-    /** Update is called for data updates, resizes & formatting changes */
+    /**
+     * The IVisual.update function
+     * Called when the visual is being initialized.
+     * Update is called for data updates, resizes & formatting changes
+     */
     public update(options: VisualUpdateOptions) {
         if (!this.destroyed) {
             const updateType = this.updateType();
@@ -358,6 +403,9 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
             log("Update Type: ", updateType);
             super.update(options);
 
+            const oldSettings = this.visualSettings;
+            this.visualSettings = this.visualSettings.receiveFromPBI(this.dataView);
+
             // Assume that data updates won't happen when resizing
             const newDims = { width: options.viewport.width, height: options.viewport.height };
             if ((updateType & UpdateType.Resize)) {
@@ -365,7 +413,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
             }
 
             if (updateType & UpdateType.Settings) {
-                this.loadSettingsFromPowerBI();
+                this.loadSettingsFromPowerBI(oldSettings, this.visualSettings);
             }
 
             if (updateType & UpdateType.Data ||
@@ -373,14 +421,18 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
                 this.hasLayoutChanged(updateType, options) ||
 
                 // The data may not have changed, but we are loading
-                // Necessary because sometimes the user "changes" the filter, but it doesn't actually change the dataset. 
+                // Necessary because sometimes the user "changes" the filter, but it doesn't actually change the dataset.
                 // ie. If the user selects the min value and the max value of the dataset as a filter.
-                this.loadResolver) {
+                this.loadResolver ||
+
+                // If the color settings have changed, we need to rerender
+                hasColorSettingsChanged(oldSettings, this.visualSettings)) {
+
                 // If we explicitly are loading more data OR If we had no data before, then data has been loaded
                 this.waitingForMoreData = false;
                 this.waitingForSort = false;
 
-                this.loadDataFromPowerBI();
+                this.loadDataFromPowerBI(oldSettings, updateType);
             }
 
             this.handlingUpdate = false;
@@ -388,27 +440,21 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
     }
 
     /**
+     * The IVisual.enumerateObjectInstances function
      * Enumerates the instances for the objects that appear in the power bi panel
      */
     public enumerateObjectInstances(options: EnumerateVisualObjectInstancesOptions): VisualObjectInstance[] {
-        let instances = super.enumerateObjectInstances(options) || [{
-            /* tslint:disable */
-            selector: null,
-            /* tslint:enable */
-            objectName: options.objectName,
-            properties: {},
-        }];
-        $.extend(true, instances[0].properties, this.tableSorter.settings[options.objectName]);
-        if (options.objectName === "presentation") {
-            $.extend(true, instances[0].properties, {
-                labelDisplayUnits: this.labelDisplayUnits,
-                labelPrecision: this.labelPrecision,
-            });
+        let instances = (super.enumerateObjectInstances(options) || []) as VisualObjectInstance[];
+
+        const otherInstances = this.visualSettings.buildEnumerationObjects(options.objectName, this.dataView, false);
+        if (otherInstances && otherInstances.length) {
+            instances = instances.concat(otherInstances);
         }
-        return options.objectName === "layout" ? <any>{} : instances;
+        return options.objectName === "layout" ? <any>{} : instances.filter(n => Object.keys(n.properties).length > 0);
     }
 
     /**
+     * The IVisual.destroy function
      * Destroys this visual
      */
     public destroy() {
@@ -434,6 +480,8 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
 
     /**
      * Returns true if the layout has changed in the PBI settings
+     * @param updateType The current update type that caused this check
+     * @param options The update options that caused this check
      */
     private hasLayoutChanged(updateType: UpdateType, options: VisualUpdateOptions) {
         if (updateType & UpdateType.Settings &&
@@ -451,12 +499,28 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
     }
 
     /**
-     * Event listener for when the visual data's changes
+     * Handles all of the data loading required from power bi during an update call
+     * @param oldSettings The settings before the update
+     * @param updateType The type of update being performed
      */
-    private loadDataFromPowerBI() {
+    private loadDataFromPowerBI(oldSettings: TSSettings, updateType: UpdateType) {
         if (this.dataViewTable) {
-            let newData = TableSorterVisual.converter(this.dataView, this.selectionManager.getSelectionIds());
-            let config = buildConfig(this.dataView, newData.data);
+            const rankSettings = this.visualSettings.rankSettings;
+            const oldRankSettings = oldSettings.rankSettings;
+            let newData = TableSorterVisual.converter(
+                this.dataView,
+                this.selectionManager.getSelectionIds(),
+                rankSettings);
+
+            let config = buildConfig(
+                this.dataView,
+                newData.data,
+                rankSettings,
+
+                // We really only want to reset the rank columns IF the user is JUST toggling the reverse option,
+                // Otherwise, this can just be true if we are loading from a refresh
+                oldRankSettings.reverseBars !== rankSettings.reverseBars && updateType === UpdateType.Settings,
+                rankSettings.reverseBars);
             let selectedRows = newData.data.filter(n => n.selected);
 
             this.tableSorter.configuration = config;
@@ -468,19 +532,61 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
                 resolver(newData.data);
             } else {
                 log("Loading data into MyDataProvider");
-                this.tableSorter.dataProvider = this.createDataProvider(newData);
+                const domainInfo = config.columns
+                    .filter(n => !!n.domain)
+                    .reduce((a, b) => { a[b.column] = b.domain; return a; }, {});
+                this.tableSorter.dataProvider = this.createDataProvider(newData, domainInfo);
             }
             this.tableSorter.selection = selectedRows;
         }
     }
 
     /**
-     * Creates a data provider with the given set of data
+     * Loads the settings object from PBI during an update call
+     * @param oldState The state before the update call
+     * @param newState The state during the update call
      */
-    private createDataProvider(newData: { data: any[] }) {
+    private loadSettingsFromPowerBI(oldState: TSSettings, newState: TSSettings) {
+        if (this.dataView) {
+            // Make sure we have the default values
+            let updatedSettings: ITableSorterSettings =
+                $.extend(true,
+                    {},
+                    this.tableSorter.settings,
+                    TableSorterVisual.VISUAL_DEFAULT_SETTINGS,
+                    this.initialSettings || { },
+                    newState.toJSONObject());
+
+            let doRender = false;
+            if (oldState.presentation.labelPrecision !== newState.presentation.labelPrecision ||
+                oldState.presentation.labelDisplayUnits !== newState.presentation.labelDisplayUnits) {
+                this.numberFormatter = valueFormatterFactory({
+                    value: newState.presentation.labelDisplayUnits || 0,
+                    format: "0",
+                    precision: newState.presentation.labelPrecision || undefined,
+                });
+                doRender = true;
+            }
+
+            doRender = doRender || (oldState.rankSettings.histogram !== newState.rankSettings.histogram);
+
+            if (doRender) {
+                this.tableSorter.rerenderValues();
+            }
+
+            this.tableSorter.settings = updatedSettings;
+        }
+    }
+
+    /**
+     * Creates a data provider with the given set of data
+     * @param newData The data to load
+     */
+    private createDataProvider(newData: { data: any[] }, domainInfo: any) {
         let firstLoad = true;
         return new MyDataProvider(
             newData.data,
+            domainInfo,
             (newQuery) => {
                 // If it is a new query
                 const canLoadMore = firstLoad || newQuery || !!this.dataView.metadata.segment;
@@ -506,6 +612,11 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
             });
     }
 
+    /**
+     * Handles the sort from the data provider by emitting it to powerbi
+     * * Note * Not currently used
+     * @param rawSort The sort being performed
+     */
     private handleSort(rawSort: ITableSorterSort) {
         /* tslint:disable */
         let args: powerbi.CustomSortEventArgs = null;
@@ -538,6 +649,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
 
     /**
      * Builds a self filter for PBI from the list of filters
+     * @param filters The set of filters that table sorter has applied
      */
     private buildSelfFilter(filters: ITableSorterFilter[]) {
         let operation = "remove";
@@ -577,51 +689,122 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
     }
 
     /**
-     * Listener for when the visual settings changed
+     * The cell formatter for TableSorter
+     * @param selection The d3 selection for the cells being formatted.
      */
-    private loadSettingsFromPowerBI() {
-        if (this.dataView) {
-            // Make sure we have the default values
-            let updatedSettings: ITableSorterSettings =
-                $.extend(true, {}, this.tableSorter.settings, TableSorterVisual.VISUAL_DEFAULT_SETTINGS, this.initialSettings || {});
+    private cellFormatter(selection: d3.Selection<ICellFormatterObject>) {
+        const getColumnColor = (d: ICellFormatterObject) => {
+            if (this._data && this._data.rankingInfo) {
+                const { values, column, colors } = this._data.rankingInfo;
+                const cellColName = d.column && d.column.column && d.column.column.column;
+                const rankColName = column.displayName;
 
-            // Copy over new values
-            let newObjs = $.extend(true, {}, <ITableSorterSettings>this.dataView.metadata.objects);
-            const presObjs = newObjs && newObjs.presentation;
-            if (newObjs) {
-                for (let section in newObjs) {
-                    if (newObjs.hasOwnProperty(section)) {
-                        let values = newObjs[section];
-                        for (let prop in values) {
-                            if (updatedSettings[section] && typeof(updatedSettings[section][prop]) !== "undefined") {
-                                updatedSettings[section][prop] = values[prop];
-                            }
-                        }
-                    }
-                }
+                // If this is  the column we are ranking, then color it
+                return cellColName === rankColName ? colors[d.row[rankColName]] : undefined;
             }
-
-            let newLabelPrecision = (presObjs && presObjs.labelPrecision) || 0;
-            let newLabelDisplayUnits = (presObjs && presObjs.labelDisplayUnits) || 0;
-            if (newLabelPrecision !== this.labelPrecision ||
-                newLabelDisplayUnits !== this.labelDisplayUnits) {
-                this.labelPrecision = newLabelPrecision;
-                this.labelDisplayUnits = newLabelDisplayUnits;
-                this.numberFormatter = valueFormatterFactory({
-                    value: this.labelDisplayUnits || 0,
-                    format: "0",
-                    precision: newLabelPrecision || undefined,
-                });
-                this.tableSorter.rerenderValues();
-            }
-
-            this.tableSorter.settings = updatedSettings;
-        }
+        };
+        const rankHistogram = this.visualSettings.rankSettings.histogram;
+        const isConfidence = (d: ICellFormatterObject) => {
+            // Path: Object -> Layout Column -> Lineup Column -> Config
+            const config = get(d, v => v.column.column.config, {});
+            return config.isConfidence;
+        };
+        selection
+            .style({
+                "background": (d) => {
+                    return rankHistogram && isConfidence(d) && d.label > 1 ?
+                        vendorPrefix + `linear-gradient(bottom, rgba(0,0,0,.2) ${d.label}%, rgba(0,0,0,0) ${d.label}%)` :
+                        getColumnColor(d);
+                },
+                "width": (d) => `${d["width"] + (rankHistogram && isConfidence(d) ? 2 : 0)}px`,
+                "margin-left": (d) => rankHistogram && isConfidence(d) ? `-1px` : undefined,
+                "color": (d) => {
+                    const color = getColumnColor(d) || "#ffffff";
+                    const d3Color = d3.hcl(color);
+                    return d3Color.l <= 60 ? "#ececec" : "#333333";
+                },
+            })
+            .text((d) => isConfidence(d) && (d.label + "") === "0" ? " - " : d.label);
     }
 }
 
 /**
- * The lineup data
+ * Updates the data to have the current values of the ranking info, by taking into account filtering and sorting.
+ * @param rankingInfo The ranking info to use when updating the column values
+ * @param data The current set of data
+ */
+function updateRankingColumns(rankingInfo: IRankingInfo, data: ITableSorterRow[]) {
+    "use strict";
+    if (rankingInfo) {
+        // const data = this._data.data;
+        const ranks = rankingInfo.values.slice(0).reverse();
+        const runningRankTotal = {};
+        const rankCounts = {};
+        data.forEach(result => {
+            const itemRank = result[rankingInfo.column.displayName];
+            ranks.forEach(rank => {
+                if (LOWER_NUMBER_HIGHER_VALUE ? (itemRank <= rank) : (itemRank >= rank)) {
+                    rankCounts[rank] = (rankCounts[rank] || 0) + 1;
+                }
+            });
+        });
+        const precision = Math.max((data.length + "").length - 2, 0);
+        data.forEach((result, j) => {
+            // The bucket that this item belongs to
+            const itemRank = result[rankingInfo.column.displayName];
+
+            // Go through each bucket in the entire dataset
+            for (let i = 0; i < ranks.length; i++) {
+                const rank = ranks[i];
+                const positionInBucket = runningRankTotal[rank] = runningRankTotal[rank] || 0;
+                const propName = `GENERATED_RANK_LEVEL_${rank}`;
+                let value = 0;
+                if (LOWER_NUMBER_HIGHER_VALUE ? (itemRank <= rank) : (itemRank >= rank)) {
+                    const position = ((rankCounts[rank] - runningRankTotal[rank]) / rankCounts[rank]) * 100;
+                    value = parseFloat(position.toFixed(precision));
+                    runningRankTotal[rank] = positionInBucket + 1;
+                }
+                result[propName] = value;
+            }
+        });
+    }
+}
+
+/**
+ * Returns true if any of the color settings have changed.
+ * @param state The previous state
+ * @param newState The new state
+ */
+function hasColorSettingsChanged(state: TSSettings, newState: TSSettings) {
+    "use strict";
+    if (state && newState) {
+        const oldSettings = get(state, v => v.rankSettings, {});
+        const newSettings = get(newState, v => v.rankSettings, {});
+        const oldGradient = get(state, v => v.rankSettings.rankGradients, {});
+        const newGradient = get(newState, v => v.rankSettings.rankGradients, {});
+        let changed =
+            oldSettings.reverseBars !== newSettings.reverseBars ||
+            oldSettings.colorMode !== newSettings.colorMode ||
+            oldGradient.endColor !== newGradient.endColor ||
+            oldGradient.startColor !== newGradient.startColor ||
+            oldGradient.endValue !== newGradient.endValue ||
+            oldGradient.startValue !== newGradient.startValue;
+        if (!changed) {
+            const oldSeriesColors = oldSettings.rankInstanceColors || {};
+            const newSeriesColors = newSettings.rankInstanceColors || {};
+
+            // If the entries are different, or any of the values are different
+            return !_.isEqual(Object.keys(oldSeriesColors), Object.keys(newSeriesColors)) ||
+                Object.keys(oldSeriesColors).filter(n => newSeriesColors[n] !== oldSeriesColors[n]).length > 0;
+        }
+        return changed;
+    }
+    return true;
+}
+
+
+/**
+ * A simple interface to describe the data requirements for the table sorter visual row
  */
 interface ITableSorterVisualRow extends ITableSorterRow, powerbi.visuals.SelectableDataPoint {
 
@@ -629,4 +812,15 @@ interface ITableSorterVisualRow extends ITableSorterRow, powerbi.visuals.Selecta
      * The expression that will exactly match this row
      */
     filterExpr: powerbi.data.SQExpr;
+}
+
+/**
+ * A simple interface to describe the ranking info calculated from a dataView
+ */
+interface IRankingInfo {
+    column: powerbi.DataViewMetadataColumn;
+    values: any[];
+    colors: {
+        [rank: string]: string;
+    };
 }

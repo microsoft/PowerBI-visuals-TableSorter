@@ -21,12 +21,13 @@
 
 import * as $ from "jquery";
 import * as d3 from "d3";
+import * as _ from "lodash";
 import { ITableSorterFilter, ILineupImpl, ITableSorterConfiguration, ITableSorterSort } from "./models";
 
 /**
- * Gets the current list of filters from lineup
+ * Converts the current set of lineup filters into ones compatible with table sorter
  */
-export function convertFilters(lineupImpl: ILineupImpl, filteredColumn?: any) {
+export function convertFilters(lineupImpl: ILineupImpl, filteredColumn?: any): ITableSorterFilter[] {
     "use strict";
     if (lineupImpl) {
         let fDesc = filteredColumn && filteredColumn.description();
@@ -45,67 +46,27 @@ export function convertFilters(lineupImpl: ILineupImpl, filteredColumn?: any) {
             }));
         let filters: ITableSorterFilter[] = [];
         descs.forEach((n: any) => {
-            if (n.filter) {
-                // These can be arrays or strings
-                if (typeof n.filter === "string") {
-                    filters.push({
-                        column: n.column,
-                        value: n.filter || undefined,
-                    });
-                } else {
-                    filters.push({
-                        column: n.column,
-                        value: {
-                            values: n.filter || undefined,
-                        },
-                    });
-                }
-            } else if (n.domain) {
-                filters.push({
-                    column: n.column,
-                    value: {
-                        domain: n.domain,
-                        range: n.range,
-                    },
-                });
+            const filter = convertFilterFromDesc(n);
+            if (filter) {
+                filters.push(filter);
             }
         });
         return filters;
     }
 }
 
-
 /**
- * Gets filters from a layout obj
+ * Converts the current set of lineup filters on the layout object into ones compatible with table sorter
+ * @param layoutObj The layout object to extract the filters from
  */
 export function convertFiltersFromLayout(layoutObj: any) {
     "use strict";
     if (layoutObj) {
         let filters: ITableSorterFilter[] = [];
         layoutObj.forEach((n: any) => {
-            if (n.filter) {
-                // These can be arrays or strings
-                if (typeof n.filter === "string") {
-                    filters.push({
-                        column: n.column,
-                        value: n.filter || undefined,
-                    });
-                } else {
-                    filters.push({
-                        column: n.column,
-                        value: {
-                            values: n.filter || undefined,
-                        },
-                    });
-                }
-            } else if (n.domain) {
-                filters.push({
-                    column: n.column,
-                    value: {
-                        domain: n.domain,
-                        range: n.range,
-                    },
-                });
+            const filter = convertFilterFromDesc(n);
+            if (filter) {
+                filters.push(filter);
             }
         });
         return filters;
@@ -113,9 +74,46 @@ export function convertFiltersFromLayout(layoutObj: any) {
 }
 
 /**
- * Returns a configuration based on lineup settings
+ * Converts a filter from the given lineup description
+ * @param desc The description to get the filter from
  */
-export function convertConfiguration(lineupImpl: ILineupImpl, filteredColumn?: any) {
+export function convertFilterFromDesc(desc: any) {
+    "use strict";
+    // A filter without a column is kind of useless
+    if (desc && desc.column) {
+        if (desc.filter) {
+            // These can be arrays or strings
+            if (typeof desc.filter === "string") {
+                return {
+                    column: desc.column,
+                    value: desc.filter || undefined,
+                };
+            } else {
+                return {
+                    column: desc.column,
+                    value: {
+                        values: desc.filter || undefined,
+                    },
+                };
+            }
+        } else if (desc.domain) {
+            return {
+                column: desc.column,
+                value: {
+                    domain: desc.domain,
+                    range: desc.range,
+                },
+            };
+        }
+    }
+}
+
+/**
+ * Converts a table sorter compatible configuration from the given lineup instance
+ * @param lineupImpl The lineup instance to create from
+ * @param filteredColumn The filtered column that caused this conversion to occur.
+ */
+export function convertConfiguration(lineupImpl: ILineupImpl, filteredColumn?: any): ITableSorterConfiguration {
     "use strict";
     // TODO: filteredColumn is not a great fix.  The problem is when we filter a column, we reload lineup with new data/columns
     // but the UI remains open, and has a reference to an old column. filteredColumn is that old column.
@@ -155,9 +153,9 @@ export function convertConfiguration(lineupImpl: ILineupImpl, filteredColumn?: a
     return s;
 }
 
-
 /**
- * Gets the sort from lineup
+ * Converts the current lineup sort into one compatible with table sorter
+ * @param lineupImpl The lineup instance to get the sort from
  */
 export function convertSort(lineupImpl: ILineupImpl): ITableSorterSort {
     "use strict";

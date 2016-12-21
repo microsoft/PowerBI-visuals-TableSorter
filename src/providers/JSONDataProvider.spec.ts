@@ -18,14 +18,14 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-
-// import "../../base/testSetup";
-import "essex.powerbi.base/spec/visualHelpers";
-
 import { expect } from "chai";
 import { JSONDataProvider } from "./JSONDataProvider";
+import { Promise } from "es6-promise";
+import * as d3 from "d3";
+import { IQueryResult } from "../models";
 
 describe("JSONDataProvider", () => {
+    //
     const TEST_CASE_ONE = [
         {
             "id": 1,
@@ -110,9 +110,54 @@ describe("JSONDataProvider", () => {
     }];
     /* tslint:enable */
 
+    /* tslint:disable */
+    const TEST_DATA_WITH_ALL_SOME_NULLS = [{
+        id: 1,
+        col1: 12,  // (12 - 10) / (45 - 10) = .057...
+        some_null_col: null // 0
+
+        // .057
+    }, {
+        id: 2,
+        col1: 45, // 1
+        some_null_col: null  // 0
+
+        // 1
+    }, {
+        id: 3,
+        col1: 10, // 0
+        some_null_col: 1  // 1
+
+        // 1
+    }];
+    /* tslint:enable */
+
+    /* tslint:disable */
+    const TEST_DATA_WITH_ALL_SOME_NULLS_BUT_SAME_VALUES = [{
+        id: 1,
+        col1: 1,
+        some_null_col: null
+    }, {
+        id: 2,
+        col1: 1,
+        some_null_col: null
+    }, {
+        id: 3,
+        col1: 1,
+        some_null_col: 1
+    }];
+    /* tslint:enable */
+
     const createInstance = (data: any[]) => {
+        const domainInfo = {};
+        if (data && data.length) {
+            Object.keys(data[0]).forEach(prop => {
+                const getter = (i: any) => i[prop];
+                domainInfo[prop] = [d3.min(data, getter), d3.max(data, getter)];
+            });
+        }
         const result = {
-            instance: new JSONDataProvider(data),
+            instance: new JSONDataProvider(data, domainInfo),
         };
         return result;
     };
@@ -182,6 +227,95 @@ describe("JSONDataProvider", () => {
         });
     });
 
+    describe("query", () => {
+        it("should correctly filter columns with negative values and the filter is 0", () => {
+            const { instance } = createInstance(TEST_CASE_WITH_NEGATIVES_AND_ZERO);
+            const result = instance.query({
+                query: [{
+                    column: "negative_numbers",
+                    value: {
+                        domain: [0, 5],
+                        range: [1, 1],
+                    },
+                }],
+            });
+
+            return result.then(r => {
+                // There should only be the first two items, since those are the only two between 0 and 5
+                expect(r.results).to.be.deep.equal(TEST_CASE_WITH_NEGATIVES_AND_ZERO.slice(0, 2));
+            });
+        });
+        it("should not filter out 'null' values if the filtered domain isn't different from the actual domain", () => {
+            const { instance } = createInstance(TEST_DATA_WITH_ALL_SOME_NULLS);
+            const result = instance.query({
+                query: [{
+                    column: "some_null_col",
+                    value: {
+                        domain: [1, 1], // this is the actual domain
+                        range: [1, 1],
+                    },
+                }],
+            });
+
+            return result.then(r => {
+                // There should be NO missing elements
+                expect(r.results).to.be.deep.equal(TEST_DATA_WITH_ALL_SOME_NULLS);
+            });
+        });
+        it("should filter out 'null' values if the filtered domain is different from the actual domain", () => {
+            const { instance } = createInstance(TEST_DATA_WITH_ALL_SOME_NULLS);
+            const result = instance.query({
+                query: [{
+                    column: "some_null_col",
+                    value: {
+                        domain: [0, 1], // this is the actual domain
+                        range: [1, 1],
+                    },
+                }],
+            });
+
+            return result.then(r => {
+                // Only the last item has no null values
+                expect(r.results).to.be.deep.equal([TEST_DATA_WITH_ALL_SOME_NULLS[2]]);
+            });
+        });
+        it("should not include 'null' values if the filtered domain's minimum is 0", () => {
+            const { instance } = createInstance(TEST_DATA_WITH_ALL_SOME_NULLS);
+            const result = instance.query({
+                query: [{
+                    column: "some_null_col",
+                    value: {
+                        domain: [0, 1], // this is the actual domain
+                        range: [1, 1],
+                    },
+                }],
+            });
+
+            return result.then(r => {
+                // Only the last item has no null values
+                expect(r.results).to.be.deep.equal([TEST_DATA_WITH_ALL_SOME_NULLS[2]]);
+            });
+        });
+        it("should not crash if passed an empty column in a filter", () => {
+            const { instance } = createInstance(TEST_DATA_WITH_ALL_SOME_NULLS);
+            const result = instance.query({
+                query: [{
+                    column: undefined,
+                    value: {
+                        domain: [0, 1], // this is the actual domain
+                        range: [1, 1],
+                    },
+                }],
+            }) as Promise<IQueryResult>;
+
+            return result
+                .then((r) => {
+                    expect(r.results).to.be.ok;
+                })/*
+                .catch(e => { throw e; })*/;
+        });
+    });
+
     describe("stacked sorting", () => {
         it("should sort correctly with a column with null values", (done) => {
             let { instance } = createInstance(TEST_DATA_WITH_ALL_NULLS);
@@ -201,28 +335,161 @@ describe("JSONDataProvider", () => {
                         }],
                     },
                 }],
-            });
+            }) as Promise<any>;
 
             result.then((sorted) => {
-                expect(sorted.results.length).to.eq(3);
-                expect(sorted.results[0]["col1"]).to.equal(
-                    TEST_DATA_WITH_ALL_NULLS[2].col1 // This has the lowest value
-                );
-                expect(sorted.results[1]["col1"]).to.equal(
-                    TEST_DATA_WITH_ALL_NULLS[0].col1 // This has the second lowest value
-                );
-                expect(sorted.results[2]["col1"]).to.equal(
-                    TEST_DATA_WITH_ALL_NULLS[1].col1 // This has the highest value
-                );
-                done();
-            });
-        });
+                const mappedResult = sorted.results.map((n: any) => n.col1);
+                const mapped = TEST_DATA_WITH_ALL_NULLS.map(n => n.col1);
 
-        it ("should sort TEST_CASE_1 correctly", () => {
-            let { instance } = createInstance(TEST_CASE_ONE);
+                expect(mappedResult).to.be.deep.equal([
+                    mapped[2], // This has the lowest value
+                    mapped[0], // This has the second lowest value
+                    mapped[1], // This has the highest value
+                ]);
+
+                done();
+            })
+            .catch(done);
+        });
+        it("should sort correctly with a column with some null values", (done) => {
+            let { instance } = createInstance(TEST_DATA_WITH_ALL_SOME_NULLS);
             let result = instance.query({
                 // offset: 0,
                 // count: 100,
+                sort: [{
+                    asc: true,
+                    stack: {
+                        name: "someName",
+                        columns: [{
+                            column: "col1",
+                            weight: .5,
+                        }, {
+                            column: "some_null_col",
+                            weight: .5,
+                        }],
+                    },
+                }],
+            }) as Promise<any>;
+
+            result.then((sorted) => {
+                const mappedResult = sorted.results.map((n: any) => n.col1);
+                const mapped = TEST_DATA_WITH_ALL_SOME_NULLS.map(n => n.col1);
+
+                expect(mappedResult).to.be.deep.equal([
+                    mapped[0], // This has the lowest value
+                    mapped[1], // This has the second lowest value
+                    mapped[2], // This has the highest value
+                ]);
+
+                done();
+            })
+            .catch(done);
+        });
+        it("should sort correctly with a column with some null values in descending", (done) => {
+            let { instance } = createInstance(TEST_DATA_WITH_ALL_SOME_NULLS);
+            let result = instance.query({
+                // offset: 0,
+                // count: 100,
+                sort: [{
+                    asc: false,
+                    stack: {
+                        name: "someName",
+                        columns: [{
+                            column: "col1",
+                            weight: .5,
+                        }, {
+                            column: "some_null_col",
+                            weight: .5,
+                        }],
+                    },
+                }],
+            }) as Promise<any>;
+
+            result.then((sorted) => {
+                const mappedResult = sorted.results.map((n: any) => n.col1);
+                const mapped = TEST_DATA_WITH_ALL_SOME_NULLS.map(n => n.col1);
+
+                expect(mappedResult).to.be.deep.equal([
+                    mapped[1], // This has the lowest value
+                    mapped[2], // This has the second lowest value
+                    mapped[0], // This has the highest value
+                ]);
+
+                done();
+            })
+            .catch(done);
+        });
+        it("should sort correctly with a column with some null values but with all other equal values", (done) => {
+            let { instance } = createInstance(TEST_DATA_WITH_ALL_SOME_NULLS_BUT_SAME_VALUES);
+            let result = instance.query({
+                // offset: 0,
+                // count: 100,
+                sort: [{
+                    asc: true,
+                    stack: {
+                        name: "someName",
+                        columns: [{
+                            column: "col1",
+                            weight: 1,
+                        }, {
+                            column: "some_null_col",
+                            weight: 1,
+                        }],
+                    },
+                }],
+            }) as Promise<any>;
+
+            result.then((sorted) => {
+                const mappedResult = sorted.results.map((n: any) => n.col1);
+                const mapped = TEST_DATA_WITH_ALL_SOME_NULLS_BUT_SAME_VALUES.map(n => n.col1);
+
+                expect(mappedResult).to.be.deep.equal([
+                    mapped[2], // This has the lowest value
+                    mapped[0], // This has the second lowest value
+                    mapped[1], // This has the highest value
+                ]);
+
+                done();
+            })
+            .catch(done);
+
+            // Sorting the opposite direction should result in the opposite
+            result = instance.query({
+                // offset: 0,
+                // count: 100,
+                sort: [{
+                    asc: false,
+                    stack: {
+                        name: "someName",
+                        columns: [{
+                            column: "col1",
+                            weight: 1,
+                        }, {
+                            column: "some_null_col",
+                            weight: 1,
+                        }],
+                    },
+                }],
+            }) as Promise<any>;
+
+            result.then((sorted) => {
+                const mappedResult = sorted.results.map((n: any) => n.col1);
+                const mapped = TEST_DATA_WITH_ALL_SOME_NULLS_BUT_SAME_VALUES.map(n => n.col1);
+
+                expect(mappedResult).to.be.deep.equal([
+                    mapped[1], // This has the highest value
+                    mapped[0], // This has the second lowest value
+                    mapped[2], // This has the lowest value
+                ]);
+
+                done();
+            })
+            .catch(done);
+        });
+
+        it("should sort TEST_CASE_1 correctly", () => {
+            let { instance } = createInstance(TEST_CASE_ONE);
+            let result = instance.query({
                 sort: [{
                     "stack": {
                     "name": "Stacked",

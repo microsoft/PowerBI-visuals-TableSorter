@@ -20,6 +20,7 @@
  */
 
 import { expect } from "chai";
+import * as _ from "lodash";
 import { convertFiltersFromLayout, convertFilters, convertSort, convertConfiguration } from "./conversion";
 
 describe("conversion", () => {
@@ -32,6 +33,17 @@ describe("conversion", () => {
     const STRING_FILTER = [{
         column: "FAKE_COLUMN",
         value: "FAKE_FILTER",
+    }];
+    const STACKED_NUMERICAL_FILTER_DESC_LINEUP = [{
+        description: () => ({
+            children: [{
+                column: "FAKE_COLUMN",
+                domain: [12, 43],
+                range: [122, 423],
+            }],
+            domain: [12, 43],
+            range: [122, 423],
+        }),
     }];
     const NUMERICAL_FILTER_DESC_LINEUP = [{
         description: () => ({
@@ -92,6 +104,10 @@ describe("conversion", () => {
         it("should return a numerical filter if a layout with a numerical filter is passed to it", () => {
             const result = convertFiltersFromLayout([NUMERICAL_FILTER_DESC_LINEUP[0].description()]);
             expect(result).to.be.deep.equal(NUMERICAL_FILTER);
+        });
+        it("should not return a filter on a stacked column", () => {
+            const result = convertFiltersFromLayout([STACKED_NUMERICAL_FILTER_DESC_LINEUP[0].description()]);
+            expect(result).to.be.deep.equal([]);
         });
     });
 
@@ -179,7 +195,6 @@ describe("conversion", () => {
                     primary: [{
                         column: "FAKE_COLUMN",
                         filter: "FAKE_FILTER",
-                        domain: undefined,
                     }],
                 },
                 sort: {
