@@ -29,7 +29,7 @@ import {
     createPropertyPersister,
     PropertyPersister,
     get,
-} from "essex.powerbi.base";
+} from "@essex/pbi-base";
 import * as $ from "jquery";
 import * as d3 from "d3";
 import { TableSorter } from "../TableSorter";

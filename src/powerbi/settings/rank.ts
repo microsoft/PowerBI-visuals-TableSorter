@@ -33,7 +33,7 @@ import {
      getObjectsForColumn,
      createObjectSelectorForColumn,
      IGradient,
-} from "essex.powerbi.base";
+} from "@essex/pbi-base";
 import { IColorSettings, ColorMode } from "../../models";
 import { calculateRankingInfo } from "../ConfigBuilder";
 

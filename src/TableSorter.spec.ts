@@ -20,7 +20,7 @@
  */
 
 /* tslint:disable */
-import "essex.powerbi.base/dist/spec/visualHelpers";
+import "@essex/pbi-base/dist/spec/visualHelpers";
 // import "../base/testSetup";
 /* tslint:enable */
 import { expect } from "chai";
