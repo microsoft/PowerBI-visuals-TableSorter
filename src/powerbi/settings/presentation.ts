@@ -25,7 +25,7 @@
 import {
      setting,
      boolSetting as bool,
-} from "essex.powerbi.base";
+} from "@essex/pbi-base";
 
 /**
  * Settings related to presentation

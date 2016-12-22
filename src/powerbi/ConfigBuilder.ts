@@ -27,7 +27,7 @@ import {
     IColorSettings,
     ColorMode,
 } from "../models";
-import { listDiff } from "essex.powerbi.base";
+import { listDiff } from "@essex/pbi-base";
 import * as _ from "lodash";
 import * as d3 from "d3";
 const naturalSort = require("javascript-natural-sort"); // tslint:disable-line

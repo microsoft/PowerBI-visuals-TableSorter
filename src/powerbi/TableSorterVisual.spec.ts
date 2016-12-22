@@ -20,7 +20,7 @@
  */
 
 /* tslint:disable */
-require("essex.powerbi.base/dist/spec/visualHelpers");
+require("@essex/pbi-base/dist/spec/visualHelpers");
 import * as $ from "jquery";
 $.extend(true, global['powerbi'], {
     visuals: {
@@ -43,8 +43,8 @@ $.extend(true, global['powerbi'], {
 import * as _ from "lodash";
 
 /* tslint:enable */
-import { Utils as SpecUtils } from "essex.powerbi.base/dist/spec/visualHelpers";
-import { UpdateType } from "essex.powerbi.base";
+import { Utils as SpecUtils } from "@essex/pbi-base/dist/spec/visualHelpers";
+import { UpdateType } from "@essex/pbi-base";
 import { expect } from "chai";
 import { default as TableSorterVisual  } from "./TableSorterVisual";
 import { Promise } from "es6-promise";
