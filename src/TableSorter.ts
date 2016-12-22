@@ -44,7 +44,7 @@ const LineUpLib = require("lineup-v1");
 const EVENTS_NS = ".lineup";
 
 /**
- * Thin wrapper around the lineup library
+ * A wrapper around the lineup library
  */
 export class TableSorter {
 
@@ -58,6 +58,7 @@ export class TableSorter {
         SELECTION_CHANGED: "selectionChanged",
         LOAD_MORE_DATA: "loadMoreData",
         CLEAR_SELECTION: "clearSelection",
+        LOAD_LINEUP: "loadLineup",
     };
 
     /**
@@ -126,7 +127,11 @@ export class TableSorter {
     /**
      * Setter for if we are loading data
      */
-    private _toggleClass = _.debounce(() => this.element.toggleClass("loading", this.loadingData), 100);
+    private _toggleClass = _.debounce(() => {
+        if (!this.destroyed) {
+            this.element.toggleClass("loading", this.loadingData);
+        }
+    }, 100);
     private set loadingData(value: boolean) {
         this._loadingData = value;
         if (value) {
@@ -146,7 +151,10 @@ export class TableSorter {
         svgLayout: {
             mode: "separate",
         },
-        numberformat: (d: number) => (this.settings.presentation.numberFormatter || DEFAULT_NUMBER_FORMATTER)(d),
+        numberformat: (d: number, row: any, column: any) => {
+            const formatter = <any>(this.settings.presentation.numberFormatter || DEFAULT_NUMBER_FORMATTER);
+            return formatter(d, row, column);
+        },
         interaction: {
             multiselect: () => this.settings.selection.multiSelect,
         },
@@ -162,7 +170,9 @@ export class TableSorter {
     };
 
     /**
-     * Constructor for the lineups
+     * Constructor for the table sorter
+     * @param element The element to attach the table sorter to
+     * @param dataProvider The data provider to use when querying for data
      */
     constructor(element: JQuery, dataProvider?: IDataProvider) {
         this.element = $(template());
@@ -197,7 +207,7 @@ export class TableSorter {
      * Resizer function to update lineups rendering
      */
     private bodyUpdater = _.debounce(() => {
-        if (this.lineupImpl) {
+        if (this.lineupImpl && !this.destroyed) {
             this.lineupImpl.updateBody();
         }
     }, 100);
@@ -210,8 +220,9 @@ export class TableSorter {
         this._dimensions = value;
         if (this.lineupImpl && this.lineupImpl.$container && value) {
             const wrapper = $(this.lineupImpl.$container.node()).find("div.lu-wrapper");
+            const headerHeight = wrapper.offset().top - this.element.offset().top;
             wrapper.css({
-                height: (value.height - wrapper.offset().top - 2) + "px",
+                height: (value.height - headerHeight - 2) + "px",
                 width: "100%",
             });
         }
@@ -234,6 +245,7 @@ export class TableSorter {
         // Reset query vars
         this.loadingData = false;
         this.lastQuery = undefined;
+        this.queryOptions = {};
 
         this._dataProvider = dataProvider;
         if (this._dataProvider) {
@@ -289,6 +301,8 @@ export class TableSorter {
         let newSettings: ITableSorterSettings = $.extend(true, {}, DEFAULT_TABLESORTER_SETTINGS, value);
         newSettings.selection.singleSelect = !newSettings.selection.multiSelect;
 
+        this.lineUpConfig["cellFormatter"] = newSettings.presentation.cellFormatter;
+
         /** Apply the settings to lineup */
         if (this.lineupImpl) {
             let presProps = newSettings.presentation;
@@ -318,7 +332,7 @@ export class TableSorter {
     /**
      * Sets the column configuration that is used
      * *NOTE* This does not cause a data fetch, because it is just restoring state,
-     * if required, set the dataProvider property to refetch data. 
+     * if required, set the dataProvider property to refetch data.
      */
     public set configuration(value: ITableSorterConfiguration) {
         this._configuration = value;
@@ -358,20 +372,22 @@ export class TableSorter {
      * Function to destroy itself
      */
     public destroy() {
-        this.destroyed = true;
         if (this.lineupImpl) {
-            /* tslint:disable */ 
+            /* tslint:disable */
             if (this.lineupImpl.listeners) {
                 this.lineupImpl.listeners.on(EVENTS_NS, null);
             }
             this.lineupImpl.scrolled = () => {};
             /* tslint:enable */
             this.lineupImpl.destroy();
+            delete this.lineupImpl;
         }
+        this.destroyed = true;
     }
 
     /**
      * Checks to see if more data should be loaded based on the viewport
+     * @param scroll If true, a scrolling behavior caused this check
      */
     protected checkLoadMoreData(scroll: boolean) {
         if (!this.destroyed) {
@@ -389,6 +405,7 @@ export class TableSorter {
 
     /**
      * Runs the current query against the data provider
+     * @param newQuery If true, a change in the query (filter/sort) caused this run, as opposed to infinite scrolling
      */
     private runQuery(newQuery: boolean) {
         // If there is already a thing goin, stop it
@@ -439,6 +456,7 @@ export class TableSorter {
 
     /**
      * Loads data from a query result
+     * @param r The query result to load the data from
      */
     private loadDataFromQueryResult(r: IQueryResult) {
         this._data = this._data || [];
@@ -465,8 +483,11 @@ export class TableSorter {
 
     /**
      * Loads the actual lineup impl from the given spec document
+     * @param config The configuration to use when loading lineup
      */
     private loadLineup(config: ITableSorterConfiguration) {
+        this.raiseLoadLineup(config);
+
         let spec: any = {};
         // spec.name = name;
         spec.dataspec = config;
@@ -524,6 +545,8 @@ export class TableSorter {
 
     /**
      * Generates the histogram for lineup
+     * @param columnImpl The lineup column to generate the histogram for
+     * @param callback The callback for when the generation is complete
      */
     private generateHistogram(columnImpl: any, callback: Function) {
         let column = this.getColumnByName(columnImpl.column.column);
@@ -557,6 +580,7 @@ export class TableSorter {
 
     /**
      * Saves the current layout
+     * @param filteredColumn The column that is being filtered
      */
     private updateConfigurationFromLineup(filteredColumn?: any) {
         if (!this.savingConfiguration) {
@@ -595,6 +619,8 @@ export class TableSorter {
 
     /**
      * Listener for line up being sorted
+     * @param column The column being sorted
+     * @param asc If true the sort is ascending
      */
     private onLineUpSorted(column: string, asc: boolean) {
         if (!this.sortingFromConfig) {
@@ -616,6 +642,7 @@ export class TableSorter {
 
     /**
      * Listener for lineup being filtered
+     * @param column The lineup column being filtered
      */
     private onLineUpFiltered(column: any) {
         let colName = column.column && column.column.column;
@@ -694,5 +721,12 @@ export class TableSorter {
      */
     private raiseClearSelection() {
         this.events.raiseEvent(TableSorter.EVENTS.CLEAR_SELECTION);
+    }
+
+    /**
+     * Raises the event when loading lineup
+     */
+    private raiseLoadLineup(config: ITableSorterConfiguration) {
+        this.events.raiseEvent(TableSorter.EVENTS.LOAD_LINEUP, config);
     }
 }
