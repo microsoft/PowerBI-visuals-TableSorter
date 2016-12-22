@@ -20,7 +20,7 @@
   "author": "Microsoft",
   "license": "MIT",
   "dependencies": {
-    "@essex/pbi-base": "~0.8.18",
+    "@essex/pbi-base": "~0.8.24",
     "babel-core": "^6.11.4",
     "d3": "3.5.12",
     "dompurify": "^0.7.4",
