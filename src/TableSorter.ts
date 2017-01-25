@@ -594,6 +594,7 @@ export class TableSorter {
 
     /**
      * Applies the current configuration to the query options
+     * @param value The configuration to apply to the query options
      */
     private applyConfigurationToQueryOptions(value: ITableSorterConfiguration) {
         const primary = value && value.layout && value.layout.primary;

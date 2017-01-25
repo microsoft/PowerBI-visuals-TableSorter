@@ -23,6 +23,8 @@ require("./spec/init"); // tslint:disable-line
 import userSortedAndReorderedColumn from "./spec/test_data/userSortedAndReorderedColumn";
 import userSwitchedRankColumnToRegularColumn from "./spec/test_data/userSwitchedRankColumnToRegularColumn";
 import userSwitchedRegularColumnToRankColumn from "./spec/test_data/userSwitchedRegularColumnToRankColumn";
+import userRemovesAColumnFromPBIThatWasSorted from "./spec/test_data/userRemovesAColumnFromPBIThatWasSorted";
+import userRemovesAColumnFromPBIThatWasFiltered from "./spec/test_data/userRemovesAColumnFromPBIThatWasFiltered";
 
 import { Utils as SpecUtils } from "@essex/pbi-base/dist/spec/visualHelpers";
 import { default as TableSorterVisual  } from "./TableSorterVisual";
@@ -82,6 +84,14 @@ describe("TableSorterVisual", () => {
 
         function userSwitchedRegularColumnToRankColumnOptions() {
             return userSwitchedRegularColumnToRankColumn();
+        }
+
+        function userRemovesAColumnFromPBIThatWasSortedOptions() {
+            return userRemovesAColumnFromPBIThatWasSorted();
+        }
+
+        function userRemovesAColumnFromPBIThatWasFilteredOptions() {
+            return userRemovesAColumnFromPBIThatWasFiltered();
         }
 
         it("should restore column ordering if a user reorders a basic column", () => {
@@ -170,6 +180,28 @@ describe("TableSorterVisual", () => {
                 // we want to make sure we think about the generated rank columns, cause this will
                 // still pass if we check against `expected.columns`.
                 expectHeadersInCorrectOrder(parentEle, expected.rawColumns.concat(expected.rankColumns));
+            });
+        });
+
+        it("should not crash if a user removes a column that was sorted, from PBI's field list", () => {
+            const { options, expected } = userRemovesAColumnFromPBIThatWasSortedOptions();
+            const { updateComplete } = createVisualWithUpdate(options);
+
+            return updateComplete.then(() => {
+
+                // This is basically the same as the sort check, because the `expected` is unfiltered
+                expectRowsMatch(parentEle, expected.columns, expected.rows);
+            });
+        });
+
+        it("should not crash if a user removes a column that was filtered, from PBI's field list", () => {
+            const { options, expected } = userRemovesAColumnFromPBIThatWasFilteredOptions();
+            const { updateComplete } = createVisualWithUpdate(options);
+
+            return updateComplete.then(() => {
+
+                // This is basically the same as the sort check, because the `expected` is unfiltered
+                expectRowsMatch(parentEle, expected.columns, expected.rows);
             });
         });
 
