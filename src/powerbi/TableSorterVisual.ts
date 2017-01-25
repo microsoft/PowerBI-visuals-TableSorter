@@ -221,9 +221,14 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
      * The constructor for the visual
      * @param noCss If true, no css will be loaded
      * @param initialSettings The initial set of settings to use
-     * @param updateTypeGetterOverride An override for the update type gettter.
+     * @param updateTypeGetterOverride An override for the update type getter.
+     * @param bodyUpdateDebounce The delay before repainting the body
      */
-    public constructor(noCss: boolean = false, initialSettings?: ITableSorterSettings, updateTypeGetterOverride?: () => UpdateType) {
+    public constructor(
+        noCss: boolean = false,
+        initialSettings?: ITableSorterSettings,
+        updateTypeGetterOverride?: () => UpdateType,
+        private bodyUpdateDebounce = 100) { // tslint:disable-line
         super("TableSorter", noCss);
         this.initialSettings = initialSettings || {
             presentation: {
@@ -312,7 +317,10 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
                     identity = view.categorical.categories[0].identity[rowIndex];
                     newId = SelectionId.createWithId(identity);
                 } else {
-                    newId = SelectionId.createNull();
+                    // newId = SelectionId.createNull();
+                    newId = {
+                        key: "TableSorter_",
+                    };
                 }
 
                 // The below is busted > 100
@@ -370,7 +378,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
             this.selectionManager = new SelectionManager({
                 hostServices: options.host,
             });
-            this.tableSorter = new TableSorter(this.element.find(".lineup"));
+            this.tableSorter = new TableSorter(this.element.find(".lineup"), undefined, this.bodyUpdateDebounce);
             this.tableSorter.settings = this.initialSettings;
             this.listeners = [
                 this.tableSorter.events.on("selectionChanged", (rows: ITableSorterVisualRow[]) => this.onSelectionChanged(rows)),

@@ -173,8 +173,14 @@ export class TableSorter {
      * Constructor for the table sorter
      * @param element The element to attach the table sorter to
      * @param dataProvider The data provider to use when querying for data
+     * @param bodyUpdateDebounce The delay before repainting the body
      */
-    constructor(element: JQuery, dataProvider?: IDataProvider) {
+    constructor(element: JQuery, dataProvider?: IDataProvider, bodyUpdateDebounce: number = 100) {
+        this.bodyUpdater = _.debounce(() => {
+            if (this.lineupImpl && !this.destroyed) {
+                this.lineupImpl.updateBody();
+            }
+        }, bodyUpdateDebounce);
         this.element = $(template());
         this.element.find(".clear-selection").on("click", () => {
             this.lineupImpl.clearSelection();
@@ -206,11 +212,7 @@ export class TableSorter {
     /**
      * Resizer function to update lineups rendering
      */
-    private bodyUpdater = _.debounce(() => {
-        if (this.lineupImpl && !this.destroyed) {
-            this.lineupImpl.updateBody();
-        }
-    }, 100);
+    private bodyUpdater: () => void;
     /* tslint:enable */
 
     /**
@@ -246,6 +248,9 @@ export class TableSorter {
         this.loadingData = false;
         this.lastQuery = undefined;
         this.queryOptions = {};
+
+        // Load the current sort/filters into query options
+        this.applyConfigurationToQueryOptions(this.configuration);
 
         this._dataProvider = dataProvider;
         if (this._dataProvider) {
@@ -337,15 +342,7 @@ export class TableSorter {
     public set configuration(value: ITableSorterConfiguration) {
         this._configuration = value;
 
-        if (value && value.sort) {
-            this.queryOptions.sort = [value.sort];
-        }
-
-        const primary = value && value.layout && value.layout.primary;
-        if (primary) {
-            this.queryOptions.query = convertFiltersFromLayout(primary);
-        }
-
+        this.applyConfigurationToQueryOptions(value);
         this.applyConfigurationToLineup();
     }
 
@@ -592,6 +589,21 @@ export class TableSorter {
                 this.raiseConfigurationChanged(this.configuration);
             }
             this.savingConfiguration = false;
+        }
+    }
+
+    /**
+     * Applies the current configuration to the query options
+     */
+    private applyConfigurationToQueryOptions(value: ITableSorterConfiguration) {
+        const primary = value && value.layout && value.layout.primary;
+        delete this.queryOptions.sort;
+        delete this.queryOptions.query;
+        if (value && value.sort) {
+            this.queryOptions.sort = [value.sort];
+        }
+        if (primary) {
+            this.queryOptions.query = convertFiltersFromLayout(primary);
         }
     }
 
