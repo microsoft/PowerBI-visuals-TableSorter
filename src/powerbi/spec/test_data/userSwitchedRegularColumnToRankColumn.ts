@@ -683,9 +683,19 @@ import * as _ from "lodash";
 export default function userSwitchedRegularColumnToRankColumn() {
     "use strict";
     const clonedOptions = <powerbi.VisualUpdateOptions><any>_.cloneDeep(data);
+
+    // Make sure to disable animations
+    _.merge(clonedOptions.dataViews[0].metadata, {
+        objects: {
+            presentation: {
+                animation: false,
+            },
+        },
+    });
+
     const rawColumns = ["Customer Name", "Discount"];
     const rankColumns = [" 0", "≥ 0.01", "≥ 0.02", "≥ 0.03", "≥ 0.04", "≥ 0.05", "≥ 0.06", "≥ 0.08", "≥ 0.09"];
-    const u: any = undefined;
+    const e: any = " - ";
     return {
         options: clonedOptions,
         expected: {
@@ -693,16 +703,16 @@ export default function userSwitchedRegularColumnToRankColumn() {
             rankColumns,
             columns: rawColumns.concat(rankColumns),
             rows: [
-                ["Aaron Bergman", "100", "100", "100", "100", "100", "100", "100", "100", "100", u],
-                ["Aaron Bergman", "0.01", "67", "75", "80", "83", "86", "88", "89", "90", u],
-                ["Aaron Bergman", "0.03", "60", "67", "71", "75", "78", "80", "56", "50", u],
-                ["Aaron Bergman", "0.08", "67", "70", "40", "50", "57", "63", "40", u, u],
-                ["Aaron Bergman", "0.09", "60", "50", "33", "43", "50", "44", u, u, u],
-                ["Aaron Hawkins", "0.01", "33", "20", "38", "33", "30", u, u, u, u],
-                ["Aaron Hawkins", "0.02", "25", "29", "22", "20", u, u, u, u, u],
-                ["Aaron Hawkins", "0.04", "17", "25", "10", u, u, u, u, u, u],
-                ["Aaron Hawkins", "0.05", "14", "11", u, u, u, u, u, u, u],
-                ["Aaron Hawkins", "0.06", "13", u, u, u, u, u, u, u, u],
+                ["Aaron Bergman", "0", "100", "100", "100", "100", "100", "100", "100", "100", "100"],
+                ["Aaron Bergman", "0.01", e, "67", "75", "80", "83", "86", "88", "89", "90"],
+                ["Aaron Bergman", "0.03", e, e, e, "60", "67", "71", "75", "78", "80"],
+                ["Aaron Bergman", "0.08", e, e, e, e, e, e, e, "67", "70"],
+                ["Aaron Bergman", "0.09", e, e, e, e, e, e, e, e, "60"],
+                ["Aaron Hawkins", "0.01", e, "33", "50", "40", "50", "57", "63", "56", "50"],
+                ["Aaron Hawkins", "0.02", e, e, "25", "20", "33", "43", "50", "44", "40"],
+                ["Aaron Hawkins", "0.04", e, e, e, e, "17", "29", "38", "33", "30"],
+                ["Aaron Hawkins", "0.05", e, e, e, e, e, "14", "25", "22", "20"],
+                ["Aaron Hawkins", "0.06", e, e, e, e, e, e, "13", "11", "10"],
             ],
         },
     };

@@ -31,12 +31,16 @@ import { expect } from "chai";
 function visualOrderSort(a: HTMLElement, b: HTMLElement) {
     "use strict";
     // Sort it by the visual order
-    return parseFloat(a.style.left.replace("px", "")) - parseFloat(b.style.left.replace("px", ""));
+    return parseFloat($(a).css("left").replace("px", "")) - parseFloat($(b).css("left").replace("px", ""));
 }
 
-export function getHeaders(parentEle: JQuery) {
+export function getHeaders(parentEle: JQuery, excludeRank = false) {
     "use strict";
-    return parentEle.find(".header").toArray().sort(visualOrderSort);
+    let headers = parentEle.find(".header").toArray().sort(visualOrderSort);
+    if (excludeRank) {
+        headers = headers.filter(n => $(n).find(".headerLabel").text() !== "Rank");
+    }
+    return headers;
 };
 
 // const getHeader = (colName: string) => {
@@ -45,17 +49,25 @@ export function getHeaders(parentEle: JQuery) {
 
 export function getHeaderNames (parentEle: JQuery) {
     "use strict";
-    return getHeaders(parentEle).map(n => $(n).find(".headerLabel").text()).filter(n => n !== "Rank");
+    return getHeaders(parentEle, true).map(n => $(n).find(".headerLabel").text());
 }
 
 export function getColumnValues(parentEle: JQuery, col: string) {
     "use strict";
+    const rowOrderRegex = /translate\s*\((\d+\.*\d*)px\s*,\s*(\d+\.*\d*)px\s*\)/;
     const headerNames = getHeaders(parentEle).map(n => $(n).find(".headerLabel").text());
     const colIdx = headerNames.indexOf(col); // Returns the index that this header is in the list of headers
     // Find all the row values, and make sure they match
     return parentEle.find(".row")
-        .map((i, ele) => $(ele).find(".text,.valueonly").toArray().sort(visualOrderSort)[colIdx])
-        .map((i, ele) => $(ele).text()).toArray();
+        .toArray()
+        .sort((a, b) => {
+            // a.style.transform was returning undefined here for some reason, hence getAttribute("style")
+            const aYOffset = parseFloat(rowOrderRegex.exec(a.getAttribute("style"))[2]);
+            const bYOffset = parseFloat(rowOrderRegex.exec(b.getAttribute("style"))[2]);
+            return aYOffset - bYOffset;
+        })
+        .map((ele, i) => $(ele).find(".text,.valueonly").toArray().sort(visualOrderSort)[colIdx])
+        .map((ele, i) => $(ele).text());
 }
 
 export function getHeader (parentEle: JQuery, colName: string) {
@@ -84,6 +96,30 @@ export function performClick(e: JQuery) {
     }
 };
 
+
+
+/**
+ * Performs the sort on the TableSorter UI for the given column
+ * @param parentEle The element containing TableSorter
+ * @param column The column to be sorted
+ * @param numeric If the column is numeric
+ * @param asc True if ascending
+ */
+export function performSort(parentEle: JQuery, column: { column: string; label: string }, numeric: boolean, asc = true) {
+    "use strict";
+    let headerEle = getHeader(parentEle, column.column);
+
+    // If numeric, it sorts descending by default
+    // string, it sorts ascending by default
+    performClick(headerEle);
+    if ((!asc && !numeric) || (asc && numeric)) {
+        performClick(headerEle);
+    }
+    return new Promise((resolve, reject) => {
+        setTimeout(resolve, 20);
+    });
+}
+
 /**
  * Sets a string filter on the TableSorter UI
  * @param parentEle The element that contains table sorter
@@ -99,7 +135,7 @@ export function setStringFilter(parentEle: JQuery, colName: string, value: strin
         const inputEle = popup.find("input");
         inputEle.val(value);
         popup.find(".ok").click();
-        setTimeout(resolve, 100);
+        setTimeout(resolve, 10);
     });
 };
 
@@ -118,6 +154,6 @@ export function setNumericalFilter (parentEle: JQuery, colName: string, value: n
         const inputEle = popup.find("input");
         inputEle.val(value);
         popup.find(".ok").click();
-        setTimeout(resolve, 100);
+        setTimeout(resolve, 10);
     });
 };

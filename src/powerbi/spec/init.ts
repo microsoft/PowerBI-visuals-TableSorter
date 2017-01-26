@@ -14,7 +14,9 @@ $.extend(true, global["powerbi"], {
             createNull: () => ({}),
         },
         valueFormatter: {
-            create: () => (() => 0),
+            create: () => ({
+                format: (n: any) => n.toFixed(3),
+            }),
         },
     },
 });

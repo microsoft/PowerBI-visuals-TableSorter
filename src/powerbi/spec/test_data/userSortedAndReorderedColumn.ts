@@ -714,6 +714,16 @@ import * as _ from "lodash";
 export default function userSortedAndFilteredRankColumn() {
     "use strict";
     const clonedOptions = <powerbi.VisualUpdateOptions><any>_.cloneDeep(data);
+
+    // Make sure to disable animations
+    _.merge(clonedOptions.dataViews[0].metadata, {
+        objects: {
+            presentation: {
+                animation: false,
+            },
+        },
+    });
+
     return {
         options: clonedOptions,
         expected: {

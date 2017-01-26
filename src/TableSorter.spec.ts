@@ -113,7 +113,7 @@ describe("TableSorter", () => {
             }).TableSorter;
             parentEle.append(element);
             let result = {
-                instance: (new ctor(element, dataProvider)) as TableSorter,
+                instance: (new ctor(element, dataProvider, 0)) as TableSorter,
                 element,
                 mockLineup,
                 stubs: {
@@ -161,7 +161,7 @@ describe("TableSorter", () => {
                         // Ghetto hax, 50 because it tries to checkLoadMoreData after 10 seconds.
                         setTimeout(function () {
                             resolver();
-                        }, 50);
+                        }, 20);
                     });
                 },
             };
@@ -421,7 +421,7 @@ describe("TableSorter", () => {
                         setTimeout(function () {
                             expect(mockLineup.updateBody.called).to.be.true;
                             resolve();
-                        }, 150);
+                        }, 10);
                     });
                 });
             });
