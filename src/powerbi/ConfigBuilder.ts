@@ -213,43 +213,51 @@ function processConfigWithRankResult(config: ITableSorterConfiguration, rankResu
 
 /**
  * Processes the existing config, removing unnecessary columns, and does some additional processing
- * @param config The config to process
- * @param columns The set of valid columns
+ * @param existingConfig The config to process
+ * @param newColumns The set of new columns
  */
-export function processExistingConfig(config: ITableSorterConfiguration, columns: ITableSorterColumn[]) {
+export function processExistingConfig(existingConfig: ITableSorterConfiguration, newColumns: ITableSorterColumn[]) {
     "use strict";
-    let newColNames = columns.map(c => c.column);
-    let oldConfig = _.merge({}, config);
-    const oldCols = config.columns || [];
+    let newColNames = newColumns.map(c => c.column);
+    let oldConfig = _.merge({}, existingConfig);
+    const oldCols = existingConfig.columns || [];
+    const sortedColumn = existingConfig.sort && existingConfig.sort.column;
 
     // Filter out any columns that don't exist anymore
-    config.columns = oldCols.filter(c =>
+    existingConfig.columns = oldCols.filter(c =>
         newColNames.indexOf(c.column) >= 0
     );
 
     // Override the domain, with the newest data
-    oldCols.forEach(n => {
-        let newCol = columns.filter(m => m.column === n.column)[0];
+    oldCols.forEach(oldCol => {
+        let newCol = newColumns.filter(m => m.column === oldCol.column)[0];
         if (newCol) {
             if (newCol.domain) {
                 // Reset the domain, cause we now have a new set of data
-                n.domain = newCol.domain.slice(0) as any;
+                oldCol.domain = newCol.domain.slice(0) as any;
             }
-            n.color = newCol.color;
+            oldCol.color = newCol.color;
+        }
+
+        // If we had a sort, but there is no longer a column for it, or it's type has changed
+        // then lets just remove the sort, cause clearly the user changed the underlying dataset.
+        if (sortedColumn === oldCol.column &&
+            (!newCol || newCol.type !== oldCol.type)) {
+            delete existingConfig.sort;
+        }
+
+        // For some reason the user passed in the same column, but a different type
+        if (newCol && oldCol.type !== newCol.type) {
+            _.merge(oldCol, newCol);
         }
     });
 
-    // Sort contains a missing column
-    if (config.sort && newColNames.indexOf(config.sort.column) < 0 && !config.sort.stack) {
-        config.sort = undefined;
-    }
-
     // If we have a layout
-    if (config.layout && config.layout.primary) {
-        config.layout.primary = syncLayoutColumns(config.layout.primary, config.columns, oldConfig.columns);
+    if (existingConfig.layout && existingConfig.layout.primary) {
+        existingConfig.layout.primary = syncLayoutColumns(existingConfig.layout.primary, existingConfig.columns, oldConfig.columns);
     }
 
-    removeMissingColumns(config, columns);
+    removeMissingColumns(existingConfig, newColumns);
 }
 
 /**
@@ -346,6 +354,16 @@ export function syncLayoutColumns(layoutCols: ITableSorterLayoutColumn[], newCol
                 }
 
                 c.domain = [lowerBound, upperBound];
+            }
+
+            // Sync the layout column, with our defined cols
+            if (c.type !== newCol.type) {
+                _.merge(c, newCol, {
+                    domain: c.domain,
+                });
+
+                // Remove the filter if there is one
+                delete c.filter;
             }
         }
 

@@ -128,6 +128,11 @@ export interface ITableSorterLayoutColumn extends ITableSorterColumn {
      * The child columns (if this is a stacked column)
      */
     children?: ITableSorterLayoutColumn[];
+
+    /**
+     * The filter of the column
+     */
+    filter?: any;
 }
 
 /**
@@ -152,7 +157,10 @@ export interface ITableSorterConfiguration {
     /**
      * The layout of the columns
      */
-    layout?: any;
+    layout?: {
+        [bundleName: string]: ITableSorterLayoutColumn[];
+        primary?: ITableSorterLayoutColumn[];
+    };
 
     /**
      * The sort of the table sorter

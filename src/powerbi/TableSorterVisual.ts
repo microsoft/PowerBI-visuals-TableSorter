@@ -155,21 +155,23 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
      * A simple debounced function to update the configuration
      */
     private configurationUpdater = _.debounce(() => {
-        const config = this.tableSorter.configuration;
-        const objects: powerbi.VisualObjectInstancesToPersist = {
-            merge: [
-                <VisualObjectInstance>{
-                    objectName: "layout",
-                    properties: {
-                        "layout": JSON.stringify(config),
+        if (!this.destroyed) {
+            const config = this.tableSorter.configuration;
+            const objects: powerbi.VisualObjectInstancesToPersist = {
+                merge: [
+                    <VisualObjectInstance>{
+                        objectName: "layout",
+                        properties: {
+                            "layout": JSON.stringify(config),
+                        },
+                        selector: undefined,
                     },
-                    selector: undefined,
-                },
-            ],
-        };
-        log("Updating Config");
-        this.propertyPersister.persist(false, objects);
-    }, 100);
+                ],
+            };
+            log("Updating Config");
+            this.propertyPersister.persist(false, objects);
+        }
+    }, this.userInteractionDebounce);
 
     /**
      * A debounced version of the selection changed event listener
@@ -221,11 +223,17 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
      * The constructor for the visual
      * @param noCss If true, no css will be loaded
      * @param initialSettings The initial set of settings to use
-     * @param updateTypeGetterOverride An override for the update type gettter.
+     * @param updateTypeGetterOverride An override for the update type getter.
+     * @param userInteractionDebounce The debounce delay after some user action to actually perform computationally
+     * expensive operations.
      */
-    public constructor(noCss: boolean = false, initialSettings?: ITableSorterSettings, updateTypeGetterOverride?: () => UpdateType) {
+    public constructor(
+        noCss: boolean = false,
+        initialSettings?: ITableSorterSettings,
+        updateTypeGetterOverride?: () => UpdateType,
+        private userInteractionDebounce = 100) { // tslint:disable-line
         super("TableSorter", noCss);
-        this.initialSettings = initialSettings || {
+        this.initialSettings = _.merge({
             presentation: {
                 numberFormatter: (numVal: number, row: any, col: any) => {
                     const colName = col && col.column && col.column.column;
@@ -237,7 +245,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
                 },
                 cellFormatter: this.cellFormatter.bind(this),
             },
-        };
+        }, initialSettings || {});
 
         const className = CSS_MODULE && CSS_MODULE.locals && CSS_MODULE.locals.className;
         if (className) {
@@ -312,7 +320,10 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
                     identity = view.categorical.categories[0].identity[rowIndex];
                     newId = SelectionId.createWithId(identity);
                 } else {
-                    newId = SelectionId.createNull();
+                    // newId = SelectionId.createNull();
+                    newId = {
+                        key: "TableSorter_",
+                    };
                 }
 
                 // The below is busted > 100
@@ -370,7 +381,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
             this.selectionManager = new SelectionManager({
                 hostServices: options.host,
             });
-            this.tableSorter = new TableSorter(this.element.find(".lineup"));
+            this.tableSorter = new TableSorter(this.element.find(".lineup"), undefined, this.userInteractionDebounce);
             this.tableSorter.settings = this.initialSettings;
             this.listeners = [
                 this.tableSorter.events.on("selectionChanged", (rows: ITableSorterVisualRow[]) => this.onSelectionChanged(rows)),
