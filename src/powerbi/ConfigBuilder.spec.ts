@@ -20,7 +20,9 @@
  */
 
 import "@essex/pbi-base/dist/spec/visualHelpers";
-import { syncLayoutColumns, calcDomain, processExistingConfig } from "./ConfigBuilder";
+import userLoadedDatasetWithNullRankValues from "./spec/test_data/userLoadedDatasetWithNullRankValues";
+import userLoadedDatasetWithANonNumericRankColumn from "./spec/test_data/userLoadedDatasetWithANonNumericRankColumn";
+import { syncLayoutColumns, calcDomain, processExistingConfig, calculateRankingInfo } from "./ConfigBuilder";
 import { expect } from "chai";
 import {  ITableSorterLayoutColumn, ITableSorterConfiguration } from "../models";
 describe("ConfigBuilder", () => {
@@ -132,6 +134,24 @@ describe("ConfigBuilder", () => {
             // It should bound correctly
             const result = syncLayoutColumns(SIMPLE_STACKED_MULTIPLE_COLUMNS(), SIMPLE_COLUMNS(), SIMPLE_COLUMNS());
             expect(result[0].children).to.be.deep.equal(SIMPLE_COLUMNS());
+        });
+    });
+
+    describe("calcRankingInfo", () => {
+        it("should not generate 'NaN' columns when the dataset contains null values", () => {
+            const { dataViews } = userLoadedDatasetWithNullRankValues();
+            const ri = calculateRankingInfo(dataViews[0]);
+            expect(ri.column.displayName).to.be.equal("b"); // The column name is actually "b"
+
+            // There is only a single value of 1 for each of the rows (besides the null)
+            expect(ri.values).to.be.deep.equal([1]);
+        });
+        it("should not generate any columns when column used for ranking is not a numeric column", () => {
+            const { dataViews } = userLoadedDatasetWithANonNumericRankColumn();
+            const ri = calculateRankingInfo(dataViews[0]);
+
+            // Shouldn't return anything since it isn't a numeric column
+            expect(ri).to.be.undefined;
         });
     });
 

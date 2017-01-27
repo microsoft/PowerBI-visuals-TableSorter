@@ -424,10 +424,16 @@ export function calculateRankingInfo(dataView: powerbi.DataView) {
             const values = Object.keys(
                 dataView.table.rows
                     .reduce((a, b) => {
-                        a[b[rankingColumnInfo.idx] as string] = 1;
+                        const rankValue = b[rankingColumnInfo.idx] as string;
+                        if (rankValue !== null && rankValue !== undefined) { // tslint:disable-line
+                            a[rankValue] = 1;
+                        }
                         return a;
                     }, {}))
                     .map(n => parseFloat(n))
+
+                    // Just an additional safety net, just in case for some reason invalid data gets through
+                    .filter(n => !isNaN(n))
                     .sort(naturalSort);
             return {
                 column: rankingColumnInfo.column,

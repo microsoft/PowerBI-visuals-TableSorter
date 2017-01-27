@@ -15,7 +15,7 @@ $.extend(true, global["powerbi"], {
         },
         valueFormatter: {
             create: () => ({
-                format: (n: any) => n.toFixed(3),
+                format: (n: any) => typeof n === "number" ? n.toFixed(3) : n,
             }),
         },
     },

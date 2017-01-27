@@ -27,6 +27,8 @@ import userRemovesAColumnFromPBIThatWasSorted from "./spec/test_data/userRemoves
 import userRemovesAColumnFromPBIThatWasFiltered from "./spec/test_data/userRemovesAColumnFromPBIThatWasFiltered";
 import userLoadsBasicDataSet from "./spec/test_data/userLoadsBasicDataSet";
 import userLoadedWithASortedStackedColumn from "./spec/test_data/userLoadedWithASortedStackedColumn";
+import userLoadedDatasetWithNullRankValues from "./spec/test_data/userLoadedDatasetWithNullRankValues";
+import userLoadedDatasetWithANonNumericRankColumn from "./spec/test_data/userLoadedDatasetWithANonNumericRankColumn";
 
 import { Utils as SpecUtils } from "@essex/pbi-base/dist/spec/visualHelpers";
 import { default as TableSorterVisual  } from "./TableSorterVisual";
@@ -76,21 +78,25 @@ describe("TableSorterVisual.e2e", () => {
             updateComplete: new Promise((resolve, reject) => {
                 function doUpdate(newOpts: any) {
                     return new Promise((updateResolve) => {
-                        instance.update(newOpts);
+                        try {
+                            instance.update(newOpts);
 
-                        // Will resolve after the update has rendered
-                        requestAnimationFrame(() => {
-                            setTimeout(function() {
-                                updateResolve();
-                            }, 2); // Make this longer than bodyUpdateDebounceDelay just in case
-                        });
+                            // Will resolve after the update has rendered
+                            requestAnimationFrame(() => {
+                                setTimeout(function() {
+                                    updateResolve();
+                                }, 2); // Make this longer than bodyUpdateDebounceDelay just in case
+                            });
+                        } catch (e) {
+                            reject(e);
+                        }
                     });
                 }
 
                 // When the visuals first load PBI always calls update the first time with no data
                 return doUpdate({ dataViews: undefined, viewport: { width: 3000, height: 3000 }})
                         .then(() => doUpdate(options))
-                        .then(() => resolve());
+                        .then(() => resolve(), (e) => reject(e));
             }),
         };
     };
@@ -369,6 +375,23 @@ describe("TableSorterVisual.e2e", () => {
             }, true, true);
         }).then(() => {
             expectRowsMatch(parentEle, expected.columns, expected.rowsSortedByNumericColumnDesc);
+        });
+    });
+
+    it("should not generate 'NaN' ranking columns when the dataset contains null values", () => {
+        const { options } = userLoadedDatasetWithNullRankValues();
+        const { updateComplete } = createVisualWithUpdate(options);
+
+        return updateComplete.then(() => {
+            expect(getHeaderNames(parentEle)).to.be.deep.equal(["Name", "b", " 1"]);
+        });
+    });
+
+    it("should not generate any ranking columns when column used for ranking is not a numeric column", () => {
+        const { options } = userLoadedDatasetWithANonNumericRankColumn();
+        const { updateComplete } = createVisualWithUpdate(options);
+        return updateComplete.then(() => {
+            expect(getHeaderNames(parentEle)).to.be.deep.equal(["Customer Name", "Order Date"]);
         });
     });
 
