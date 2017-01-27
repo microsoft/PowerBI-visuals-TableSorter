@@ -19,12 +19,12 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-import { JSONDataProvider, IColumnDomainInfo } from "../providers/JSONDataProvider";
+import { JSONDataProvider } from "../providers/JSONDataProvider";
 import { IQueryOptions, IQueryResult } from "../models";
 import { LOAD_COUNT } from "./TableSorterVisual.defaults";
 
 /**
- * The data provider for our table sorter
+ * The data provider for our lineup instance
  */
 export default class MyDataProvider extends JSONDataProvider {
 
@@ -32,16 +32,14 @@ export default class MyDataProvider extends JSONDataProvider {
 
     constructor(
         data: any[],
-        domains: IColumnDomainInfo,
         hasMoreData: (newQuery: boolean) => boolean,
         onLoadMoreData: (options: IQueryOptions, newQuery: boolean, sort: boolean, filter: boolean) => PromiseLike<any[]>) {
-        super(data, domains, true, true, LOAD_COUNT);
+        super(data, true, true, LOAD_COUNT);
         this.hasMoreData = hasMoreData;
     }
 
     /**
      * Determines if the dataset can be queried again
-     * @param options The query options to control how the query is performed
      */
     public canQuery(options: IQueryOptions): PromiseLike<boolean> {
         return super.canQuery(options);
@@ -49,7 +47,6 @@ export default class MyDataProvider extends JSONDataProvider {
 
     /**
      * Runs a query against the server
-     * @param options The query options to control how the query is performed
      */
     public query(options: IQueryOptions): PromiseLike<IQueryResult> {
         return super.query(options);

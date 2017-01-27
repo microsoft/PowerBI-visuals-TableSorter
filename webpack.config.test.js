@@ -32,7 +32,7 @@ module.exports = {
         loaders: [
             {
                 test: /\.scss$/,
-                loader: 'ignore-loader'
+                loaders: ["style", "css", "sass"]
             },
             {
                 test: /\.json$/,
@@ -41,8 +41,7 @@ module.exports = {
         ],
     },
     externals: {
-        "jsdom": "",
-        "powerbi-visuals/lib/powerbi-visuals": "{}",
+        "jsdom": ""
     },
     plugins: [
         new webpack.optimize.OccurenceOrderPlugin(),

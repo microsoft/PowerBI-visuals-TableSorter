@@ -20,33 +20,17 @@
  */
 
 /* tslint:disable */
-require("@essex/pbi-base/dist/spec/visualHelpers");
-import * as $ from "jquery";
-$.extend(true, global['powerbi'], {
-    visuals: {
-        StandardObjectProperties: {
-            labelDisplayUnits: {
-                type: {}
-            },
-            labelPrecision: {
-                type: {}
-            }
-        },
-        SelectionId: {
-            createNull: () => ({}),
-        },
-        valueFormatter: {
-            create: () => (() => 0)
-        }
-    },
-});
-import * as _ from "lodash";
-
+require("essex.powerbi.base/spec/visualHelpers");
+global['powerbi'].visuals.StandardObjectProperties = {};
+global['powerbi'].visuals.valueFormatter = {
+    create: () => (() => 0)
+};
 /* tslint:enable */
-import { Utils as SpecUtils } from "@essex/pbi-base/dist/spec/visualHelpers";
-import { UpdateType } from "@essex/pbi-base";
+import { Utils as SpecUtils } from "essex.powerbi.base/spec/visualHelpers";
+import { UpdateType } from "essex.powerbi.base/src/lib/Utils";
 import { expect } from "chai";
 import { default as TableSorterVisual  } from "./TableSorterVisual";
+import * as $ from "jquery";
 import { Promise } from "es6-promise";
 
 describe("TableSorterVisual", () => {
@@ -79,28 +63,6 @@ describe("TableSorterVisual", () => {
         };
     };
 
-    const smallUpdateOptions = () => {
-        const baseOptions = SpecUtils.createUpdateOptionsWithSmallData();
-        const cols = baseOptions.dataViews[0].table.columns;
-        cols.forEach(n => {
-            n.queryName = n.displayName;
-            n.roles = {};
-        });
-        baseOptions.dataViews[0].metadata.columns = cols.slice(0);
-        return baseOptions;
-    };
-
-    const basicOptions = () => {
-        const baseOptions = SpecUtils.createUpdateOptionsWithData();
-        const cols = baseOptions.dataViews[0].table.columns;
-        cols.forEach(n => {
-            n.queryName = n.displayName;
-            n.roles = {};
-        });
-        baseOptions.dataViews[0].metadata.columns = cols.slice(0);
-        return baseOptions;
-    };
-
     it("should load", () => {
         expect(createVisual()).to.not.be.undefined;
     });
@@ -110,12 +72,12 @@ describe("TableSorterVisual", () => {
 
         // Load initial data
         setUpdateType(UpdateType.Data);
-        instance.update(basicOptions());
+        instance.update(SpecUtils.createUpdateOptionsWithData());
         expect(instance.tableSorter.configuration.columns.length).to.be.equal(2);
 
         // Pretend that we had an existing config
         let config = instance.tableSorter.configuration;
-        let newOptions = smallUpdateOptions();
+        let newOptions = SpecUtils.createUpdateOptionsWithSmallData();
         newOptions.dataViews[0].metadata = <any>{
             objects: {
                 "layout": {
@@ -137,12 +99,12 @@ describe("TableSorterVisual", () => {
 
         // Load initial data
         setUpdateType(UpdateType.Data);
-        instance.update(basicOptions());
+        instance.update(SpecUtils.createUpdateOptionsWithData());
         expect(instance.tableSorter.configuration.columns.length).to.be.equal(2);
 
         instance.tableSorter = <any>{};
         setUpdateType(UpdateType.Data);
-        instance.update(smallUpdateOptions());
+        instance.update(SpecUtils.createUpdateOptionsWithSmallData());
 
         // TODO: Assume the data is legit for now
         expect(instance.tableSorter.dataProvider).to.not.be.undefined;
@@ -152,13 +114,13 @@ describe("TableSorterVisual", () => {
         let { instance, setUpdateType } = createVisual();
 
         // Load initial data
-        let data = basicOptions();
+        let data = SpecUtils.createUpdateOptionsWithData();
         setUpdateType(UpdateType.Data);
         instance.update(data);
         expect(instance.tableSorter.configuration.columns.length).to.be.equal(2);
 
         // Pretend that we had an existing config
-        let newOptions = smallUpdateOptions();
+        let newOptions = SpecUtils.createUpdateOptionsWithSmallData();
         let config = instance.tableSorter.configuration;
 
         // Add a sort to the missing data, which in this case is the second column in the original data
@@ -194,7 +156,7 @@ describe("TableSorterVisual", () => {
         instance["createDataProvider"] = <any>(() => fakeProvider);
 
         // Load initial data
-        let data = basicOptions();
+        let data = SpecUtils.createUpdateOptionsWithData();
         setUpdateType(UpdateType.Data);
         instance.update(data);
 
@@ -211,7 +173,7 @@ describe("TableSorterVisual", () => {
         instance["createDataProvider"] = <any>(() => fakeProvider);
 
         // Load initial data
-        const data = basicOptions();
+        const data = SpecUtils.createUpdateOptionsWithData();
         setUpdateType(UpdateType.Data);
         instance.update(data);
 

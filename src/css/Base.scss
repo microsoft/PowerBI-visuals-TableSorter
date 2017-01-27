@@ -27,9 +27,9 @@
 
     .lu .headerLabel {
         @extend .smallFontSize !optional;
-        @extend %smallFontSize !optional;
+        @extend %smallFontSize;
         @extend .regularFont !optional;
-        @extend %regularFont !optional;
+        @extend %regularFont;
         font-weight: normal;
         /*stroke-size:.1;*/
         /*stroke:white;*/
@@ -37,63 +37,51 @@
 
     .lu .headerSort {
         @extend .smallFontSize !optional;
-        @extend %smallFontSize !optional;
+        @extend %smallFontSize;
     }
 
     .lineup .lu .tableData {
         @extend .regularFont !optional;
-        @extend %regularFont !optional;
+        @extend %regularFont;
         @extend .smallFontSize !optional;
-        @extend %smallFontSize !optional;
+        @extend %smallFontSize;
     }
 
     .lu .tableData.action div {
         @extend .smallFontSize !optional;
-        @extend %smallFontSize !optional;
+        @extend %smallFontSize;
     }
 
     .lu .sortedColumn {
         @extend .semiboldFont !optional;
-        @extend %semiboldFont !optional;
+        @extend %semiboldFont;
         @extend .mediumFontSize !optional;
-        @extend %mediumFontSize !optional;
+        @extend %mediumFontSize;
         font-weight: 600;
     }
 
     .lu .addColumnButton div {
         @extend .semiboldFont !optional;
-        @extend %semiboldFont !optional;
+        @extend %semiboldFont;
         @extend .smallFontSize !optional;
-        @extend %smallFontSize !optional;
+        @extend %smallFontSize;
     }
 
     .lu .fontawe {
         @extend .mediumFontSize !optional;
-        @extend %mediumFontSize !optional;
+        @extend %mediumFontSize;
     }
 
     .lu .stackedOption div {
         @extend .smallFontSize !optional;
-        @extend %smallFontSize !optional;
-    }
-
-    .lu .tableData.valueonly {
-        white-space: nowrap;
-        text-overflow: ellipsis;
-        overflow: hidden;
-    }
-
-    .lu .values {
-        .bar,.stacked {
-            opacity: .5;
-        }
+        @extend %smallFontSize;
     }
 
     .lu-popup {
         @extend .regularFont !optional;
-        @extend %regularFont !optional;
+        @extend %regularFont;
         @extend .smallFontSize !optional;
-        @extend %smallFontSize !optional;
+        @extend %smallFontSize;
     }
 
     .lu-popup .selectionTable {
@@ -104,11 +92,11 @@
         margin-top: 5px;
         margin-bottom: 5px;
         max-height: 300px;
-
+        
         td {
             vertical-align: middle;
         }
-
+        
         td.checkmark {
             vertical-align: bottom;
         }
@@ -116,22 +104,22 @@
 
     .lu-popup table {
         @extend .smallFontSize !optional;
-        @extend %smallFontSize !optional;
+        @extend %smallFontSize;
     }
 
     .lu-popup2 {
         @extend .regularFont !optional;
-        @extend %regularFont !optional;
+        @extend %regularFont;
         @extend .smallFontSize !optional;
-        @extend %smallFontSize !optional;
+        @extend %smallFontSize;
     }
 
     .lu-tooltip {
         @extend .regularFont !optional;
-        @extend %regularFont !optional;
+        @extend %regularFont;
         @extend .smallFontSize !optional;
-        @extend %smallFontSize !optional;
-
+        @extend %smallFontSize;
+        
         text-align: left;
 
         padding: 2px;
@@ -146,7 +134,7 @@
     // /*
     //  * in the separate mode a dedicated header and body svg are used, with an additional wrapper div for the body as scrolling container
     //  */
-    .lu-mode-separate{
+    .lu-mode-separate{ 
         .lu-header {
             /* position: absolute; */
             /* top: 0; */
@@ -167,9 +155,9 @@
 
     .lineup-component {
         @extend .smallFontSize !optional;
-        @extend %smallFontSize !optional;
+        @extend %smallFontSize;
         @extend .regularFont !optional;
-        @extend %regularFont !optional;
+        @extend %regularFont;
     }
 
     .nav ul {
@@ -182,7 +170,7 @@
     }
     .nav li {
     @extend .mediumFontSize !optional;
-    @extend %mediumFontSize !optional;
+    @extend %mediumFontSize;
     //   line-height: 40px;
     //   height: 40px;
     border-bottom: 1px solid #888;

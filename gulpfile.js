@@ -21,6 +21,6 @@
 
 const gulp = require('gulp');
 require("ts-node/register");
-const configure = require("@essex/pbi-base/dist/build_scripts").default;
-configure(gulp, __dirname);
+require("./tasks/build")(gulp);
+require("./tasks/release")(gulp);
 gulp.task('default', ['build']);

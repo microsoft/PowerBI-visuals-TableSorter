@@ -19,7 +19,4 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-/**
- * The number of items to load from PBI at one time
- */
 export const LOAD_COUNT = 1000;

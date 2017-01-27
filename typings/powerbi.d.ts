@@ -19,5 +19,4 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-@import "../../base/css/main";
-@import "Base";
+/// <reference path="../node_modules/powerbi-visuals/lib/powerbi-visuals.d.ts"/>

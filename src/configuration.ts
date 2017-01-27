@@ -20,8 +20,6 @@
  */
 
 import { ITableSorterConfiguration, ITableSorterRow, ITableSorterColumn } from "./models";
-import * as d3 from "d3";
-import * as _ from "lodash";
 
 /**
  * Returns true if the given object is numeric
@@ -29,8 +27,7 @@ import * as _ from "lodash";
 const isNumeric = (obj: any) => (obj - parseFloat(obj) + 1) >= 0;
 
 /**
- * Derives the table sorter configuration from the given set of data
- * @param data The data to derive the configuration from
+ * Derives the desciption for the given column
  */
 export function createConfigurationFromData(data: ITableSorterRow[]): ITableSorterConfiguration {
     "use strict";
@@ -103,7 +100,7 @@ export function createConfigurationFromData(data: ITableSorterRow[]): ITableSort
 }
 
 /**
- * Determines if the two different column sets have changed between two configurations
+ * Determines if the two different column sets have changed
  */
 export function haveColumnsChanged(oldCfg: ITableSorterConfiguration, newCfg: ITableSorterConfiguration) {
     "use strict";
@@ -123,7 +120,7 @@ export function haveColumnsChanged(oldCfg: ITableSorterConfiguration, newCfg: IT
 }
 
 /**
- * Determines if the two different layouts have changed between two configurations
+ * Determines if the two different layouts have changed
  */
 export function hasLayoutChanged(oldCfg: ITableSorterConfiguration, newCfg: ITableSorterConfiguration) {
     "use strict";
@@ -135,7 +132,7 @@ export function hasLayoutChanged(oldCfg: ITableSorterConfiguration, newCfg: ITab
 
 
 /**
- * Returns true if the new table sorter configuration has changed between two configurations
+ * Returns true if the new table sorter configuration has changed from the old one
  */
 export function hasConfigurationChanged(nc: ITableSorterConfiguration, oc: ITableSorterConfiguration) {
     "use strict";

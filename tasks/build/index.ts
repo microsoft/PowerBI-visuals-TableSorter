@@ -19,5 +19,19 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-@import "../../base/css/main";
-@import "Base";
+import * as fs from "fs";
+import * as path from "path";
+
+const baseDir = __dirname + "/../../";
+const sequence = require("gulp-sequence");
+
+module.exports = function(gulp: any) {
+    require("./powerbi")(gulp);
+
+    /**
+     * Build task for a given component
+     */
+    gulp.task(`build`, function(callback: Function) {
+        return sequence('build:powerbi', callback);
+    });
+};

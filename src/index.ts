@@ -19,6 +19,10 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-export { TableSorter } from "./TableSorter";
-export { TableSorter as TableSorterReact } from "./TableSorter";
-export { JSONDataProvider } from "./providers/JSONDataProvider";
+import { TableSorter } from "./TableSorter";
+import { TableSorter as TableSorterReact } from "./TableSorter";
+
+export = {
+    TableSorter,
+    TableSorterReact,
+};

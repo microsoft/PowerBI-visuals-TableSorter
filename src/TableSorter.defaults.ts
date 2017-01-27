@@ -20,7 +20,6 @@
  */
 
 import { ITableSorterSettings } from "./models";
-import * as d3 from "d3";
 
 /**
  * The default numbering format to use when formatting numbers to display in lineup
