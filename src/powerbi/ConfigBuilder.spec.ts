@@ -19,6 +19,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+import "@essex/pbi-base/dist/spec/visualHelpers";
 import { syncLayoutColumns, calcDomain, processExistingConfig } from "./ConfigBuilder";
 import { expect } from "chai";
 import {  ITableSorterLayoutColumn, ITableSorterConfiguration } from "../models";

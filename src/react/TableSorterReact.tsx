@@ -77,7 +77,7 @@ export class TableSorter extends React.Component<TableSorterProps, TableSorterSt
      * Renders this component
      */
     public render() {
-        return <div class="tablesorter-react"></div>;
+        return <div className="tablesorter-react"></div>;
     }
 
     /**

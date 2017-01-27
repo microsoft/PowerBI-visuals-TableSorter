@@ -45,7 +45,7 @@ describe("configuration", () => {
         it("should return false if only the rank column has changed", () => {
             const rankConfig = CONFIG_WITH_LAYOUT();
             // Add a rank column, otherwise identical
-            rankConfig.layout.primary.push({
+            rankConfig.layout.primary.push(<any>{
                 type: "rank",
             });
             const result = hasLayoutChanged(rankConfig, CONFIG_WITH_LAYOUT());
