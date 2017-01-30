@@ -21,7 +21,8 @@
 
 import { ITableSorterConfiguration, ITableSorterRow, ITableSorterColumn } from "./models";
 import * as d3 from "d3";
-import * as _ from "lodash";
+import isEqual = require("lodash/isEqual");
+import pick = require("lodash/pick");
 
 /**
  * Returns true if the given object is numeric
@@ -117,8 +118,8 @@ export function haveColumnsChanged(oldCfg: ITableSorterConfiguration, newCfg: IT
         if (oldCols.length !== newCols.length) {
             return true;
         }
-        const colMapper = (col: ITableSorterColumn) => _.pick(col, ["column", "label", "type"]);
-        return !_.isEqual(oldCols.map(colMapper), newCols.map(colMapper));
+        const colMapper = (col: ITableSorterColumn) => pick(col, ["column", "label", "type"]);
+        return !isEqual(oldCols.map(colMapper), newCols.map(colMapper));
     }
 }
 
@@ -130,7 +131,7 @@ export function hasLayoutChanged(oldCfg: ITableSorterConfiguration, newCfg: ITab
     const rankColumnFilter = (col: any) => col && col.type !== "rank"; // Filter out the rank column
     let oldLayout = (oldCfg && oldCfg.layout && oldCfg.layout.primary || []).filter(rankColumnFilter);
     let newLayout = (newCfg && newCfg.layout && newCfg.layout.primary || []).filter(rankColumnFilter);
-    return !_.isEqual(oldLayout, newLayout);
+    return !isEqual(oldLayout, newLayout);
 }
 
 
@@ -144,7 +145,7 @@ export function hasConfigurationChanged(nc: ITableSorterConfiguration, oc: ITabl
     } else if (!nc || !oc) {
         return true;
     }
-    return !_.isEqual(oc.sort, nc.sort) || // Has the sort changed
+    return !isEqual(oc.sort, nc.sort) || // Has the sort changed
            haveColumnsChanged(oc, nc) ||
            hasLayoutChanged(oc, nc);
 }

@@ -24,7 +24,7 @@ import { VisualBase } from "@essex/pbi-base";
 import VisualDataRoleKind = powerbi.VisualDataRoleKind;
 import TSSettings from "./settings";
 import * as $ from "jquery";
-import * as _ from "lodash";
+import merge = require("lodash/merge");
 
 /**
  * The set of capabilities for the table sorter
@@ -53,7 +53,7 @@ export default $.extend(true, {}, VisualBase.capabilities, {
             rowCount: { preferred: { min: 1 } },
         },
     }],
-    objects: _.merge({
+    objects: merge({
         general: {
             displayName: "General",
             properties: {

@@ -18,9 +18,8 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-
+import merge = require("lodash/merge");
 import { expect } from "chai";
-import * as _ from "lodash";
 import { convertFiltersFromLayout, convertFilters, convertSort, convertConfiguration } from "./conversion";
 
 describe("conversion", () => {
@@ -176,7 +175,7 @@ describe("conversion", () => {
 
     describe("convertConfiguration", () => {
         it ("should return a layout with a filter and a sort", () => {
-            const result = convertConfiguration(_.merge({
+            const result = convertConfiguration(merge({
                 spec: {
                     dataspec: {
                         columns: [{
