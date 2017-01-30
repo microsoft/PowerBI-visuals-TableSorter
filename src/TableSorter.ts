@@ -20,7 +20,6 @@
  */
 
 import { default as EventEmitter } from "../base/EventEmitter";
-import * as _  from "lodash";
 import * as d3 from "d3";
 import * as $ from "jquery";
 import {
@@ -40,6 +39,9 @@ import { DEFAULT_TABLESORTER_SETTINGS, DEFAULT_NUMBER_FORMATTER } from "./TableS
 
 /* tslint:disable */
 const LineUpLib = require("lineup-v1");
+import merge = require("lodash/merge");
+import debounce = require("lodash/debounce");
+import isEqual = require("lodash/isEqual");
 /* tslint:enable */
 const EVENTS_NS = ".lineup";
 
@@ -127,7 +129,7 @@ export class TableSorter {
     /**
      * Setter for if we are loading data
      */
-    private _toggleClass = _.debounce(() => {
+    private _toggleClass = debounce(() => {
         if (!this.destroyed) {
             this.element.toggleClass("loading", this.loadingData);
         }
@@ -176,7 +178,7 @@ export class TableSorter {
      * @param bodyUpdateDebounce The delay before repainting the body
      */
     constructor(element: JQuery, dataProvider?: IDataProvider, bodyUpdateDebounce: number = 100) {
-        this.bodyUpdater = _.debounce(() => {
+        this.bodyUpdater = debounce(() => {
             if (this.lineupImpl && !this.destroyed) {
                 this.lineupImpl.updateBody();
             }
@@ -350,7 +352,7 @@ export class TableSorter {
      * Gets the current set of query options
      */
     public getQueryOptions() {
-        return _.merge({}, this.queryOptions);
+        return merge({}, this.queryOptions);
     }
 
     /**
@@ -614,7 +616,7 @@ export class TableSorter {
     private applyConfigurationToLineup() {
         if (this.lineupImpl) {
             let currentSort = convertSort(this.lineupImpl);
-            if (this.configuration && this.configuration.sort && (!currentSort || !_.isEqual(currentSort, this.configuration.sort))) {
+            if (this.configuration && this.configuration.sort && (!currentSort || !isEqual(currentSort, this.configuration.sort))) {
                 this.sortingFromConfig = true;
                 let sort = this.configuration.sort;
                 this.lineupImpl.sortBy(sort.stack ? sort.stack.name : sort.column, sort.asc);
@@ -678,7 +680,7 @@ export class TableSorter {
         }
 
         const newFilters = convertFilters(this.lineupImpl, column);
-        if (!_.isEqual(newFilters, this.queryOptions.query)) {
+        if (!isEqual(newFilters, this.queryOptions.query)) {
             this.updateConfigurationFromLineup(column);
             this.raiseFilterChanged(filter);
 

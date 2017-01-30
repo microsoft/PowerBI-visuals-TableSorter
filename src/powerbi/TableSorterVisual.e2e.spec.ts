@@ -38,6 +38,11 @@ import { getHeaderNames, performSort, getHeaders } from "../spec/utils";
 import { expectHeadersInCorrectOrder, expectRowsMatch } from "../spec/expectations";
 import { expect } from "chai";
 
+/**
+ * This is the delay to wait before resolving our updateComplete promises after the table sorter has finished rendering
+ */
+const UPDATE_RESOLVE_DELAY = 2;
+
 describe("TableSorterVisual.e2e", () => {
     let parentEle: JQuery;
     let instances: any[] = [];
@@ -85,7 +90,7 @@ describe("TableSorterVisual.e2e", () => {
                             requestAnimationFrame(() => {
                                 setTimeout(function() {
                                     updateResolve();
-                                }, 2); // Make this longer than bodyUpdateDebounceDelay just in case
+                                }, UPDATE_RESOLVE_DELAY);
                             });
                         } catch (e) {
                             reject(e);

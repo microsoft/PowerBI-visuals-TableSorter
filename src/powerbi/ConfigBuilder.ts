@@ -28,10 +28,11 @@ import {
     ColorMode,
 } from "../models";
 import { listDiff } from "@essex/pbi-base";
-import * as _ from "lodash";
 import * as d3 from "d3";
+import ldget = require("lodash/get");
+import merge = require("lodash/merge");
 const naturalSort = require("javascript-natural-sort"); // tslint:disable-line
-const ldget = require("lodash/get"); // tslint:disable-line
+
 
 /**
  * The prefix for the generated rank column names
@@ -160,7 +161,7 @@ function parseColumnsFromDataView(dataView: powerbi.DataView, data: ITableSorter
                 type: c.type.numeric ? "number" : "string",
             };
             if (c.type.numeric) {
-                _.merge(base, {
+                merge(base, {
                     domain: calcDomain(data, base.column),
                 });
             }
@@ -219,7 +220,7 @@ function processConfigWithRankResult(config: ITableSorterConfiguration, rankResu
 export function processExistingConfig(existingConfig: ITableSorterConfiguration, newColumns: ITableSorterColumn[]) {
     "use strict";
     let newColNames = newColumns.map(c => c.column);
-    let oldConfig = _.merge({}, existingConfig);
+    let oldConfig = merge({}, existingConfig);
     const oldCols = existingConfig.columns || [];
     const sortedColumn = existingConfig.sort && existingConfig.sort.column;
 
@@ -248,7 +249,7 @@ export function processExistingConfig(existingConfig: ITableSorterConfiguration,
 
         // For some reason the user passed in the same column, but a different type
         if (newCol && oldCol.type !== newCol.type) {
-            _.merge(oldCol, newCol);
+            merge(oldCol, newCol);
         }
     });
 
@@ -358,7 +359,7 @@ export function syncLayoutColumns(layoutCols: ITableSorterLayoutColumn[], newCol
 
             // Sync the layout column, with our defined cols
             if (c.type !== newCol.type) {
-                _.merge(c, newCol, {
+                merge(c, newCol, {
                     domain: c.domain,
                 });
 

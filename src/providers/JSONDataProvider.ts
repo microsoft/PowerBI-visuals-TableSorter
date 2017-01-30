@@ -31,10 +31,10 @@ import {
     IExplicitFilter,
 } from "../models";
 import * as d3 from "d3";
-import * as _ from "lodash";
 
 const debug = require("debug"); // tslint:disable-line
 const log = debug("essex:widget:tablesorter:JSONDataProvider");
+import ldIsNaN = require("lodash/isNaN");
 
 /**
  * A Data provider for lineup that uses a data array as its store
@@ -165,7 +165,7 @@ export class JSONDataProvider implements IDataProvider {
             let maxHist = d3.max(histValues);
 
             // Make the values a percentage
-            resolve(histValues.map(n => maxHist === 0 || n === 0 || _.isNaN(n) || _.isNaN(maxHist) ? 0 : n / maxHist));
+            resolve(histValues.map(n => maxHist === 0 || n === 0 || ldIsNaN(n) || ldIsNaN(maxHist) ? 0 : n / maxHist));
         });
     }
 

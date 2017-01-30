@@ -49,7 +49,6 @@ import MyDataProvider from "./TableSorterVisual.dataProvider";
 import { default as buildConfig, calculateRankingInfo, calculateRankColors, LOWER_NUMBER_HIGHER_VALUE } from "./ConfigBuilder";
 import { DEFAULT_TABLESORTER_SETTINGS } from "../TableSorter.defaults";
 
-import * as _ from "lodash";
 import IVisual = powerbi.IVisual;
 import DataViewTable = powerbi.DataViewTable;
 import IVisualHostServices = powerbi.IVisualHostServices;
@@ -77,6 +76,10 @@ const vendorPrefix = (function getVendorPrefix() {
           .match(/-(moz|webkit|ms)-/) || (styles["OLink"] === "" && ["", "-o-"])
          )[0];
 })();
+import merge = require("lodash/merge");
+import debounce = require("lodash/debounce");
+import find = require("lodash/find");
+import isEqual = require("lodash/isEqual");
 /* tslint:enable */
 
 /**
@@ -154,7 +157,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
     /**
      * A simple debounced function to update the configuration
      */
-    private configurationUpdater = _.debounce(() => {
+    private configurationUpdater = debounce(() => {
         if (!this.destroyed) {
             const config = this.tableSorter.configuration;
             const objects: powerbi.VisualObjectInstancesToPersist = {
@@ -177,7 +180,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
      * A debounced version of the selection changed event listener
      * @param rows The rows that are selected
      */
-    private onSelectionChanged = _.debounce((rows?: ITableSorterVisualRow[]) => {
+    private onSelectionChanged = debounce((rows?: ITableSorterVisualRow[]) => {
         let filter: powerbi.data.SemanticFilter;
         let { multiSelect } = this.tableSorter.settings.selection;
         if (rows && rows.length) {
@@ -233,7 +236,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
         updateTypeGetterOverride?: () => UpdateType,
         private userInteractionDebounce = 100) { // tslint:disable-line
         super("TableSorter", noCss);
-        this.initialSettings = _.merge({
+        this.initialSettings = merge({
             presentation: {
                 numberFormatter: (numVal: number, row: any, col: any) => {
                     const colName = col && col.column && col.column.column;
@@ -333,7 +336,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
                     identity: newId,
                     equals: (b) => (<ITableSorterVisualRow>b).identity.equals(newId),
                     filterExpr: identity && identity.expr,
-                    selected: !!_.find(selectedIds, (id: SelectionId) => id.equals(newId)),
+                    selected: !!find(selectedIds, (id: SelectionId) => id.equals(newId)),
                 };
 
                 // Copy over column data
@@ -805,7 +808,7 @@ function hasColorSettingsChanged(state: TSSettings, newState: TSSettings) {
             const newSeriesColors = newSettings.rankInstanceColors || {};
 
             // If the entries are different, or any of the values are different
-            return !_.isEqual(Object.keys(oldSeriesColors), Object.keys(newSeriesColors)) ||
+            return !isEqual(Object.keys(oldSeriesColors), Object.keys(newSeriesColors)) ||
                 Object.keys(oldSeriesColors).filter(n => newSeriesColors[n] !== oldSeriesColors[n]).length > 0;
         }
         return changed;
