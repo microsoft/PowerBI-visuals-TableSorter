@@ -21,7 +21,10 @@
 
 import * as $ from "jquery";
 import * as d3 from "d3";
-import * as _ from "lodash";
+
+import merge = require("lodash/merge");
+import groupBy = require("lodash/groupBy");
+
 import { ITableSorterFilter, ILineupImpl, ITableSorterConfiguration, ITableSorterSort } from "./models";
 
 /**
@@ -121,7 +124,7 @@ export function convertConfiguration(lineupImpl: ILineupImpl, filteredColumn?: a
     let dataSpec: any = lineupImpl.spec.dataspec;
     let s: ITableSorterConfiguration = $.extend(true, {}, {
         columns: dataSpec.columns.map((n: any) => {
-            return _.merge({}, n, {
+            return merge({}, n, {
                 // domain: [0, 40000]
             });
         }),
@@ -138,7 +141,7 @@ export function convertConfiguration(lineupImpl: ILineupImpl, filteredColumn?: a
                     d = filteredColumn;
                 }
             }
-            let result = _.merge({}, base, {
+            let result = merge({}, base, {
                 domain: d.scale ? d.scale.domain() : undefined,
             });
             // If it is set to false or whatever, just remove it
@@ -148,7 +151,7 @@ export function convertConfiguration(lineupImpl: ILineupImpl, filteredColumn?: a
             return result;
         });
     // s.filters = this.getFiltersFromLineup();
-    s.layout = _.groupBy(descs, (d: any) => d.columnBundle || "primary");
+    s.layout = groupBy(descs, (d: any) => d.columnBundle || "primary");
     s.sort = convertSort(lineupImpl);
     return s;
 }

@@ -376,15 +376,17 @@ const data = {
     ]
 };
 
+import merge = require("lodash/merge");
+import cloneDeep = require("lodash/cloneDeep");
+
 /* tslint:enable */
 
-import * as _ from "lodash";
 export default function userRemovesAColumnFromPBIThatWasSorted() {
     "use strict";
-    const clonedOptions = <powerbi.VisualUpdateOptions><any>_.cloneDeep(data);
+    const clonedOptions = <powerbi.VisualUpdateOptions><any>cloneDeep(data);
 
     // Make sure to disable animations
-    _.merge(clonedOptions.dataViews[0].metadata, {
+    merge(clonedOptions.dataViews[0].metadata, {
         objects: {
             presentation: {
                 animation: false,

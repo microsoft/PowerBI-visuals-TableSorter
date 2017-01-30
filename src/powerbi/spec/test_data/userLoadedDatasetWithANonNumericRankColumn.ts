@@ -28,13 +28,14 @@ const data = {
         "height": 3000
     },
     "viewMode": 1,
-    "type": 4,
+    "type": 2,
+    "operationKind": 0,
     "dataViews": [
         {
             "metadata": {
                 "objects": {
-                    "presentation": {
-                        "values": true
+                    "layout": {
+                        "layout": "{\"columns\":[{\"label\":\"Customer Name\",\"column\":\"Customer Name\",\"type\":\"string\"}],\"primaryKey\":\"id\",\"layout\":{\"primary\":[{\"width\":50,\"type\":\"rank\"},{\"width\":200,\"column\":\"Customer Name\"}]}}"
                     }
                 },
                 "columns": [
@@ -44,8 +45,7 @@ const data = {
                         },
                         "type": {
                             "underlyingType": 1,
-                            "category": <any>null,
-                            "text": true
+                            "category": <any>null
                         },
                         "displayName": "Customer Name",
                         "queryName": "Orders.Customer Name",
@@ -61,15 +61,17 @@ const data = {
                     },
                     {
                         "roles": {
-                            "Values": true
+                            "Rank": true
                         },
                         "type": {
-                            "underlyingType": 259,
+                            "underlyingType": 519,
                             "category": <any>null,
-                            "numeric": true
+                            "temporalType": {
+                                "underlyingType": 519
+                            }
                         },
-                        "displayName": "Discount",
-                        "queryName": "Orders.Discount",
+                        "displayName": "Order Date",
+                        "queryName": "Orders.Order Date",
                         "expr": {
                             "_kind": 2,
                             "source": {
@@ -77,7 +79,7 @@ const data = {
                                 "entity": "Orders",
                                 "variable": "o"
                             },
-                            "ref": "Discount"
+                            "ref": "Order Date"
                         }
                     }
                 ]
@@ -86,57 +88,48 @@ const data = {
                 "rows": [
                     [
                         "Aaron Bergman",
-                        0
+                        "2009-07-01T07:00:00.000Z"
                     ],
                     [
                         "Aaron Bergman",
-                        0.01
+                        "2009-07-07T07:00:00.000Z"
                     ],
                     [
                         "Aaron Bergman",
-                        0.03
+                        "2010-07-27T07:00:00.000Z"
                     ],
                     [
                         "Aaron Bergman",
-                        0.08
+                        "2010-11-09T08:00:00.000Z"
                     ],
                     [
                         "Aaron Bergman",
-                        0.09
+                        "2011-05-28T07:00:00.000Z"
                     ],
                     [
                         "Aaron Hawkins",
-                        0.01
+                        "2009-08-15T07:00:00.000Z"
                     ],
                     [
                         "Aaron Hawkins",
-                        0.02
+                        "2009-12-13T08:00:00.000Z"
                     ],
                     [
                         "Aaron Hawkins",
-                        0.04
+                        "2010-05-26T07:00:00.000Z"
                     ],
                     [
                         "Aaron Hawkins",
-                        0.05
+                        "2010-10-04T07:00:00.000Z"
                     ],
                     [
                         "Aaron Hawkins",
-                        0.06
+                        "2011-02-24T08:00:00.000Z"
                     ]
                 ],
                 "columns": [
                     {
-                        "roles": {
-                            "Values": true
-                        },
-                        "type": {
-                            "underlyingType": 1,
-                            "category": <any>null,
-                            "text": true
-                        },
                         "displayName": "Customer Name",
-                        "queryName": "Orders.Customer Name",
                         "expr": {
                             "_kind": 2,
                             "source": {
@@ -145,19 +138,21 @@ const data = {
                                 "variable": "o"
                             },
                             "ref": "Customer Name"
-                        }
-                    },
-                    {
+                        },
                         "roles": {
                             "Values": true
                         },
                         "type": {
-                            "underlyingType": 259,
-                            "category": <any>null,
-                            "numeric": true
-                        },
-                        "displayName": "Discount",
-                        "queryName": "Orders.Discount",
+                            "underlyingType": 1,
+                            "bool": false,
+                            "text": true,
+                            "integer": false,
+                            "numeric": false,
+                            "dateTime": false
+                        }
+                    },
+                    {
+                        "displayName": "Order Date",
                         "expr": {
                             "_kind": 2,
                             "source": {
@@ -165,7 +160,18 @@ const data = {
                                 "entity": "Orders",
                                 "variable": "o"
                             },
-                            "ref": "Discount"
+                            "ref": "Order Date"
+                        },
+                        "roles": {
+                            "Rank": true
+                        },
+                        "type": {
+                            "underlyingType": 519,
+                            "bool": false,
+                            "text": false,
+                            "integer": false,
+                            "numeric": false,
+                            "dateTime": true
                         }
                     }
                 ],
@@ -203,23 +209,23 @@ const data = {
                                         "_kind": 0,
                                         "entity": "Orders"
                                     },
-                                    "ref": "Discount"
+                                    "ref": "Order Date"
                                 },
                                 "right": {
                                     "_kind": 17,
                                     "type": {
-                                        "underlyingType": 259,
-                                        "category": <any>null
+                                        "underlyingType": 519,
+                                        "category": <any>null,
+                                        "temporalType": {
+                                            "underlyingType": 519
+                                        }
                                     },
-                                    "value": 0,
-                                    "valueEncoded": "0D"
+                                    "value": "2009-07-01T07:00:00.000Z",
+                                    "valueEncoded": "datetime'2009-07-01T00:00:00'"
                                 }
                             }
                         },
-                        "_key": {
-                            "factoryMethod": <any>null,
-                            "value": "{\"and\":{\"l\":{\"comp\":{\"k\":0,\"l\":{\"col\":{\"s\":{\"e\":\"Orders\"},\"r\":\"Customer Name\"}},\"r\":{\"const\":{\"t\":1,\"v\":\"Aaron Bergman\"}}}},\"r\":{\"comp\":{\"k\":0,\"l\":{\"col\":{\"s\":{\"e\":\"Orders\"},\"r\":\"Discount\"}},\"r\":{\"const\":{\"t\":3,\"v\":0}}}}}}"
-                        }
+                        "_key": {}
                     },
                     {
                         "_expr": {
@@ -254,23 +260,23 @@ const data = {
                                         "_kind": 0,
                                         "entity": "Orders"
                                     },
-                                    "ref": "Discount"
+                                    "ref": "Order Date"
                                 },
                                 "right": {
                                     "_kind": 17,
                                     "type": {
-                                        "underlyingType": 259,
-                                        "category": <any>null
+                                        "underlyingType": 519,
+                                        "category": <any>null,
+                                        "temporalType": {
+                                            "underlyingType": 519
+                                        }
                                     },
-                                    "value": 0.01,
-                                    "valueEncoded": "0.01D"
+                                    "value": "2009-07-07T07:00:00.000Z",
+                                    "valueEncoded": "datetime'2009-07-07T00:00:00'"
                                 }
                             }
                         },
-                        "_key": {
-                            "factoryMethod": <any>null,
-                            "value": "{\"and\":{\"l\":{\"comp\":{\"k\":0,\"l\":{\"col\":{\"s\":{\"e\":\"Orders\"},\"r\":\"Customer Name\"}},\"r\":{\"const\":{\"t\":1,\"v\":\"Aaron Bergman\"}}}},\"r\":{\"comp\":{\"k\":0,\"l\":{\"col\":{\"s\":{\"e\":\"Orders\"},\"r\":\"Discount\"}},\"r\":{\"const\":{\"t\":3,\"v\":0.01}}}}}}"
-                        }
+                        "_key": {}
                     },
                     {
                         "_expr": {
@@ -305,23 +311,23 @@ const data = {
                                         "_kind": 0,
                                         "entity": "Orders"
                                     },
-                                    "ref": "Discount"
+                                    "ref": "Order Date"
                                 },
                                 "right": {
                                     "_kind": 17,
                                     "type": {
-                                        "underlyingType": 259,
-                                        "category": <any>null
+                                        "underlyingType": 519,
+                                        "category": <any>null,
+                                        "temporalType": {
+                                            "underlyingType": 519
+                                        }
                                     },
-                                    "value": 0.03,
-                                    "valueEncoded": "0.03D"
+                                    "value": "2010-07-27T07:00:00.000Z",
+                                    "valueEncoded": "datetime'2010-07-27T00:00:00'"
                                 }
                             }
                         },
-                        "_key": {
-                            "factoryMethod": <any>null,
-                            "value": "{\"and\":{\"l\":{\"comp\":{\"k\":0,\"l\":{\"col\":{\"s\":{\"e\":\"Orders\"},\"r\":\"Customer Name\"}},\"r\":{\"const\":{\"t\":1,\"v\":\"Aaron Bergman\"}}}},\"r\":{\"comp\":{\"k\":0,\"l\":{\"col\":{\"s\":{\"e\":\"Orders\"},\"r\":\"Discount\"}},\"r\":{\"const\":{\"t\":3,\"v\":0.03}}}}}}"
-                        }
+                        "_key": {}
                     },
                     {
                         "_expr": {
@@ -356,23 +362,23 @@ const data = {
                                         "_kind": 0,
                                         "entity": "Orders"
                                     },
-                                    "ref": "Discount"
+                                    "ref": "Order Date"
                                 },
                                 "right": {
                                     "_kind": 17,
                                     "type": {
-                                        "underlyingType": 259,
-                                        "category": <any>null
+                                        "underlyingType": 519,
+                                        "category": <any>null,
+                                        "temporalType": {
+                                            "underlyingType": 519
+                                        }
                                     },
-                                    "value": 0.08,
-                                    "valueEncoded": "0.08D"
+                                    "value": "2010-11-09T08:00:00.000Z",
+                                    "valueEncoded": "datetime'2010-11-09T00:00:00'"
                                 }
                             }
                         },
-                        "_key": {
-                            "factoryMethod": <any>null,
-                            "value": "{\"and\":{\"l\":{\"comp\":{\"k\":0,\"l\":{\"col\":{\"s\":{\"e\":\"Orders\"},\"r\":\"Customer Name\"}},\"r\":{\"const\":{\"t\":1,\"v\":\"Aaron Bergman\"}}}},\"r\":{\"comp\":{\"k\":0,\"l\":{\"col\":{\"s\":{\"e\":\"Orders\"},\"r\":\"Discount\"}},\"r\":{\"const\":{\"t\":3,\"v\":0.08}}}}}}"
-                        }
+                        "_key": {}
                     },
                     {
                         "_expr": {
@@ -407,23 +413,23 @@ const data = {
                                         "_kind": 0,
                                         "entity": "Orders"
                                     },
-                                    "ref": "Discount"
+                                    "ref": "Order Date"
                                 },
                                 "right": {
                                     "_kind": 17,
                                     "type": {
-                                        "underlyingType": 259,
-                                        "category": <any>null
+                                        "underlyingType": 519,
+                                        "category": <any>null,
+                                        "temporalType": {
+                                            "underlyingType": 519
+                                        }
                                     },
-                                    "value": 0.09,
-                                    "valueEncoded": "0.09D"
+                                    "value": "2011-05-28T07:00:00.000Z",
+                                    "valueEncoded": "datetime'2011-05-28T00:00:00'"
                                 }
                             }
                         },
-                        "_key": {
-                            "factoryMethod": <any>null,
-                            "value": "{\"and\":{\"l\":{\"comp\":{\"k\":0,\"l\":{\"col\":{\"s\":{\"e\":\"Orders\"},\"r\":\"Customer Name\"}},\"r\":{\"const\":{\"t\":1,\"v\":\"Aaron Bergman\"}}}},\"r\":{\"comp\":{\"k\":0,\"l\":{\"col\":{\"s\":{\"e\":\"Orders\"},\"r\":\"Discount\"}},\"r\":{\"const\":{\"t\":3,\"v\":0.09}}}}}}"
-                        }
+                        "_key": {}
                     },
                     {
                         "_expr": {
@@ -458,23 +464,23 @@ const data = {
                                         "_kind": 0,
                                         "entity": "Orders"
                                     },
-                                    "ref": "Discount"
+                                    "ref": "Order Date"
                                 },
                                 "right": {
                                     "_kind": 17,
                                     "type": {
-                                        "underlyingType": 259,
-                                        "category": <any>null
+                                        "underlyingType": 519,
+                                        "category": <any>null,
+                                        "temporalType": {
+                                            "underlyingType": 519
+                                        }
                                     },
-                                    "value": 0.01,
-                                    "valueEncoded": "0.01D"
+                                    "value": "2009-08-15T07:00:00.000Z",
+                                    "valueEncoded": "datetime'2009-08-15T00:00:00'"
                                 }
                             }
                         },
-                        "_key": {
-                            "factoryMethod": <any>null,
-                            "value": "{\"and\":{\"l\":{\"comp\":{\"k\":0,\"l\":{\"col\":{\"s\":{\"e\":\"Orders\"},\"r\":\"Customer Name\"}},\"r\":{\"const\":{\"t\":1,\"v\":\"Aaron Hawkins\"}}}},\"r\":{\"comp\":{\"k\":0,\"l\":{\"col\":{\"s\":{\"e\":\"Orders\"},\"r\":\"Discount\"}},\"r\":{\"const\":{\"t\":3,\"v\":0.01}}}}}}"
-                        }
+                        "_key": {}
                     },
                     {
                         "_expr": {
@@ -509,23 +515,23 @@ const data = {
                                         "_kind": 0,
                                         "entity": "Orders"
                                     },
-                                    "ref": "Discount"
+                                    "ref": "Order Date"
                                 },
                                 "right": {
                                     "_kind": 17,
                                     "type": {
-                                        "underlyingType": 259,
-                                        "category": <any>null
+                                        "underlyingType": 519,
+                                        "category": <any>null,
+                                        "temporalType": {
+                                            "underlyingType": 519
+                                        }
                                     },
-                                    "value": 0.02,
-                                    "valueEncoded": "0.02D"
+                                    "value": "2009-12-13T08:00:00.000Z",
+                                    "valueEncoded": "datetime'2009-12-13T00:00:00'"
                                 }
                             }
                         },
-                        "_key": {
-                            "factoryMethod": <any>null,
-                            "value": "{\"and\":{\"l\":{\"comp\":{\"k\":0,\"l\":{\"col\":{\"s\":{\"e\":\"Orders\"},\"r\":\"Customer Name\"}},\"r\":{\"const\":{\"t\":1,\"v\":\"Aaron Hawkins\"}}}},\"r\":{\"comp\":{\"k\":0,\"l\":{\"col\":{\"s\":{\"e\":\"Orders\"},\"r\":\"Discount\"}},\"r\":{\"const\":{\"t\":3,\"v\":0.02}}}}}}"
-                        }
+                        "_key": {}
                     },
                     {
                         "_expr": {
@@ -560,23 +566,23 @@ const data = {
                                         "_kind": 0,
                                         "entity": "Orders"
                                     },
-                                    "ref": "Discount"
+                                    "ref": "Order Date"
                                 },
                                 "right": {
                                     "_kind": 17,
                                     "type": {
-                                        "underlyingType": 259,
-                                        "category": <any>null
+                                        "underlyingType": 519,
+                                        "category": <any>null,
+                                        "temporalType": {
+                                            "underlyingType": 519
+                                        }
                                     },
-                                    "value": 0.04,
-                                    "valueEncoded": "0.04D"
+                                    "value": "2010-05-26T07:00:00.000Z",
+                                    "valueEncoded": "datetime'2010-05-26T00:00:00'"
                                 }
                             }
                         },
-                        "_key": {
-                            "factoryMethod": <any>null,
-                            "value": "{\"and\":{\"l\":{\"comp\":{\"k\":0,\"l\":{\"col\":{\"s\":{\"e\":\"Orders\"},\"r\":\"Customer Name\"}},\"r\":{\"const\":{\"t\":1,\"v\":\"Aaron Hawkins\"}}}},\"r\":{\"comp\":{\"k\":0,\"l\":{\"col\":{\"s\":{\"e\":\"Orders\"},\"r\":\"Discount\"}},\"r\":{\"const\":{\"t\":3,\"v\":0.04}}}}}}"
-                        }
+                        "_key": {}
                     },
                     {
                         "_expr": {
@@ -611,23 +617,23 @@ const data = {
                                         "_kind": 0,
                                         "entity": "Orders"
                                     },
-                                    "ref": "Discount"
+                                    "ref": "Order Date"
                                 },
                                 "right": {
                                     "_kind": 17,
                                     "type": {
-                                        "underlyingType": 259,
-                                        "category": <any>null
+                                        "underlyingType": 519,
+                                        "category": <any>null,
+                                        "temporalType": {
+                                            "underlyingType": 519
+                                        }
                                     },
-                                    "value": 0.05,
-                                    "valueEncoded": "0.05D"
+                                    "value": "2010-10-04T07:00:00.000Z",
+                                    "valueEncoded": "datetime'2010-10-04T00:00:00'"
                                 }
                             }
                         },
-                        "_key": {
-                            "factoryMethod": <any>null,
-                            "value": "{\"and\":{\"l\":{\"comp\":{\"k\":0,\"l\":{\"col\":{\"s\":{\"e\":\"Orders\"},\"r\":\"Customer Name\"}},\"r\":{\"const\":{\"t\":1,\"v\":\"Aaron Hawkins\"}}}},\"r\":{\"comp\":{\"k\":0,\"l\":{\"col\":{\"s\":{\"e\":\"Orders\"},\"r\":\"Discount\"}},\"r\":{\"const\":{\"t\":3,\"v\":0.05}}}}}}"
-                        }
+                        "_key": {}
                     },
                     {
                         "_expr": {
@@ -662,23 +668,23 @@ const data = {
                                         "_kind": 0,
                                         "entity": "Orders"
                                     },
-                                    "ref": "Discount"
+                                    "ref": "Order Date"
                                 },
                                 "right": {
                                     "_kind": 17,
                                     "type": {
-                                        "underlyingType": 259,
-                                        "category": <any>null
+                                        "underlyingType": 519,
+                                        "category": <any>null,
+                                        "temporalType": {
+                                            "underlyingType": 519
+                                        }
                                     },
-                                    "value": 0.06,
-                                    "valueEncoded": "0.06D"
+                                    "value": "2011-02-24T08:00:00.000Z",
+                                    "valueEncoded": "datetime'2011-02-24T00:00:00'"
                                 }
                             }
                         },
-                        "_key": {
-                            "factoryMethod": <any>null,
-                            "value": "{\"and\":{\"l\":{\"comp\":{\"k\":0,\"l\":{\"col\":{\"s\":{\"e\":\"Orders\"},\"r\":\"Customer Name\"}},\"r\":{\"const\":{\"t\":1,\"v\":\"Aaron Hawkins\"}}}},\"r\":{\"comp\":{\"k\":0,\"l\":{\"col\":{\"s\":{\"e\":\"Orders\"},\"r\":\"Discount\"}},\"r\":{\"const\":{\"t\":3,\"v\":0.06}}}}}}"
-                        }
+                        "_key": {}
                     }
                 ],
                 "identityFields": [
@@ -696,7 +702,7 @@ const data = {
                             "_kind": 0,
                             "entity": "Orders"
                         },
-                        "ref": "Discount"
+                        "ref": "Order Date"
                     }
                 ]
             }
@@ -709,9 +715,15 @@ import cloneDeep = require("lodash/cloneDeep");
 
 /* tslint:enable */
 
-export default function userLoadsBasicDataSet() {
+export default function userLoadedDatasetWithANonNumericRankColumn() {
     "use strict";
     const clonedOptions = <powerbi.VisualUpdateOptions><any>cloneDeep(data);
+
+    // Parse the table rows into dates, cause that is what PBI would do
+    clonedOptions.dataViews[0].table.rows.forEach(n => {
+        const unparsedDate = n[1];
+        n[1] = new Date(Date.parse(<any>unparsedDate));
+    });
 
     // Make sure to disable animations
     merge(clonedOptions.dataViews[0].metadata, {
@@ -724,45 +736,6 @@ export default function userLoadsBasicDataSet() {
 
     return {
         options: clonedOptions,
-        numericColumn: "Discount",
-        expected: {
-            columns: ["Customer Name", "Discount"],
-            rows: [
-                ["Aaron Bergman", 0],
-                ["Aaron Bergman", 0.01],
-                ["Aaron Hawkins", 0.01],
-                ["Aaron Hawkins", 0.02],
-                ["Aaron Bergman", 0.03],
-                ["Aaron Hawkins", 0.04],
-                ["Aaron Hawkins", 0.05],
-                ["Aaron Hawkins", 0.06],
-                ["Aaron Bergman", 0.08],
-                ["Aaron Bergman", 0.09],
-            ],
-            rowsSortedByNumericColumnAsc: [
-                ["Aaron Bergman", 0],
-                ["Aaron Bergman", 0.01],
-                ["Aaron Hawkins", 0.01],
-                ["Aaron Hawkins", 0.02],
-                ["Aaron Bergman", 0.03],
-                ["Aaron Hawkins", 0.04],
-                ["Aaron Hawkins", 0.05],
-                ["Aaron Hawkins", 0.06],
-                ["Aaron Bergman", 0.08],
-                ["Aaron Bergman", 0.09],
-            ],
-            rowsSortedByNumericColumnDesc: [
-                ["Aaron Bergman", 0.09],
-                ["Aaron Bergman", 0.08],
-                ["Aaron Hawkins", 0.06],
-                ["Aaron Hawkins", 0.05],
-                ["Aaron Hawkins", 0.04],
-                ["Aaron Bergman", 0.03],
-                ["Aaron Hawkins", 0.02],
-                ["Aaron Bergman", 0.01],
-                ["Aaron Hawkins", 0.01],
-                ["Aaron Bergman", 0],
-            ],
-        },
+        dataViews: clonedOptions.dataViews,
     };
 };

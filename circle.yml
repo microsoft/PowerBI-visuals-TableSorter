@@ -23,7 +23,7 @@ dependencies:
 
 test:
   override:
-    - yarn test
+    - NODE_ENV=production yarn test
 
 general:
   artifacts:
