@@ -29,6 +29,7 @@ import userLoadsBasicDataSet from "./spec/test_data/userLoadsBasicDataSet";
 import userLoadedWithASortedStackedColumn from "./spec/test_data/userLoadedWithASortedStackedColumn";
 import userLoadedDatasetWithNullRankValues from "./spec/test_data/userLoadedDatasetWithNullRankValues";
 import userLoadedDatasetWithANonNumericRankColumn from "./spec/test_data/userLoadedDatasetWithANonNumericRankColumn";
+import userJustLoadedARankColumn from "./spec/test_data/userJustLoadedARankColumn";
 
 import { Utils as SpecUtils } from "@essex/pbi-base/dist/spec/visualHelpers";
 import { default as TableSorterVisual  } from "./TableSorterVisual";
@@ -397,6 +398,14 @@ describe("TableSorterVisual.e2e", () => {
         const { updateComplete } = createVisualWithUpdate(options);
         return updateComplete.then(() => {
             expect(getHeaderNames(parentEle)).to.be.deep.equal(["Customer Name", "Order Date"]);
+        });
+    });
+
+    it("should load correctly when the user just loads a rank column", () => {
+        const { options, expected } = userJustLoadedARankColumn();
+        const { updateComplete } = createVisualWithUpdate(options);
+        return updateComplete.then(() => {
+            expectRowsMatch(parentEle, expected.columns, expected.rows);
         });
     });
 

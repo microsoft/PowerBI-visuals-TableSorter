@@ -42,8 +42,7 @@ export default $.extend(true, {}, VisualBase.capabilities, {
     }],
     dataViewMappings: [{
         conditions: [
-            { "Values": { min: 1 }, "Rank": { min: 0, max: 1 } },
-            { "Values": { max: 0 }, "Rank": { max: 0 } },
+            { "Values": { min: 0 }, "Rank": { min: 0, max: 1 } },
         ],
         table: {
             rows: {
