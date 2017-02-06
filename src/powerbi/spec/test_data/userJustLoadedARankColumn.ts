@@ -410,7 +410,7 @@ import cloneDeep = require("lodash/cloneDeep");
 
 /* tslint:enable */
 
-export default function userSwitchedRegularColumnToRankColumn() {
+export default function userJustLoadedARankColumn() {
     "use strict";
     const clonedOptions = <powerbi.VisualUpdateOptions><any>cloneDeep(data);
 
