@@ -12,7 +12,7 @@ Table Sorter lets you create stacked table columns to explore how different comb
 * The `src` directory contains all of the visual's code.
 
 ## Building
-* Running `npm run build` will do the following:
+* Running `npm test` will do the following:
   * Compiles the `src` directory.
   * Creates a `.pbiviz` file in the `dist\powerbi` directory.
     * Go to [Power BI](https://app.powerbi.com/), and to import your new visual.
