@@ -15,7 +15,7 @@ dependencies:
         echo "The correct version of Yarn is already installed."
       fi
   override:
-    - yarn install
+    - npm install # npm install actually runs lerna's install, which in terns runs yarn install
 
   cache_directories:
     - ~/.yarn
@@ -23,9 +23,12 @@ dependencies:
 
 test:
   override:
-    - NODE_ENV=production yarn test
+   # We need to seperate these out, cause the rest of the projects depend on tablesorter being built first.
+    - NODE_ENV=production lerna --scope @essex/tablesorter run test && NODE_ENV=production lerna run test --ignore @essex/tablesorter
 
 general:
   artifacts:
-    - "dist/"
-    - "docs/"
+    - "packages/tablesorter-powerbi/dist/"
+    - "packages/tablesorter-powerbi/docs/"
+    - "packages/tablesorter/docs/"
+    - "packages/tablesorter-react/docs/"

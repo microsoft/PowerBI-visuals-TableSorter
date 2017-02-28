@@ -1,6 +1,6 @@
 # Installed Modules
-/node_modules/
-/typings/
+node_modules/
+typings/
 
 # Temp Files
 .DS_Store
@@ -12,6 +12,7 @@
 *~
 
 # Build Artifacts
+build.out
 build/
 dist/
 docs/
