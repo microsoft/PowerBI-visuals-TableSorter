@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "target": "es5",
+    "module": "commonjs",
+    "experimentalDecorators": true,
+    "jsx": "react",
+    "declaration": true,
+    "noImplicitAny": true,
+    "suppressImplicitAnyIndexErrors": true,
+    "outDir": "dist"
+  },
+  "files": [
+      "src/index.ts",
+      "src/spec/expectations.ts",
+      "src/spec/utils.ts"
+  ],
+  "compileOnSave": false,
+  "exclude": [
+    "power-bi",
+    "node_modules",
+    "build",
+    "typings/browser.d.ts",
+    "typings/browser"
+  ]
+}
