@@ -35,8 +35,8 @@ import { Utils as SpecUtils } from "@essex/pbi-base/dist/spec/visualHelpers";
 import { default as TableSorterVisual  } from "./TableSorterVisual";
 import { ITableSorterConfiguration  } from "@essex/tablesorter";
 import { Promise } from "es6-promise";
-import { getHeaderNames, performSort, getHeaders } from "@essex/tablesorter/dist/spec/utils";
-import { expectHeadersInCorrectOrder, expectRowsMatch } from "@essex/tablesorter/dist/spec/expectations";
+import { getHeaderNames, performSort, getHeaders } from "@essex/tablesorter/src/spec/utils";
+import { expectHeadersInCorrectOrder, expectRowsMatch } from "@essex/tablesorter/src/spec/expectations";
 import { expect } from "chai";
 
 /**

@@ -15,12 +15,8 @@
     moment "^2.12.0"
 
 "@types/chai@^3.4.34":
-  version "3.4.34"
-  resolved "https://registry.yarnpkg.com/@types/chai/-/chai-3.4.34.tgz#d5335792823bb09cddd5e38c3d211b709183854d"
-
-"@types/d3@^3.x":
-  version "3.5.37"
-  resolved "https://registry.yarnpkg.com/@types/d3/-/d3-3.5.37.tgz#6f10bec972d69d2cd2e4cc31b8aa6137c33952ca"
+  version "3.4.35"
+  resolved "https://registry.yarnpkg.com/@types/chai/-/chai-3.4.35.tgz#e8d65f83492d2944f816fc620741821c28a8c900"
 
 "@types/fs-extra@0.0.33":
   version "0.0.33"
@@ -35,10 +31,6 @@
 "@types/highlight.js@^9.1.8":
   version "9.1.8"
   resolved "https://registry.yarnpkg.com/@types/highlight.js/-/highlight.js-9.1.8.tgz#d227f18bcb8f3f187e16965f2444859a04689758"
-
-"@types/jquery@^2.0.40":
-  version "2.0.40"
-  resolved "https://registry.yarnpkg.com/@types/jquery/-/jquery-2.0.40.tgz#acdd69e29b74cdec15dc3c074bcb064bc1b87213"
 
 "@types/lodash@^4.14.37":
   version "4.14.44"
@@ -60,25 +52,21 @@
   version "6.0.52"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-6.0.52.tgz#1ac3a99b42320f9e463482f25af4c2359473aaa6"
 
-"@types/react-dom@^0.14.17":
-  version "0.14.19"
-  resolved "https://registry.yarnpkg.com/@types/react-dom/-/react-dom-0.14.19.tgz#698a14335e32fb1bc61db65f5647c9668a7fc2eb"
+"@types/react-dom@^0.14.23":
+  version "0.14.23"
+  resolved "https://registry.yarnpkg.com/@types/react-dom/-/react-dom-0.14.23.tgz#cecfcfad754b4c2765fe5d29b81b301889ad6c2e"
   dependencies:
     "@types/react" "*"
 
-"@types/react@*", "@types/react@^0.14.39":
-  version "0.14.55"
-  resolved "https://registry.yarnpkg.com/@types/react/-/react-0.14.55.tgz#f7f7a6ad0c94780531e95632435b2798c5dad11b"
+"@types/react@*", "@types/react@^15.0.13":
+  version "15.0.13"
+  resolved "https://registry.yarnpkg.com/@types/react/-/react-15.0.13.tgz#7031530b0d1b77941551cda06e5b56b704505f12"
 
 "@types/shelljs@^0.3.32":
   version "0.3.33"
   resolved "https://registry.yarnpkg.com/@types/shelljs/-/shelljs-0.3.33.tgz#df613bddb88225ed09ce5c835f620dcaaf155e6b"
   dependencies:
     "@types/node" "*"
-
-"@types/sinon@^1.16.31":
-  version "1.16.33"
-  resolved "https://registry.yarnpkg.com/@types/sinon/-/sinon-1.16.33.tgz#28e022572f6fb8edd60b3ae0e0955181dc3250e5"
 
 Base64@~0.2.0:
   version "0.2.1"

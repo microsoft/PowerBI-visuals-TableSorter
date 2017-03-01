@@ -34,8 +34,9 @@
   },
   "devDependencies": {
     "@types/chai": "^3.4.34",
-    "@types/d3": "^3.5.36",
-    "@types/mocha": "^2.2.32",
+    "@types/d3": "^3.x",
+    "@types/jquery": "^2.0.40",
+    "@types/mocha": "^2.2.38",
     "@types/react": "^0.14.39",
     "@types/react-dom": "^0.14.17",
     "@types/sinon": "^1.16.31",

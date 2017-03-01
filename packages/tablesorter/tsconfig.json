@@ -6,14 +6,8 @@
     "jsx": "react",
     "declaration": true,
     "noImplicitAny": true,
-    "suppressImplicitAnyIndexErrors": true,
-    "outDir": "dist"
+    "suppressImplicitAnyIndexErrors": true
   },
-  "files": [
-      "src/index.ts",
-      "src/spec/expectations.ts",
-      "src/spec/utils.ts"
-  ],
   "compileOnSave": false,
   "exclude": [
     "power-bi",
