@@ -31,7 +31,7 @@
   "devDependencies": {
     "@types/chai": "^3.4.34",
     "@types/mocha": "^2.2.38",
-    "@types/react": "^15.0.13",
+    "@types/react": "^15.0.14",
     "@types/react-dom": "^0.14.23",
     "babel-cli": "6.x",
     "babel-loader": "^6.2.4",
@@ -76,7 +76,7 @@
     "style-loader": "0.13.0",
     "ts-node": "0.5.5",
     "tslint": "^3.15.1",
-    "typedoc": "^0.5.1",
+    "typedoc": "^0.5.7",
     "typescript": "^2.0.3",
     "underscore": "1.8.3",
     "wallaby-webpack": "0.0.16",

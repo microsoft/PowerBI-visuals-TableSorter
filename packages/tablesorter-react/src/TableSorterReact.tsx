@@ -31,7 +31,7 @@ import {
     TableSorter as TableSorterImpl,
 } from "@essex/tablesorter";
 
-import "@essex/tablesorter/src/css/TableSorter.scss";
+import "@essex/tablesorter/dist/css/TableSorter.scss";
 
 export interface TableSorterProps {
     cols: ITableSorterColumn[];

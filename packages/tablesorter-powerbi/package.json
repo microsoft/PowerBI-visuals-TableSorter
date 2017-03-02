@@ -33,10 +33,10 @@
     "powerbi-visuals": "^0.5.0"
   },
   "devDependencies": {
-    "@types/chai": "^3.4.34",
+    "@types/chai": "^3.4.35",
     "@types/d3": "^3.x",
     "@types/jquery": "^2.0.40",
-    "@types/mocha": "^2.2.38",
+    "@types/mocha": "^2.2.39",
     "@types/react": "^0.14.39",
     "@types/react-dom": "^0.14.17",
     "@types/sinon": "^1.16.31",
@@ -96,7 +96,7 @@
     "style-loader": "0.13.0",
     "ts-node": "0.5.5",
     "tslint": "^3.15.1",
-    "typedoc": "^0.5.1",
+    "typedoc": "^0.5.7",
     "typescript": "^2.0.3",
     "underscore": "1.8.3",
     "wallaby-webpack": "0.0.16",
