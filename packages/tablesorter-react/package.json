@@ -31,7 +31,7 @@
   "devDependencies": {
     "@types/chai": "^3.4.34",
     "@types/mocha": "^2.2.38",
-    "@types/react": "^15.0.13",
+    "@types/react": "^15.0.14",
     "@types/react-dom": "^0.14.23",
     "babel-cli": "6.x",
     "babel-loader": "^6.2.4",

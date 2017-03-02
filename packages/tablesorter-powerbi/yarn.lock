@@ -39,9 +39,9 @@
     lodash "4.0.0"
     moment "^2.12.0"
 
-"@types/chai@^3.4.34":
-  version "3.4.34"
-  resolved "https://registry.yarnpkg.com/@types/chai/-/chai-3.4.34.tgz#d5335792823bb09cddd5e38c3d211b709183854d"
+"@types/chai@^3.4.35":
+  version "3.4.35"
+  resolved "https://registry.yarnpkg.com/@types/chai/-/chai-3.4.35.tgz#e8d65f83492d2944f816fc620741821c28a8c900"
 
 "@types/d3@^3.5.36", "@types/d3@^3.x":
   version "3.5.36"
@@ -69,11 +69,7 @@
   version "9.1.8"
   resolved "https://registry.yarnpkg.com/@types/highlight.js/-/highlight.js-9.1.8.tgz#d227f18bcb8f3f187e16965f2444859a04689758"
 
-"@types/jquery@^2.0.33":
-  version "2.0.34"
-  resolved "https://registry.yarnpkg.com/@types/jquery/-/jquery-2.0.34.tgz#27615b369f30e572336126514e74672dda6e3d04"
-
-"@types/jquery@^2.0.40":
+"@types/jquery@^2.0.33", "@types/jquery@^2.0.40":
   version "2.0.40"
   resolved "https://registry.yarnpkg.com/@types/jquery/-/jquery-2.0.40.tgz#acdd69e29b74cdec15dc3c074bcb064bc1b87213"
 
@@ -89,7 +85,7 @@
   version "2.0.29"
   resolved "https://registry.yarnpkg.com/@types/minimatch/-/minimatch-2.0.29.tgz#5002e14f75e2d71e564281df0431c8c1b4a2a36a"
 
-"@types/mocha@^2.2.38":
+"@types/mocha@^2.2.39":
   version "2.2.39"
   resolved "https://registry.yarnpkg.com/@types/mocha/-/mocha-2.2.39.tgz#f68d63db8b69c38e9558b4073525cf96c4f7a829"
 

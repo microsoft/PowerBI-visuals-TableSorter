@@ -58,9 +58,9 @@
   dependencies:
     "@types/react" "*"
 
-"@types/react@*", "@types/react@^15.0.13":
-  version "15.0.13"
-  resolved "https://registry.yarnpkg.com/@types/react/-/react-15.0.13.tgz#7031530b0d1b77941551cda06e5b56b704505f12"
+"@types/react@*", "@types/react@^15.0.14":
+  version "15.0.14"
+  resolved "https://registry.yarnpkg.com/@types/react/-/react-15.0.14.tgz#07a739b20b0d4cf946f52444d3c40a94d4a234b1"
 
 "@types/shelljs@^0.3.32":
   version "0.3.33"
