@@ -1,13 +1,13 @@
 /* tslint:disable */
 /*
-require("essex.powerbi.base/spec/visualHelpers");
+require("@essex/pbi-base/spec/visualHelpers");
 global['powerbi'].visuals.StandardObjectProperties = {};
 global['powerbi'].visuals.valueFormatter = {
     create: () => (() => 0)
 };
 
-import { Utils as SpecUtils } from "essex.powerbi.base/spec/visualHelpers";
-import { UpdateType } from "essex.powerbi.base";
+import { Utils as SpecUtils } from "@essex/pbi-base/spec/visualHelpers";
+import { UpdateType } from "@essex/pbi-base";
 import { expect } from "chai";
 import { default as TableSorterVisual  } from "./TableSorterVisual";
 import * as $ from "jquery";

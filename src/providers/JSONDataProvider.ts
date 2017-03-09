@@ -1,6 +1,6 @@
 import { Promise } from "es6-promise";
 import { IDataProvider, IQueryOptions, IQueryResult, ITableSorterColumn, ITableSorterSort, ITableSorterFilter } from "../models";
-import { logger } from "essex.powerbi.base";
+import { logger } from "@essex/pbi-base";
 import * as d3 from "d3";
 
 const log = logger("essex:widget:tablesorter:JSONDataProvider");
@@ -104,7 +104,7 @@ export class JSONDataProvider implements IDataProvider {
             let maxHist = d3.max(histValues);
 
             // Make the values a percentage
-            resolve(histValues.map(n => maxHist === 0 || n === 0 || _.isNaN(n) || _.isNaN(maxHist) ? 0 : n / maxHist));
+            resolve(histValues.map(n => maxHist === 0 || n === 0 || Number.isNaN(n) || Number.isNaN(maxHist) ? 0 : n / maxHist));
         });
     }
 

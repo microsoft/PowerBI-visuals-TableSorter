@@ -6,7 +6,11 @@
     "jsx": "react",
     "declaration": true,
     "noImplicitAny": true,
-    "suppressImplicitAnyIndexErrors": true
+    "suppressImplicitAnyIndexErrors": true,
+    "lib": [
+        "es2017",
+        "dom"
+    ]
   },
   "compileOnSave": false,
   "exclude": [

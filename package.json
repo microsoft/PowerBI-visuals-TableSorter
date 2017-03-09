@@ -18,6 +18,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@essex/pbi-base": "^0.8.19",
+    "@essex/pbi-stateful": "^0.11.1",
     "@types/d3": "^3.5.36",
     "@types/node": "^6.0.45",
     "@types/react": "^0.14.39",

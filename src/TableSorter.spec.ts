@@ -1,5 +1,5 @@
 /* tslint:disable */
-import "essex.powerbi.base/spec/visualHelpers";
+import "@essex/pbi-base/spec/visualHelpers";
 // import "../base/testSetup";
 /* tslint:enable */
 

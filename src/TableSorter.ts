@@ -1,5 +1,5 @@
 import { default as EventEmitter } from "../base/EventEmitter";
-import { logger } from "essex.powerbi.base";
+import { logger } from "@essex/pbi-base";
 import { JSONDataProvider } from "./providers/JSONDataProvider";
 import * as _  from "lodash";
 import * as d3 from "d3";
@@ -156,7 +156,7 @@ export class TableSorter {
                         </a>
                     </li>
                 </ul>
-                <hr/>       
+                <hr/>
             </div>
             <div style="position:relative">
                 <div class="grid"></div>
@@ -567,7 +567,7 @@ export class TableSorter {
     public destroy() {
         this.destroyed = true;
         if (this.lineupImpl) {
-            /* tslint:disable */ 
+            /* tslint:disable */
             if (this.lineupImpl.listeners) {
                 this.lineupImpl.listeners.on(EVENTS_NS, null);
             }

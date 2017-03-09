@@ -1,5 +1,5 @@
 import { LOAD_COUNT } from "./TableSorterVisual.defaults";
-import { VisualBase } from "essex.powerbi.base";
+import { VisualBase } from "@essex/pbi-base";
 import VisualDataRoleKind = powerbi.VisualDataRoleKind;
 import StandardObjectProperties = powerbi.visuals.StandardObjectProperties;
 

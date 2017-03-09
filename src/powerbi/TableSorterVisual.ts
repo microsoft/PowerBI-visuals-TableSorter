@@ -3,25 +3,25 @@ import {
     logger,
     UpdateType,
     createPropertyPersister,
-} from "essex.powerbi.base";
-import { StatefulVisual } from "pbi-stateful";
+} from "@essex/pbi-base";
+import { StatefulVisual } from "@essex/pbi-stateful";
 import { TableSorter  } from "../TableSorter";
 import {
     publishChange,
     publishReplace,
-} from "pbi-stateful";
+} from "@essex/pbi-stateful";
 import {
     ITableSorterSettings,
     ITableSorterSort,
     ITableSorterConfiguration,
 } from "../models";
 import { Promise } from "es6-promise";
-import { capabilities } from "essex.powerbi.base/dist/lib/utils/capabilities";
+import { capabilities } from "@essex/pbi-base/dist/lib/utils/capabilities";
 import capabilitiesData from "./TableSorterVisual.capabilities";
 import MyDataProvider from "./TableSorterVisual.dataProvider";
 import buildConfig from "./ConfigBuilder";
 import { ITableSorterVisualRow, ITableSorterState } from "./interfaces";
-import { IDimensions, receiveDimensions } from "essex.powerbi.base/dist/lib/Utils/receiveDimensions";
+import { IDimensions, receiveDimensions } from "@essex/pbi-base/dist/lib/Utils/receiveDimensions";
 
 import * as _ from "lodash";
 import DataViewTable = powerbi.DataViewTable;
@@ -36,10 +36,10 @@ import SelectionManager = powerbi.visuals.utility.SelectionManager;
 import NumberFormatConfig from "./NumberFormatConfig";
 import * as DataFactory from "./DataFactory";
 import PropertyPersistManager from "./PropertyPersistManager";
+import colors from "@essex/pbi-base/dist/lib/colors";
 
 /* tslint:disable */
 const log = logger("essex:widget:TableSorterVisual");
-const colors = require("essex.powerbi.base/dist/lib/colors");
 const ldget = require("lodash.get");
 /* tslint:enable */
 

@@ -1,5 +1,5 @@
 import { ITableSorterColumn, ITableSorterRow, ITableSorterConfiguration } from "../models";
-import { listDiff } from "essex.powerbi.base";
+import { listDiff } from "@essex/pbi-base";
 import * as _ from "lodash";
 /* tslint:disable */
 const ldget = require("lodash.get");
