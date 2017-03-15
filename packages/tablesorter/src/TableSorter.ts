@@ -39,9 +39,9 @@ import { DEFAULT_TABLESORTER_SETTINGS, DEFAULT_NUMBER_FORMATTER } from "./TableS
 
 /* tslint:disable */
 const LineUpLib = require("lineup-v1");
-import merge = require("lodash/merge");
-import debounce = require("lodash/debounce");
-import isEqual = require("lodash/isEqual");
+const merge = require("lodash/object/merge"); // tslint:disable-line
+const debounce = require("lodash/function/debounce"); //tslint:disable-line
+const isEqual = require("lodash/lang/isEqual"); // tslint:disable-line
 /* tslint:enable */
 const EVENTS_NS = ".lineup";
 

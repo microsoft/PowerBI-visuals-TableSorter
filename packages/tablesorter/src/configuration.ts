@@ -21,8 +21,8 @@
 
 import { ITableSorterConfiguration, ITableSorterRow, ITableSorterColumn } from "./models";
 import * as d3 from "d3";
-import isEqual = require("lodash/isEqual");
-import pick = require("lodash/pick");
+const isEqual = require("lodash/lang/isEqual"); // tslint:disable-line
+const pick = require("lodash/object/pick"); // tslint:disable-line
 
 /**
  * Returns true if the given object is numeric

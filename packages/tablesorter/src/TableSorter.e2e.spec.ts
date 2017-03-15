@@ -711,7 +711,7 @@ describe("TableSorter.e2e", () => {
                     },
                 });
                 const q = instance.getQueryOptions().query;
-                expect(q).to.be.deep.equal([{ column: "col3", value: { domain: [1, 1], range: undefined } }]);
+                expect(q).to.be.deep.equal([{ column: "col3", value: { domain: [1, 1] } }]);
             });
 
             it("loads lineup with a sorted stacked column and allows for filtering", () => {

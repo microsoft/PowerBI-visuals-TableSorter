@@ -1,3 +1,7 @@
+#Log files
+*-debug.log
+*-error.log
+
 # Installed Modules
 node_modules/
 typings/

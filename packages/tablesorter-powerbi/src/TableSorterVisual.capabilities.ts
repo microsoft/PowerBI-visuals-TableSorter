@@ -24,7 +24,7 @@ import { VisualBase } from "@essex/pbi-base";
 import VisualDataRoleKind = powerbi.VisualDataRoleKind;
 import TSSettings from "./settings";
 import * as $ from "jquery";
-import merge = require("lodash/merge");
+const merge = require("lodash/object/merge"); // tslint:disable-line
 
 /**
  * The set of capabilities for the table sorter
