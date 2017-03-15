@@ -78,7 +78,7 @@ const vendorPrefix = (function getVendorPrefix() {
 })();
 const merge = require("lodash/object/merge"); // tslint:disable-line
 const debounce = require("lodash/function/debounce"); //tslint:disable-line
-import find = require("lodash/find");
+const find = require("lodash/collection/find"); // tslint:disable-line
 const isEqual = require("lodash/lang/isEqual"); // tslint:disable-line
 /* tslint:enable */
 

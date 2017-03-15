@@ -705,7 +705,7 @@ const data = {
 };
 
 const merge = require("lodash/object/merge"); // tslint:disable-line
-import cloneDeep = require("lodash/cloneDeep");
+const cloneDeep = require("lodash/lang/cloneDeep"); // tslint:disable-line
 
 /* tslint:enable */
 
