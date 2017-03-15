@@ -1,6 +1,6 @@
 {
   "name": "@essex/tablesorter-powerbi",
-  "version": "0.10.6",
+  "version": "0.10.7",
   "description": "",
   "main": "src/index.js",
   "typings": "src/index.d.ts",
