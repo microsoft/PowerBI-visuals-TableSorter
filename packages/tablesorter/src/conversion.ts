@@ -22,8 +22,8 @@
 import * as $ from "jquery";
 import * as d3 from "d3";
 
-import merge = require("lodash/merge");
-import groupBy = require("lodash/groupBy");
+const merge = require("lodash/object/merge"); // tslint:disable-line
+const groupBy = require("lodash/collection/groupBy"); // tslint:disable-line
 
 import { ITableSorterFilter, ILineupImpl, ITableSorterConfiguration, ITableSorterSort } from "./models";
 

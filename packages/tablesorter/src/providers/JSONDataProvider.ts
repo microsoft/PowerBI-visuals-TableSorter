@@ -34,7 +34,7 @@ import * as d3 from "d3";
 
 const debug = require("debug"); // tslint:disable-line
 const log = debug("essex:widget:tablesorter:JSONDataProvider");
-import ldIsNaN = require("lodash/isNaN");
+const ldIsNaN = require("lodash/lang/isNaN"); //tslint:disable-line
 
 /**
  * A Data provider for lineup that uses a data array as its store

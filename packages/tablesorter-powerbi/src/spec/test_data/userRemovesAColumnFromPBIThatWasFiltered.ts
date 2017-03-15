@@ -376,7 +376,7 @@ const data = {
     ]
 };
 
-import merge = require("lodash/merge");
+import merge = require("lodash/object/merge") as anymerge") as any;
 import cloneDeep = require("lodash/cloneDeep");
 
 /* tslint:enable */

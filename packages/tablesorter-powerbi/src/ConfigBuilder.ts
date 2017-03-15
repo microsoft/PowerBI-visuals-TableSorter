@@ -30,7 +30,7 @@ import {
 import { listDiff } from "@essex/pbi-base";
 import * as d3 from "d3";
 import ldget = require("lodash/get");
-import merge = require("lodash/merge");
+const merge = require("lodash/object/merge"); // tslint:disable-line
 const naturalSort = require("javascript-natural-sort"); // tslint:disable-line
 
 /**

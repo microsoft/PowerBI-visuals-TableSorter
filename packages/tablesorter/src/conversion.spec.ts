@@ -18,7 +18,7 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-import merge = require("lodash/merge");
+const merge = require("lodash/object/merge"); // tslint:disable-line
 import { expect } from "chai";
 import { convertFiltersFromLayout, convertFilters, convertSort, convertConfiguration } from "./conversion";
 

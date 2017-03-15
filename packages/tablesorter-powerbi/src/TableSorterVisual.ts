@@ -76,10 +76,10 @@ const vendorPrefix = (function getVendorPrefix() {
           .match(/-(moz|webkit|ms)-/) || (styles["OLink"] === "" && ["", "-o-"])
          )[0];
 })();
-import merge = require("lodash/merge");
-import debounce = require("lodash/debounce");
+const merge = require("lodash/object/merge"); // tslint:disable-line
+const debounce = require("lodash/function/debounce"); //tslint:disable-line
 import find = require("lodash/find");
-import isEqual = require("lodash/isEqual");
+const isEqual = require("lodash/lang/isEqual"); // tslint:disable-line
 /* tslint:enable */
 
 /**
