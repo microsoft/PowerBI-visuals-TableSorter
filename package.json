@@ -4,7 +4,7 @@
     "postinstall": "lerna exec --concurrency=1 -- yarn && lerna exec --concurrency=99 -- linklocal --named @essex/tablesorter ../tablesorter"
   },
   "devDependencies": {
-    "lerna": "2.0.0-beta.34",
+    "lerna": "^2.0.0-beta.38",
     "linklocal": "^2.8.0"
   }
 }
