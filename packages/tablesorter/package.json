@@ -1,6 +1,6 @@
 {
   "name": "@essex/tablesorter",
-  "version": "0.10.7",
+  "version": "0.10.8",
   "description": "",
   "private": true,
   "main": "dist/index.js",
