@@ -1,6 +1,7 @@
 {
   "scripts": {
-    "test": "lerna bootstrap && lerna run test --stream"
+    "test": "lerna bootstrap && lerna run test --stream",
+    "test:powerbi": "lerna bootstrap && lerna run test --ignore \"@essex/tablesorter-react\" --stream"
   },
   "dependencies": {
     "@essex/pbi-base": "~0.8.24",
