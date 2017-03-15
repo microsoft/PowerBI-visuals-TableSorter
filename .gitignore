@@ -1,7 +1,6 @@
-#Error Logs
-npm-debug.log
-yarn-error.log
-lerna-debug.log
+#Log files
+*-debug.log
+*-error.log
 
 # Installed Modules
 node_modules/
