@@ -37,10 +37,19 @@ export default class PresentationSettings {
      * The display units for the values
      */
     @color({
-        displayName: "Font Color",
-        description: "The color for the font",
+        displayName: "Row Text Color",
+        description: "The color for the text in the rows",
     })
-    public fontColor: string;
+    public textColor: string;
+
+    /**
+     * The display units for the values
+     */
+    @color({
+        displayName: "Header Text Color",
+        description: "The text color for the headers",
+    })
+    public headerTextColor: string;
 
     /**
      * The display units for the values

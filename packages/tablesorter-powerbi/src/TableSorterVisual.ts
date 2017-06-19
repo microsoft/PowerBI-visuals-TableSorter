@@ -582,8 +582,12 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
                 doRender = true;
             }
 
-            if (oldState.presentation.fontColor !== newState.presentation.fontColor) {
+            if (oldState.presentation.textColor !== newState.presentation.textColor) {
                 doRender = true;
+            }
+
+            if (oldState.presentation.headerTextColor !== newState.presentation.headerTextColor) {
+                this.element.find(".lu-header").css("color", newState.presentation.headerTextColor || ""); // tslint:disable-line
             }
 
             doRender = doRender || (oldState.rankSettings.histogram !== newState.rankSettings.histogram);
@@ -737,8 +741,8 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
                 "width": (d) => `${d["width"] + (rankHistogram && isConfidence(d) ? 2 : 0)}px`,
                 "margin-left": (d) => rankHistogram && isConfidence(d) ? `-1px` : undefined,
                 "color": (d) => {
-                    if (this.visualSettings.presentation.fontColor) {
-                        return this.visualSettings.presentation.fontColor;
+                    if (this.visualSettings.presentation.textColor) {
+                        return this.visualSettings.presentation.textColor;
                     }
                     const color = getColumnColor(d) || "#ffffff";
                     const d3Color = d3.hcl(color);
