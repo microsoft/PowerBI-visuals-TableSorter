@@ -25,12 +25,22 @@
 import {
      setting,
      boolSetting as bool,
+     colorSetting as color
 } from "@essex/pbi-base";
 
 /**
  * Settings related to presentation
  */
 export default class PresentationSettings {
+
+    /**
+     * The display units for the values
+     */
+    @color({
+        displayName: "Font Color",
+        description: "The color for the font"
+    })
+    public fontColor: string;
 
     /**
      * The display units for the values
