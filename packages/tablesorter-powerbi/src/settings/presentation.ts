@@ -25,7 +25,7 @@
 import {
      setting,
      boolSetting as bool,
-     colorSetting as color
+     colorSetting as color,
 } from "@essex/pbi-base";
 
 /**
@@ -38,7 +38,7 @@ export default class PresentationSettings {
      */
     @color({
         displayName: "Font Color",
-        description: "The color for the font"
+        description: "The color for the font",
     })
     public fontColor: string;
 
