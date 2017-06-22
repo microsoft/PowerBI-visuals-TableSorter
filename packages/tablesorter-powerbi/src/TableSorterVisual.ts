@@ -571,20 +571,29 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
                     this.initialSettings || { },
                     newState.toJSONObject());
 
-            let doRender = false;
-            if (oldState.presentation.labelPrecision !== newState.presentation.labelPrecision ||
-                oldState.presentation.labelDisplayUnits !== newState.presentation.labelDisplayUnits) {
+            const unitsOrPrecisionChanged =
+                oldState.presentation.labelPrecision !== newState.presentation.labelPrecision ||
+                oldState.presentation.labelDisplayUnits !== newState.presentation.labelDisplayUnits;
+
+            // If the units or precision changes, we need to update the formatter
+            if (unitsOrPrecisionChanged) {
                 this.numberFormatter = valueFormatterFactory({
                     value: newState.presentation.labelDisplayUnits || 0,
                     format: "0",
                     precision: newState.presentation.labelPrecision || undefined,
                 });
-                doRender = true;
             }
 
-            doRender = doRender || (oldState.rankSettings.histogram !== newState.rankSettings.histogram);
+            // If the header text color changes, we need to set the style
+            const newHeaderTextColor = newState.presentation.headerTextColor;
+            if (oldState.presentation.headerTextColor !== newHeaderTextColor) {
+                this.element.find(".lu-header").css("color", newHeaderTextColor || ""); // tslint:disable-line
+            }
 
-            if (doRender) {
+            // If these things change, we need to force a rerender
+            if (unitsOrPrecisionChanged ||
+                (oldState.rankSettings.histogram !== newState.rankSettings.histogram) ||
+                (oldState.presentation.textColor !== newState.presentation.textColor)) {
                 this.tableSorter.rerenderValues();
             }
 
@@ -733,6 +742,9 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
                 "width": (d) => `${d["width"] + (rankHistogram && isConfidence(d) ? 2 : 0)}px`,
                 "margin-left": (d) => rankHistogram && isConfidence(d) ? `-1px` : undefined,
                 "color": (d) => {
+                    if (this.visualSettings.presentation.textColor) {
+                        return this.visualSettings.presentation.textColor;
+                    }
                     const color = getColumnColor(d) || "#ffffff";
                     const d3Color = d3.hcl(color);
                     return d3Color.l <= 60 ? "#ececec" : "#333333";

@@ -25,12 +25,31 @@
 import {
      setting,
      boolSetting as bool,
+     colorSetting as color,
 } from "@essex/pbi-base";
 
 /**
  * Settings related to presentation
  */
 export default class PresentationSettings {
+
+    /**
+     * The text color for the body of the table sorter
+     */
+    @color({
+        displayName: "Row Text Color",
+        description: "The color for the text in the rows",
+    })
+    public textColor: string;
+
+    /**
+     * The color for the headers.
+     */
+    @color({
+        displayName: "Header Text Color",
+        description: "The text color for the headers",
+    })
+    public headerTextColor: string;
 
     /**
      * The display units for the values
