@@ -1,6 +1,6 @@
 {
   "name": "@essex/tablesorter-react",
-  "version": "0.10.8",
+  "version": "0.10.9",
   "description": "",
   "private": true,
   "main": "dist/index.js",
@@ -16,6 +16,6 @@
   "author": "Microsoft",
   "license": "MIT",
   "dependencies": {
-    "@essex/tablesorter": "^0.10.8"
+    "@essex/tablesorter": "^0.10.9"
   }
 }
