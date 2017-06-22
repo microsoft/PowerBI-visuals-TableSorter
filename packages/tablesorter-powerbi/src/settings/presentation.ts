@@ -34,7 +34,7 @@ import {
 export default class PresentationSettings {
 
     /**
-     * The display units for the values
+     * The text color for the body of the table sorter
      */
     @color({
         displayName: "Row Text Color",
@@ -43,7 +43,7 @@ export default class PresentationSettings {
     public textColor: string;
 
     /**
-     * The display units for the values
+     * The color for the headers.
      */
     @color({
         displayName: "Header Text Color",
