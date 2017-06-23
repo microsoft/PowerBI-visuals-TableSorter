@@ -7,13 +7,16 @@
   "typings": "dist/index.d.ts",
   "scripts": {
     "clean": "rimraf dist",
-    "lint": "tslint 'src/**/*[!.d].{ts,tsx}'",
-    "copy:css": "copyfiles -u 1 'src/**/*.scss' dist/",
+    "lint": "tslint \"src/**/*[!.d].{ts,tsx}\"",
+    "copy:css": "copyfiles -u 1 \"src/**/*.scss\" dist/",
     "karma:tdd": "karma start --tdd",
     "karma:once": "karma start",
-    "docs": "typedoc --out docs --ignoreCompilerErrors ./ --externalPattern **/node_modules/**/*.* --exclude **/src/**/*.spec.ts > /dev/null || exit 1",
+    "docs": "typedoc --out docs --ignoreCompilerErrors ./ --externalPattern \"**/node_modules/**/*.*\" --exclude \"**/src/**/*.spec.ts\"",
     "test": "npm run clean && tsc && npm-run-all copy:css lint karma:once docs"
   },
   "author": "Microsoft",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "phantomjs-prebuilt": "2.1.7"
+  }
 }

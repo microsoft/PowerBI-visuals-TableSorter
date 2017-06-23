@@ -7,15 +7,19 @@
   "typings": "dist/index.d.ts",
   "scripts": {
     "clean": "rimraf dist",
-    "lint": "tslint 'src/**/*[!.d].{ts,tsx}'",
+    "compile": "node ./scripts/compile",
+    "lint": "tslint \"src/**/*[!.d].{ts,tsx}\"",
     "karma:tdd": "karma start --tdd",
     "karma:once": "karma start",
-    "docs": "typedoc --out docs --ignoreCompilerErrors ./ --externalPattern **/node_modules/**/*.* --exclude **/src/**/*.spec.ts > /dev/null || exit 1",
-    "test": "npm run clean && tsc && npm-run-all lint karma:once docs"
+    "docs": "typedoc --out docs --ignoreCompilerErrors ./ --externalPattern \"**/node_modules/**/*.*\" --exclude \"**/src/**/*.spec.ts\"",
+    "test": "npm run clean && npm run compile && npm-run-all lint karma:once docs"
   },
   "author": "Microsoft",
   "license": "MIT",
   "dependencies": {
     "@essex/tablesorter": "^1.0.1"
+  },
+  "devDependencies": {
+    "phantomjs-prebuilt": "^2.1.7"
   }
 }

@@ -7,17 +7,20 @@
   "typings": "src/index.d.ts",
   "scripts": {
     "clean": "rimraf dist",
-    "tsc": "(tsc > build.out) || (! cat build.out | grep -v \"node_modules.*\" | grep -v \"^\\s.*\") || ! printf \"\\n\\033[0;31mCheck build.out for full error text\\n\"",
+    "compile": "node ./scripts/compile",
     "pbibundle": "gulp",
-    "lint": "tslint 'src/**/*[!.d].{ts,tsx}'",
+    "lint": "tslint \"src/**/*[!.d].{ts,tsx}\"",
     "karma:tdd": "karma start --tdd",
     "karma:once": "karma start",
-    "docs": "typedoc --out docs --ignoreCompilerErrors ./ --externalPattern **/node_modules/**/*.* --exclude **/src/**/*.spec.ts > /dev/null || exit 1",
-    "test": "npm-run-all clean tsc lint karma:once docs pbibundle"
+    "docs": "typedoc --out docs --ignoreCompilerErrors ./ --externalPattern \"**/node_modules/**/*.*\" --exclude \"**/src/**/*.spec.ts\"",
+    "test": "npm run clean && npm run compile && npm-run-all lint karma:once docs pbibundle"
   },
   "author": "Microsoft",
   "license": "MIT",
   "dependencies": {
     "@essex/tablesorter": "^1.0.1"
+  },
+  "devDependencies": {
+    "phantomjs-prebuilt": "^2.1.7"
   }
 }

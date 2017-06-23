@@ -1,4 +1,4 @@
-[![CircleCI](https://circleci.com/gh/Microsoft/PowerBI-visuals-TableSorter.svg?style=svg)](https://circleci.com/gh/Microsoft/PowerBI-visuals-TableSorter)
+[![Build Status](https://travis-ci.org/Microsoft/PowerBI-visuals-TableSorter.svg?branch=develop)](https://travis-ci.org/Microsoft/PowerBI-visuals-TableSorter)
 
 # TableSorter
 Table Sorter lets you create stacked table columns to explore how different combinations and weightings of numerical column values result in different rank orderings of table records. Column headings show the distribution of column values and support rapid re-sorting of table rows (which may also be filtered by linked visuals). Table Sorter is built on LineUp (http://caleydo.github.io/tools/lineup/)."
