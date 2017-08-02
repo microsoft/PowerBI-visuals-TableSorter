@@ -168,10 +168,7 @@ function pbivizPluginTemplate (pbiviz) {
                                 };
                                 ${pbiviz.visual.visualClassName}.call(instance, false, adaptedOptions);
 
-                                instance.update = function(options) {
-                                    options.type = powerbi.extensibility.v100.convertLegacyUpdateType(options);
-                                    ${pbiviz.visual.visualClassName}.prototype.update.call(instance, options);
-                                }
+
                             }`
                         }
                         return instance;

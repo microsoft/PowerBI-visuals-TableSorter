@@ -26,6 +26,7 @@ const ENTRY = './src/TableSorterVisual.ts';
 const regex = path.normalize(ENTRY).replace(/\\/g, '\\\\').replace(/\./g, '\\.');
 
 const config = module.exports = {
+    entry: ENTRY,
     resolve: {
         extensions: ['', '.webpack.js', '.web.js', '.ts', '.js', '.json']
     },

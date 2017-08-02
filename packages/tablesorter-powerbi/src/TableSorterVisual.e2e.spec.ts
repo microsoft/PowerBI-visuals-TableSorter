@@ -38,7 +38,7 @@ import { Promise } from "es6-promise";
 import { getHeaderNames, performSort, getHeaders } from "@essex/tablesorter/dist/spec/utils";
 import { expectHeadersInCorrectOrder, expectRowsMatch } from "@essex/tablesorter/dist/spec/expectations";
 import { expect } from "chai";
-
+import SelectionManager = powerbi.visuals.utility.SelectionManager;
 /**
  * This is the delay to wait before resolving our updateComplete promises after the table sorter has finished rendering
  */
@@ -59,14 +59,16 @@ describe("TableSorterVisual.e2e", () => {
     });
 
     let createVisual = () => {
-        let instance: TableSorterVisual = new TableSorterVisual(true, {
+        let initOptions = SpecUtils.createFakeInitOptions();
+        initOptions.host["createSelectionManager"] = () => {
+            return new SelectionManager({hostServices: initOptions.host})
+        };
+        let instance: TableSorterVisual = new TableSorterVisual(true, initOptions, {
             presentation: {
                 animation: false,
             },
         }, undefined, 0 /* Body update delay */);
-        let initOptions = SpecUtils.createFakeInitOptions();
         parentEle.append(initOptions.element);
-        instance.init(initOptions);
         instances.push(instance);
         return {
             instance,

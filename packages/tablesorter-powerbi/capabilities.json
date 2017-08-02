@@ -88,18 +88,16 @@
                 "colorMode": {
                     "displayName": "Color Mode",
                     "type": {
-                        "enumeration": {
-                            "allMembers": [
-                                {
-                                    "value": 1,
-                                    "displayName": "Gradient"
-                                },
-                                {
-                                    "value": 2,
-                                    "displayName": "Instance"
-                                }
-                            ]
-                        }
+                        "enumeration": [
+                            {
+                                "value": 1,
+                                "displayName": "Gradient"
+                            },
+                            {
+                                "value": 2,
+                                "displayName": "Instance"
+                            }
+                        ]
                     }
                 },
                 "reverseBars": {
