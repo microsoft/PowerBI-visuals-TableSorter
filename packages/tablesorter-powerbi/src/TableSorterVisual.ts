@@ -45,7 +45,7 @@ import {
     DEFAULT_TABLESORTER_SETTINGS,
 } from "@essex/tablesorter";
 import { Promise } from "es6-promise";
-import capabilities from "./TableSorterVisual.capabilities";
+// import capabilities from "./TableSorterVisual.capabilities";
 import MyDataProvider from "./TableSorterVisual.dataProvider";
 import { default as buildConfig, calculateRankingInfo, calculateRankColors, LOWER_NUMBER_HIGHER_VALUE } from "./ConfigBuilder";
 
@@ -85,13 +85,12 @@ const isEqual = require("lodash/lang/isEqual"); // tslint:disable-line
 /**
  * The visual which wraps TableSorter
  */
-@Visual(require("./build.json").output.PowerBI)
 export default class TableSorterVisual extends VisualBase implements IVisual {
 
     /**
      * The set of capabilities for the visual
      */
-    public static capabilities: VisualCapabilities = capabilities;
+    // public static capabilities: VisualCapabilities = capabilities;
 
     /**
      * The default settings for the visual

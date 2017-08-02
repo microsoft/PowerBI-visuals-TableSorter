@@ -22,13 +22,19 @@
 const path = require('path');
 const webpack = require('webpack');
 const fs = require("fs");
+const ENTRY = './src/TableSorterVisual.ts';
+const regex = path.normalize(ENTRY).replace(/\\/g, '\\\\').replace(/\./g, '\\.');
 
 const config = module.exports = {
     resolve: {
-        extensions: ['', '.webpack.js', '.web.js', '.js', '.json']
+        extensions: ['', '.webpack.js', '.web.js', '.ts', '.js', '.json']
     },
     module: {
         loaders: [
+            {
+                test: new RegExp(regex),
+                loader: path.join(__dirname, 'bin', 'pbiPluginLoader'),
+            },
             {
                 test: /\.scss$/,
                 loaders: ["style", "css", "sass"]
@@ -36,6 +42,10 @@ const config = module.exports = {
             {
                 test: /\.json$/,
                 loader: 'json-loader'
+            },
+            {
+                test: /\.ts$/,
+                loader: 'ts-loader',
             }
         ],
     },
