@@ -45,7 +45,6 @@ import {
     DEFAULT_TABLESORTER_SETTINGS,
 } from "@essex/tablesorter";
 import { Promise } from "es6-promise";
-// import capabilities from "./TableSorterVisual.capabilities";
 import MyDataProvider from "./TableSorterVisual.dataProvider";
 import { default as buildConfig, calculateRankingInfo, calculateRankColors, LOWER_NUMBER_HIGHER_VALUE } from "./ConfigBuilder";
 
