@@ -26,3 +26,4 @@ docs/
 !/src/references.d.ts
 !/base/powerbi/powerbi.d.ts
 !/base/powerbi/references.d.ts
+!/packages/*/bin/*.js

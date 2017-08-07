@@ -25,6 +25,7 @@ import { UpdateType } from "@essex/pbi-base";
 import { expect } from "chai";
 import { default as TableSorterVisual  } from "./TableSorterVisual";
 import { Promise } from "es6-promise";
+import SelectionManager = powerbi.visuals.utility.SelectionManager;
 
 describe("TableSorterVisual", () => {
     let parentEle: JQuery;
@@ -41,14 +42,18 @@ describe("TableSorterVisual", () => {
 
     let createVisual = () => {
         let currentUpdateType: UpdateType;
-        let instance: TableSorterVisual = new TableSorterVisual(true, {
+        let initOptions = SpecUtils.createFakeInitOptions();
+        
+        initOptions.host["createSelectionManager"] = () => {
+            return new SelectionManager({hostServices: initOptions.host})
+        };
+        let instance: TableSorterVisual = new TableSorterVisual(true, initOptions, {
             presentation: {
                 animation: false,
             },
         }, () => currentUpdateType);
-        let initOptions = SpecUtils.createFakeInitOptions();
         parentEle.append(initOptions.element);
-        instance.init(initOptions);
+
         return {
             instance,
             element: initOptions.element,

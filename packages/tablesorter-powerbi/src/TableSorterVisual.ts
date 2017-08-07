@@ -45,7 +45,6 @@ import {
     DEFAULT_TABLESORTER_SETTINGS,
 } from "@essex/tablesorter";
 import { Promise } from "es6-promise";
-import capabilities from "./TableSorterVisual.capabilities";
 import MyDataProvider from "./TableSorterVisual.dataProvider";
 import { default as buildConfig, calculateRankingInfo, calculateRankColors, LOWER_NUMBER_HIGHER_VALUE } from "./ConfigBuilder";
 
@@ -85,13 +84,12 @@ const isEqual = require("lodash/lang/isEqual"); // tslint:disable-line
 /**
  * The visual which wraps TableSorter
  */
-@Visual(require("./build.json").output.PowerBI)
 export default class TableSorterVisual extends VisualBase implements IVisual {
 
     /**
      * The set of capabilities for the visual
      */
-    public static capabilities: VisualCapabilities = capabilities;
+    // public static capabilities: VisualCapabilities = capabilities;
 
     /**
      * The default settings for the visual
@@ -232,10 +230,12 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
      */
     public constructor(
         noCss: boolean = false,
+        options: any,
         initialSettings?: ITableSorterSettings,
         updateTypeGetterOverride?: () => UpdateType,
         private userInteractionDebounce = 100) { // tslint:disable-line
         super("TableSorter", noCss);
+        options.element = $(options.element);
         this.initialSettings = merge({
             presentation: {
                 numberFormatter: (numVal: number, row: any, col: any) => {
@@ -261,6 +261,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
         });
         this.updateType = updateTypeGetterOverride ? updateTypeGetterOverride : updateTypeGetter(this);
         this.visualSettings = TSSettings.create<TSSettings>();
+        this.init(options);
     }
 
     /* tslint:disable */
@@ -381,9 +382,7 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
             this.host = options.host;
 
             this.propertyPersister = createPropertyPersister(this.host, 100);
-            this.selectionManager = new SelectionManager({
-                hostServices: options.host,
-            });
+            this.selectionManager = this.host["createSelectionManager"]();
             this.tableSorter = new TableSorter(this.element.find(".lineup"), undefined, this.userInteractionDebounce);
             this.tableSorter.settings = this.initialSettings;
             this.listeners = [
@@ -398,7 +397,6 @@ export default class TableSorterVisual extends VisualBase implements IVisual {
                     this.configurationUpdater();
                 }
             })];
-
             this.dimensions = { width: options.viewport.width, height: options.viewport.height };
         }
     }
