@@ -25,7 +25,6 @@ import { UpdateType } from "@essex/pbi-base";
 import { expect } from "chai";
 import { default as TableSorterVisual  } from "./TableSorterVisual";
 import { Promise } from "es6-promise";
-import SelectionManager = powerbi.visuals.utility.SelectionManager;
 
 describe("TableSorterVisual", () => {
     let parentEle: JQuery;
@@ -41,23 +40,17 @@ describe("TableSorterVisual", () => {
     });
 
     let createVisual = () => {
-        let currentUpdateType: UpdateType;
-        let initOptions = SpecUtils.createFakeInitOptions();
-        
-        initOptions.host["createSelectionManager"] = () => {
-            return new SelectionManager({hostServices: initOptions.host})
-        };
-        let instance: TableSorterVisual = new TableSorterVisual(true, initOptions, {
+        let options = SpecUtils.createFakeConstructorOptions();
+        let instance: TableSorterVisual = new TableSorterVisual(options, {
             presentation: {
                 animation: false,
             },
-        }, () => currentUpdateType);
-        parentEle.append(initOptions.element);
+        });
+        parentEle.append(options.element);
 
         return {
             instance,
-            element: initOptions.element,
-            setUpdateType: (type: UpdateType) => currentUpdateType = type,
+            element: $(options.element)
         };
     };
 
@@ -88,11 +81,10 @@ describe("TableSorterVisual", () => {
     });
 
     it("should remove columns from TableSorter.configuration if columns are removed from PBI", () => {
-        let { instance, setUpdateType } = createVisual();
+        let { instance } = createVisual();
 
         // Load initial data
-        setUpdateType(UpdateType.Data);
-        instance.update(basicOptions());
+        instance.update(basicOptions(), undefined, UpdateType.Data);
         expect(instance.tableSorter.configuration.columns.length).to.be.equal(2);
 
         // Pretend that we had an existing config
@@ -107,36 +99,32 @@ describe("TableSorterVisual", () => {
         };
 
         // Run update again with new options
-        setUpdateType(UpdateType.Data);
-        instance.update(newOptions);
+        instance.update(newOptions, undefined, UpdateType.Data);
 
         // Make sure it removed the extra column
         expect(instance.tableSorter.configuration.columns.length).to.be.equal(1);
     });
 
     it("should load the data into the tablesorter if only columns changed", () => {
-        let { instance, setUpdateType } = createVisual();
+        let { instance } = createVisual();
 
         // Load initial data
-        setUpdateType(UpdateType.Data);
-        instance.update(basicOptions());
+        instance.update(basicOptions(), undefined, UpdateType.Data);
         expect(instance.tableSorter.configuration.columns.length).to.be.equal(2);
 
         instance.tableSorter = <any>{};
-        setUpdateType(UpdateType.Data);
-        instance.update(smallUpdateOptions());
+        instance.update(smallUpdateOptions(), undefined, UpdateType.Data);
 
         // TODO: Assume the data is legit for now
         expect(instance.tableSorter.dataProvider).to.not.be.undefined;
     });
 
     it("should remove sort from TableSorter.configuration if columns are removed from PBI", () => {
-        let { instance, setUpdateType } = createVisual();
+        let { instance } = createVisual();
 
         // Load initial data
         let data = basicOptions();
-        setUpdateType(UpdateType.Data);
-        instance.update(data);
+        instance.update(data, undefined, UpdateType.Data);
         expect(instance.tableSorter.configuration.columns.length).to.be.equal(2);
 
         // Pretend that we had an existing config
@@ -159,15 +147,14 @@ describe("TableSorterVisual", () => {
         };
 
         // Run update again with new options
-        setUpdateType(UpdateType.Data);
-        instance.update(newOptions);
+        instance.update(newOptions, undefined, UpdateType.Data);
 
         // Make sure it removed the extra column
         expect(instance.tableSorter.configuration.sort).to.be.undefined;
     });
 
     it("should load tableSorter with a new provider when new data is passed via PBI", () => {
-        let { instance, setUpdateType } = createVisual();
+        let { instance } = createVisual();
         let fakeProvider = {
             canQuery: () => Promise.resolve(false),
         } as any;
@@ -177,14 +164,13 @@ describe("TableSorterVisual", () => {
 
         // Load initial data
         let data = basicOptions();
-        setUpdateType(UpdateType.Data);
-        instance.update(data);
+        instance.update(data, undefined, UpdateType.Data);
 
         expect(instance.tableSorter.dataProvider).to.be.equal(fakeProvider); // Make sure it sets my data provider
     });
 
     it("should load tableSorter with the correct layout stored in PBI", () => {
-        let { instance, setUpdateType } = createVisual();
+        let { instance } = createVisual();
         let fakeProvider = {
             canQuery: () => Promise.resolve(false),
         } as any;
@@ -194,8 +180,7 @@ describe("TableSorterVisual", () => {
 
         // Load initial data
         const data = basicOptions();
-        setUpdateType(UpdateType.Data);
-        instance.update(data);
+        instance.update(data, undefined, UpdateType.Data);
 
         // Tweak the layout of the table
         const config = instance.tableSorter.configuration;
@@ -219,8 +204,7 @@ describe("TableSorterVisual", () => {
         };
 
         // Update TableSorterVisual with the new layout
-        setUpdateType(UpdateType.Settings);
-        instance.update(data);
+        instance.update(data, undefined, UpdateType.Settings);
 
         // Make sure the layouts order matches
         expect(instance.tableSorter.configuration.layout.primary.map(n => n.column))

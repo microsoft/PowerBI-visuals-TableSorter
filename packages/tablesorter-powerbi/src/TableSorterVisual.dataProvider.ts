@@ -26,16 +26,10 @@ import { LOAD_COUNT } from "./TableSorterVisual.defaults";
  * The data provider for our table sorter
  */
 export default class MyDataProvider extends JSONDataProvider {
-
-    private hasMoreData: (newQuery: boolean) => boolean;
-
     constructor(
         data: any[],
-        domains: IColumnDomainInfo,
-        hasMoreData: (newQuery: boolean) => boolean,
-        onLoadMoreData: (options: IQueryOptions, newQuery: boolean, sort: boolean, filter: boolean) => PromiseLike<any[]>) {
+        domains: IColumnDomainInfo) {
         super(data, domains, true, true, LOAD_COUNT);
-        this.hasMoreData = hasMoreData;
     }
 
     /**

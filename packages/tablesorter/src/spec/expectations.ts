@@ -36,8 +36,8 @@ export function expectRowsMatch(parentEle: JQuery, columns: string[], rows: any[
     });
 
     // columnValues is now an array of the values in a given column
-    expect(columnValues.length).to.be.eq(columns.length);
-    expect(rowValues.length).to.be.eq(rows.length);
+    expect(columnValues.length).to.be.eq(columns.length, "Column lengths do not match");
+    expect(rowValues.length).to.be.eq(rows.length, "Row counts do not match");
 
     rows.forEach((row, rowNum) => {
         row.forEach((val, colNum) => {
@@ -47,7 +47,7 @@ export function expectRowsMatch(parentEle: JQuery, columns: string[], rows: any[
             if (typeof val === "number") {
                 result = parseFloat(result);
             }
-            expect(result).to.be.eq(val);
+            expect(result).to.be.eq(val, `${columns[colNum]}@${rowNum} expected to be ${val}, but was ${result}`);
         });
     });
 }

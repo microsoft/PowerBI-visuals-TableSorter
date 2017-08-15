@@ -22,9 +22,12 @@
   "author": "Microsoft",
   "license": "MIT",
   "dependencies": {
-    "@essex/tablesorter": "^1.0.1"
+    "@essex/tablesorter": "^1.0.1",
+    "globalize": "0.1.0-a2"
   },
   "devDependencies": {
-    "phantomjs-prebuilt": "^2.1.7"
+    "imports-loader": "^0.7.1",
+    "phantomjs-prebuilt": "^2.1.7",
+    "ts-loader": "^2.3.2"
   }
 }

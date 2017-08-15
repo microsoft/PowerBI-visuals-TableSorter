@@ -10,6 +10,7 @@ typings/
 .DS_Store
 /.scripts
 /dump
+.tmp/
 
 # IDE / Editors
 .vscode

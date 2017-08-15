@@ -58,7 +58,11 @@ export default class PresentationSettings {
         displayName: "Units",
         description: "The units to use when formatting numbers within TableSorter",
         config: {
-            type: powerbi.visuals.StandardObjectProperties.labelDisplayUnits.type,
+            type: {
+                formatting: {
+                    labelDisplayUnits: true,
+                }
+            }
         },
         defaultValue: 0,
     })
@@ -71,7 +75,9 @@ export default class PresentationSettings {
         displayName: "Precision",
         description: "The decimal precision to use when formatting numbers within TableSorter",
         config: {
-            type: powerbi.visuals.StandardObjectProperties.labelPrecision.type,
+            type:  {
+                numeric: true,
+            },
         },
     })
     public labelPrecision: number;

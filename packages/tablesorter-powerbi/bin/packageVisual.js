@@ -147,8 +147,8 @@ const buildPackageJson = pbivizJson.apiVersion ? _buildPackageJson() : _buildLeg
 const compileSass = () => {
     if (pbivizJson.style) {
         const sassOutput = sass.renderSync({ file: pbivizJson.style }).css.toString();
-        const options = { 
-            level: { 
+        const options = {
+            level: {
                 2: {
                     all: true,
                     mergeNonAdjacentRules: false,

@@ -717,7 +717,7 @@ const cloneDeep = require("lodash/lang/cloneDeep"); // tslint:disable-line
 
 export default function userLoadedDatasetWithANonNumericRankColumn() {
     "use strict";
-    const clonedOptions = <powerbi.VisualUpdateOptions><any>cloneDeep(data);
+    const clonedOptions = <powerbi.extensibility.visual.VisualUpdateOptions><any>cloneDeep(data);
 
     // Parse the table rows into dates, cause that is what PBI would do
     clonedOptions.dataViews[0].table.rows.forEach(n => {

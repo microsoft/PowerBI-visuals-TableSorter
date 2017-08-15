@@ -69,7 +69,7 @@ export default function(
         if (dataView.metadata && dataView.metadata.objects && dataView.metadata.objects["layout"]) {
             let configStr = dataView.metadata.objects["layout"]["layout"];
             if (configStr) {
-                config = JSON.parse(configStr);
+                config = JSON.parse(configStr as string);
             }
         }
 

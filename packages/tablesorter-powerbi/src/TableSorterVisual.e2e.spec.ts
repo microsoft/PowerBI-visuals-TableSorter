@@ -38,7 +38,6 @@ import { Promise } from "es6-promise";
 import { getHeaderNames, performSort, getHeaders } from "@essex/tablesorter/dist/spec/utils";
 import { expectHeadersInCorrectOrder, expectRowsMatch } from "@essex/tablesorter/dist/spec/expectations";
 import { expect } from "chai";
-import SelectionManager = powerbi.visuals.utility.SelectionManager;
 /**
  * This is the delay to wait before resolving our updateComplete promises after the table sorter has finished rendering
  */
@@ -59,21 +58,18 @@ describe("TableSorterVisual.e2e", () => {
     });
 
     let createVisual = () => {
-        let initOptions = SpecUtils.createFakeInitOptions();
-        initOptions.host["createSelectionManager"] = () => {
-            return new SelectionManager({hostServices: initOptions.host})
-        };
-        let instance: TableSorterVisual = new TableSorterVisual(true, initOptions, {
+        let options = SpecUtils.createFakeConstructorOptions();
+        let instance: TableSorterVisual = new TableSorterVisual(options, {
             presentation: {
                 animation: false,
             },
-        }, undefined, 0 /* Body update delay */);
-        parentEle.append(initOptions.element);
+        });
+        parentEle.append(options.element);
         instances.push(instance);
         return {
             instance,
-            host: initOptions.host,
-            element: initOptions.element,
+            host: options.host,
+            element: $(options.element),
         };
     };
 
@@ -174,7 +170,7 @@ describe("TableSorterVisual.e2e", () => {
         });
     });
 
-    it("should restore a sort if the user sorted a column", () => {
+    it.only("should restore a sort if the user sorted a column", () => {
         const { options, expected } = userSortedAndReorderedColumn();
         const { updateComplete } = createVisualWithUpdate(options);
 
