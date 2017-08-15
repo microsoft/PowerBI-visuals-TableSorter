@@ -170,7 +170,7 @@ describe("TableSorterVisual.e2e", () => {
         });
     });
 
-    it.only("should restore a sort if the user sorted a column", () => {
+    it("should restore a sort if the user sorted a column", () => {
         const { options, expected } = userSortedAndReorderedColumn();
         const { updateComplete } = createVisualWithUpdate(options);
 

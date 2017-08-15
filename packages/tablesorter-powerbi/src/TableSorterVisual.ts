@@ -227,6 +227,7 @@ export default class TableSorterVisual implements IVisual {
         this.numberFormatter = formatting.valueFormatter.create({
             value: 0,
             format: "0",
+            precision: 3
         });
         this.selectionManager = this.host["createSelectionManager"]();
         this.tableSorter = new TableSorter(this.element.find(".lineup"), undefined, this.userInteractionDebounce);
@@ -293,14 +294,13 @@ export default class TableSorterVisual implements IVisual {
             table.rows.forEach((row, rowIndex) => {
                 let identity: ISelectionId;
                 let newId: any;
-                const categoryColumn = {
-                    source: table.columns[0],
-                    values: <any>null,
-                    identity: [table.identity[rowIndex]]
-                };
-
                 const builder = createSelectionIdBuilder && createSelectionIdBuilder();
                 if (builder) {
+                    const categoryColumn = {
+                        source: table.columns[0],
+                        values: <any>null,
+                        identity: [table.identity[rowIndex]]
+                    };
                     identity =
                         builder
                             .withCategory(<any>categoryColumn, 0)
@@ -519,7 +519,7 @@ export default class TableSorterVisual implements IVisual {
                 this.numberFormatter = formatting.valueFormatter.create({
                     value: newState.presentation.labelDisplayUnits || 0,
                     format: "0",
-                    precision: newState.presentation.labelPrecision || undefined,
+                    precision: 3 || undefined,
                 });
             }
 
