@@ -176,17 +176,16 @@ export default class TableSorterVisual implements IVisual {
      */
     private onSelectionChanged = debounce((rows?: ITableSorterVisualRow[]) => {
         let { multiSelect } = this.tableSorter.settings.selection;
-
-        this.selectionManager.clear();
-
-        // rows are what are currently selected in lineup
-        if (rows && rows.length) {
-            // HACK
-            rows.forEach((r) => this.selectionManager.select(r.identity, true));
-        }
-
-        this.selectionManager.applySelectionFilter();
-
+        setTimeout(() => {
+            const ids = (rows || []).map(n => n.identity);
+            const currentlySelIds = this.selectionManager.getSelectionIds() || [];
+            const toSelect = ids.filter(n => !currentlySelIds.some(m => m["getKey"]() === n.getKey())) as powerbi.extensibility.ISelectionId[];
+            const toDeselect = currentlySelIds.filter(n => !ids.some(m => m.getKey() === n["getKey"]())) as powerbi.extensibility.ISelectionId[];
+            toSelect.concat(toDeselect).forEach(n => {
+                this.selectionManager.select(n, true);
+            });
+            this.selectionManager.applySelectionFilter();
+        }, 0);
     }, 100);
 
     /**
