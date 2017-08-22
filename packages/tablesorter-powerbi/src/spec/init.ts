@@ -1,4 +1,4 @@
-require("@essex/pbi-base/dist/spec/visualHelpers"); // tslint:disable-line
+require("@essex/visual-testing-tools/lib/visualHelpers"); // tslint:disable-line
 import * as $ from "jquery";
 $.extend(true, global["powerbi"], {
     visuals: {

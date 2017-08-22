@@ -25,7 +25,7 @@
 import {
      HasSettings,
      settings,
-} from "@essex/pbi-base";
+} from "@essex/visual-settings";
 import { default as RankSettings, hasRankInfo } from "./rank";
 import PresentationSettings from "./presentation";
 import SelectionSettings from "./selection";

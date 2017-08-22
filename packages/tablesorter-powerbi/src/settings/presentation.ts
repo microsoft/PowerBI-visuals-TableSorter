@@ -26,7 +26,7 @@ import {
      setting,
      boolSetting as bool,
      colorSetting as color,
-} from "@essex/pbi-base";
+} from "@essex/visual-settings";
 
 /**
  * Settings related to presentation

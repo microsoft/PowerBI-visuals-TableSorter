@@ -27,7 +27,7 @@ import {
     IColorSettings,
     ColorMode,
 } from "@essex/tablesorter";
-import { listDiff } from "@essex/pbi-base";
+import { listDiff } from "@essex/visual-utils";
 import * as d3 from "d3";
 import ldget = require("lodash/utility/property");
 const merge = require("lodash/object/merge"); // tslint:disable-line

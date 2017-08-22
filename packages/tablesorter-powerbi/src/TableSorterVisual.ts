@@ -23,11 +23,11 @@ import "powerbi-visuals-tools/templates/visuals/.api/v1.7.0/PowerBI-visuals";
 import { formatting } from "../powerbi-visuals-utils";
 import {
     logger,
-    colors,
     UpdateType,
     calcUpdateType,
     get,
-} from "@essex/pbi-base";
+} from "@essex/visual-utils";
+import colors from "@essex/visual-styling";
 import * as $ from "jquery";
 import * as d3 from "d3";
 import { dateTimeFormatCalculator } from "./Utils";

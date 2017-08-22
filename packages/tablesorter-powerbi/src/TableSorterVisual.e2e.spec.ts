@@ -31,7 +31,7 @@ import userLoadedDatasetWithNullRankValues from "./spec/test_data/userLoadedData
 import userLoadedDatasetWithANonNumericRankColumn from "./spec/test_data/userLoadedDatasetWithANonNumericRankColumn";
 import userJustLoadedARankColumn from "./spec/test_data/userJustLoadedARankColumn";
 
-import { Utils as SpecUtils } from "@essex/pbi-base/dist/spec/visualHelpers";
+import { Utils as SpecUtils } from "@essex/visual-testing-tools";
 import { default as TableSorterVisual  } from "./TableSorterVisual";
 import { ITableSorterConfiguration  } from "@essex/tablesorter";
 import { Promise } from "es6-promise";

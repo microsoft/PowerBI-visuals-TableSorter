@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-import { boolSetting as bool } from "@essex/pbi-base";
+import { boolSetting as bool } from "@essex/visual-settings";
 
 /**
  * The set of settings related to selection

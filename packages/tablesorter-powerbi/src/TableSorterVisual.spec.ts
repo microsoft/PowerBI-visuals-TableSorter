@@ -20,8 +20,8 @@
  */
 require("./spec/init"); // tslint:disable-line
 
-import { Utils as SpecUtils } from "@essex/pbi-base/dist/spec/visualHelpers";
-import { UpdateType } from "@essex/pbi-base";
+import { Utils as SpecUtils } from "@essex/visual-testing-tools";
+import { UpdateType } from "@essex/visual-utils";
 import { expect } from "chai";
 import { default as TableSorterVisual  } from "./TableSorterVisual";
 import { Promise } from "es6-promise";

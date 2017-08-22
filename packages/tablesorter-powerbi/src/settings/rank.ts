@@ -27,13 +27,15 @@ import {
      colorSetting as color,
      numberSetting as num,
      boolSetting as bool,
-     get,
      enumSetting,
      composeInstance,
      getObjectsForColumn,
      createObjectSelectorForColumn,
+} from "@essex/visual-settings";
+import {
+     get,
      IGradient,
-} from "@essex/pbi-base";
+} from "@essex/visual-utils";
 import { IColorSettings, ColorMode } from "@essex/tablesorter";
 import { calculateRankingInfo } from "../ConfigBuilder";
 
