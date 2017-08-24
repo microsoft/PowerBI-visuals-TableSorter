@@ -17,10 +17,8 @@
   "author": "Microsoft",
   "license": "MIT",
   "dependencies": {
-    "phantomjs-prebuilt": "2.1.7"
-  },
-  "devDependencies": {
-    "imports-loader": "^0.7.1",
-    "ts-loader": "^2.3.2"
+    "d3": "3.5.12",
+    "jquery": "^2.2.0",
+    "es6-promise": "^3.0.2"
   }
 }
