@@ -61,8 +61,8 @@ export default class PresentationSettings {
             type: {
                 formatting: {
                     labelDisplayUnits: true,
-                }
-            }
+                },
+            },
         },
         defaultValue: 0,
     })

@@ -1031,4 +1031,4 @@ export default function userLoadedWithASortedStackedColumn() {
             ],
         },
     };
-};
+}

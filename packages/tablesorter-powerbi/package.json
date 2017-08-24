@@ -14,8 +14,7 @@
     "package": "node bin/packageVisual",
     "test": "npm run compile && karma start --color && node bin/packageVisual",
     "test:tdd": "npm run compile && karma start --color --tdd",
-    "lint": "tslint src/**/*.ts",
-    "docs": "typedoc --out docs --ignoreCompilerErrors ./ --externalPattern \"**/node_modules/**/*.*\" --exclude \"**/src/**/*.spec.ts\""
+    "docs": "typedoc --out docs --exclude **/src/**/*.spec.ts"
   },
   "author": "Microsoft",
   "license": "MIT",

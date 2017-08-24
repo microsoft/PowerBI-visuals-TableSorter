@@ -46,5 +46,5 @@ export default class MyDataProvider extends JSONDataProvider {
      */
     public query(options: IQueryOptions): PromiseLike<IQueryResult> {
         return super.query(options);
-    };
+    }
 }

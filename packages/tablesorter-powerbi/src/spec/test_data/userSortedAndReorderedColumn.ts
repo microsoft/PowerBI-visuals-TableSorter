@@ -745,4 +745,4 @@ export default function userSortedAndFilteredRankColumn() {
             ],
         },
     };
-};
+}

@@ -738,4 +738,4 @@ export default function userLoadedDatasetWithANonNumericRankColumn() {
         options: clonedOptions,
         dataViews: clonedOptions.dataViews,
     };
-};
+}

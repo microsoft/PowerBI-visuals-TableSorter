@@ -117,6 +117,14 @@ export class TableSorter {
      * Whether or not this is destroyed
      */
     private destroyed: boolean;
+    /**
+     * Setter for if we are loading data
+     */
+    private _toggleClass = debounce(() => {
+        if (!this.destroyed) {
+            this.element.toggleClass("loading", this.loadingData);
+        }
+    }, 100);
 
     /**
      * A boolean indicating whehter or not we are currently loading more data
@@ -126,14 +134,6 @@ export class TableSorter {
         return this._loadingData;
     }
 
-    /**
-     * Setter for if we are loading data
-     */
-    private _toggleClass = debounce(() => {
-        if (!this.destroyed) {
-            this.element.toggleClass("loading", this.loadingData);
-        }
-    }, 100);
     private set loadingData(value: boolean) {
         this._loadingData = value;
         if (value) {
@@ -167,7 +167,7 @@ export class TableSorter {
             external: true,
         },
         histograms: {
-            generator: (columnImpl: any, callback: Function) => this.generateHistogram(columnImpl, callback),
+            generator: (columnImpl: any, callback: () => any) => this.generateHistogram(columnImpl, callback),
         },
     };
 
@@ -202,6 +202,12 @@ export class TableSorter {
             this.dataProvider = dataProvider;
         }
     }
+    /* tslint:disable */
+    /**
+     * Resizer function to update lineups rendering
+     */
+    private bodyUpdater: () => void;
+    /* tslint:enable */
 
     /**
      * getter for the dimensions
@@ -209,13 +215,6 @@ export class TableSorter {
     public get dimensions() {
         return this._dimensions;
     }
-
-    /* tslint:disable */
-    /**
-     * Resizer function to update lineups rendering
-     */
-    private bodyUpdater: () => void;
-    /* tslint:enable */
 
     /**
      * setter for the dimensions
@@ -236,7 +235,7 @@ export class TableSorter {
     /**
      * Gets the data provider
      */
-    private _dataProvider: IDataProvider;
+    private _dataProvider: IDataProvider; // tslint:disable-line
     public get dataProvider() {
         return this._dataProvider;
     }
@@ -278,13 +277,6 @@ export class TableSorter {
     }
 
     /**
-     * Gets the settings
-     */
-    public get settings() {
-        return this._settings;
-    }
-
-    /**
      * Gets the current selection
      */
     public get selection() {
@@ -302,18 +294,25 @@ export class TableSorter {
     }
 
     /**
+     * Gets the settings
+     */
+    public get settings() {
+        return this._settings;
+    }
+
+    /**
      * Sets the settings
      */
     public set settings(value: ITableSorterSettings) {
-        let newSettings: ITableSorterSettings = $.extend(true, {}, DEFAULT_TABLESORTER_SETTINGS, value);
+        const newSettings: ITableSorterSettings = $.extend(true, {}, DEFAULT_TABLESORTER_SETTINGS, value);
         newSettings.selection.singleSelect = !newSettings.selection.multiSelect;
 
         this.lineUpConfig["cellFormatter"] = newSettings.presentation.cellFormatter;
 
         /** Apply the settings to lineup */
         if (this.lineupImpl) {
-            let presProps = newSettings.presentation;
-            for (let key in presProps) {
+            const presProps = newSettings.presentation;
+            for (const key in presProps) {
                 if (presProps.hasOwnProperty(key)) {
                     this.lineupImpl.changeRenderingOption(key, presProps[key]);
                 }
@@ -423,7 +422,7 @@ export class TableSorter {
         return this.dataProvider.canQuery(this.queryOptions).then((value) => {
             if (value) {
                 this.loadingData = true;
-                let promise = this.loadingPromise = this.dataProvider.query(this.queryOptions).then(r => {
+                const promise = this.loadingPromise = this.dataProvider.query(this.queryOptions).then(r => {
 
                     // if this promise hasn't been cancelled
                     if ((!promise || !promise["cancel"]) && !this.destroyed) {
@@ -442,8 +441,6 @@ export class TableSorter {
                     }
                 }, () => this.loadingData = false)
                 .then(undefined, (err) => {
-                    console.log(err.message);
-                    console.error(err);
                     throw err;
                 });
                 return promise;
@@ -462,7 +459,7 @@ export class TableSorter {
         this._data = r.replace ? r.results : this._data.concat(r.results);
 
         // derive a description file
-        let config = this.configuration ?
+        const config = this.configuration ?
             $.extend(true, {}, this.configuration) : createConfigurationFromData(this._data);
 
         // Primary Key needs to always be ID
@@ -487,7 +484,7 @@ export class TableSorter {
     private loadLineup(config: ITableSorterConfiguration) {
         this.raiseLoadLineup(config);
 
-        let spec: any = {};
+        const spec: any = {};
         // spec.name = name;
         spec.dataspec = config;
         delete spec.dataspec.file;
@@ -498,7 +495,7 @@ export class TableSorter {
         if (this.lineupImpl) {
             this.lineupImpl.changeDataStorage(spec);
         } else {
-            let finalOptions = $.extend(true, this.lineUpConfig, {
+            const finalOptions = $.extend(true, this.lineUpConfig, {
                 renderingOptions: $.extend(true, {}, this.settings.presentation),
             });
             this.lineupImpl = LineUpLib.create(spec, d3.select(this.element.find(".grid")[0]), finalOptions);
@@ -532,8 +529,8 @@ export class TableSorter {
         });
         this.lineupImpl.listeners.on(`columns-changed${EVENTS_NS}`, () => this.onLineUpColumnsChanged());
         this.lineupImpl.listeners.on(`change-filter${EVENTS_NS}`, (x: JQuery, column: any) => this.onLineUpFiltered(column));
-        let scrolled = this.lineupImpl.scrolled;
-        let me = this;
+        const scrolled = this.lineupImpl.scrolled;
+        const me = this;
 
         // The use of `function` here is intentional, we need to pass along the correct scope
         this.lineupImpl.scrolled = function(...args: any[]) {
@@ -547,11 +544,11 @@ export class TableSorter {
      * @param columnImpl The lineup column to generate the histogram for
      * @param callback The callback for when the generation is complete
      */
-    private generateHistogram(columnImpl: any, callback: Function) {
-        let column = this.getColumnByName(columnImpl.column.column);
+    private generateHistogram(columnImpl: any, callback: (...args: any[]) => any) {
+        const column = this.getColumnByName(columnImpl.column.column);
         this.dataProvider.generateHistogram(column, this.queryOptions).then((h) => {
-            let perc = 1 / h.length;
-            let values = h.map((v, i) => ({
+            const perc = 1 / h.length;
+            const values = h.map((v, i) => ({
                 x: perc * i,
                 y: v,
                 dx: perc,
@@ -615,10 +612,10 @@ export class TableSorter {
      */
     private applyConfigurationToLineup() {
         if (this.lineupImpl) {
-            let currentSort = convertSort(this.lineupImpl);
+            const currentSort = convertSort(this.lineupImpl);
             if (this.configuration && this.configuration.sort && (!currentSort || !isEqual(currentSort, this.configuration.sort))) {
                 this.sortingFromConfig = true;
-                let sort = this.configuration.sort;
+                const sort = this.configuration.sort;
                 this.lineupImpl.sortBy(sort.stack ? sort.stack.name : sort.column, sort.asc);
                 this.sortingFromConfig = false;
             }
@@ -641,7 +638,7 @@ export class TableSorter {
         if (!this.sortingFromConfig) {
             this.updateConfigurationFromLineup();
             this.raiseSortChanged(column, asc);
-            let newSort = convertSort(this.lineupImpl);
+            const newSort = convertSort(this.lineupImpl);
 
             // Set the new sort value
             this.queryOptions.sort = newSort ? [newSort] : undefined;
@@ -660,8 +657,8 @@ export class TableSorter {
      * @param column The lineup column being filtered
      */
     private onLineUpFiltered(column: any) {
-        let colName = column.column && column.column.column;
-        let ourColumn = this.configuration.columns.filter(n => n.column === colName)[0];
+        const colName = column.column && column.column.column;
+        const ourColumn = this.configuration.columns.filter(n => n.column === colName)[0];
         let filter: ITableSorterFilter;
         if (ourColumn.type === "number") {
             filter = {

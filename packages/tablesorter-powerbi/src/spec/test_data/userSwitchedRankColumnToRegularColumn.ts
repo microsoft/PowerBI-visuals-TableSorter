@@ -714,4 +714,4 @@ export default function userSwitchedRankColumnToRegularColumn() {
             ],
         },
     };
-};
+}

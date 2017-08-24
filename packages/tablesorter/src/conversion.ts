@@ -33,8 +33,8 @@ import { ITableSorterFilter, ILineupImpl, ITableSorterConfiguration, ITableSorte
 export function convertFilters(lineupImpl: ILineupImpl, filteredColumn?: any): ITableSorterFilter[] {
     "use strict";
     if (lineupImpl) {
-        let fDesc = filteredColumn && filteredColumn.description();
-        let descs = lineupImpl.storage.getColumnLayout()
+        const fDesc = filteredColumn && filteredColumn.description();
+        const descs = lineupImpl.storage.getColumnLayout()
             .map(((d: any) => {
                 // Because of how we reload the data while filtering, the columns can get out of sync
                 let base = d.description();
@@ -47,7 +47,7 @@ export function convertFilters(lineupImpl: ILineupImpl, filteredColumn?: any): I
                 }
                 return base;
             }));
-        let filters: ITableSorterFilter[] = [];
+        const filters: ITableSorterFilter[] = [];
         descs.forEach((n: any) => {
             const filter = convertFilterFromDesc(n);
             if (filter) {
@@ -65,7 +65,7 @@ export function convertFilters(lineupImpl: ILineupImpl, filteredColumn?: any): I
 export function convertFiltersFromLayout(layoutObj: any) {
     "use strict";
     if (layoutObj) {
-        let filters: ITableSorterFilter[] = [];
+        const filters: ITableSorterFilter[] = [];
         layoutObj.forEach((n: any) => {
             const filter = convertFilterFromDesc(n);
             if (filter) {
@@ -121,8 +121,8 @@ export function convertConfiguration(lineupImpl: ILineupImpl, filteredColumn?: a
     // TODO: filteredColumn is not a great fix.  The problem is when we filter a column, we reload lineup with new data/columns
     // but the UI remains open, and has a reference to an old column. filteredColumn is that old column.
     // full spec
-    let dataSpec: any = lineupImpl.spec.dataspec;
-    let s: ITableSorterConfiguration = $.extend(true, {}, {
+    const dataSpec: any = lineupImpl.spec.dataspec;
+    const s: ITableSorterConfiguration = $.extend(true, {}, {
         columns: dataSpec.columns.map((n: any) => {
             return merge({}, n, {
                 // domain: [0, 40000]
@@ -131,7 +131,7 @@ export function convertConfiguration(lineupImpl: ILineupImpl, filteredColumn?: a
         primaryKey: dataSpec.primaryKey,
     });
     // create current layout
-    let descs = lineupImpl.storage.getColumnLayout()
+    const descs = lineupImpl.storage.getColumnLayout()
         .map((d: any) => {
             let base = d.description();
             if (filteredColumn) {
@@ -141,7 +141,7 @@ export function convertConfiguration(lineupImpl: ILineupImpl, filteredColumn?: a
                     d = filteredColumn;
                 }
             }
-            let result = merge({}, base, {
+            const result = merge({}, base, {
                 domain: d.scale ? d.scale.domain() : undefined,
             });
             // If it is set to false or whatever, just remove it
@@ -163,8 +163,8 @@ export function convertConfiguration(lineupImpl: ILineupImpl, filteredColumn?: a
 export function convertSort(lineupImpl: ILineupImpl): ITableSorterSort {
     "use strict";
     if (lineupImpl && lineupImpl.storage) {
-        let primary = lineupImpl.storage.config.columnBundles.primary;
-        let col = primary.sortedColumn;
+        const primary = lineupImpl.storage.config.columnBundles.primary;
+        const col = primary.sortedColumn;
         if (col) {
             if (col.column) {
                 return {
@@ -172,7 +172,7 @@ export function convertSort(lineupImpl: ILineupImpl): ITableSorterSort {
                     asc: primary.sortingOrderAsc,
                 };
             }
-            let totalWidth = d3.sum(col.childrenWidths);
+            const totalWidth = d3.sum(col.childrenWidths);
             return {
                 stack: {
                     name: col.label,

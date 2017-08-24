@@ -53,7 +53,7 @@ export default function() {
                         </a>
                     </li>
                 </ul>
-                <hr/>       
+                <hr/>
             </div>
             <div style="position:relative">
                 <div class="grid"></div>

@@ -101,7 +101,7 @@ export default class TableSorterVisual implements IVisual {
     /**
      * The list of listeners on the table sorter
      */
-    private listeners: { destroy: () => void }[] = [];
+    private listeners: Array<{ destroy: () => void }> = [];
     private dataView: powerbi.DataView;
     private host: IVisualHost;
     private selectionManager: powerbi.extensibility.ISelectionManager;
@@ -159,7 +159,7 @@ export default class TableSorterVisual implements IVisual {
                     <VisualObjectInstance>{
                         objectName: "layout",
                         properties: {
-                            "layout": JSON.stringify(config),
+                            layout: JSON.stringify(config),
                         },
                         selector: undefined,
                     },
@@ -175,7 +175,7 @@ export default class TableSorterVisual implements IVisual {
      * @param rows The rows that are selected
      */
     private onSelectionChanged = debounce((rows?: ITableSorterVisualRow[]) => {
-        let { multiSelect } = this.tableSorter.settings.selection;
+        const { multiSelect } = this.tableSorter.settings.selection;
         setTimeout(() => {
             const ids = (rows || []).map(n => n.identity);
             const currentlySelIds = this.selectionManager.getSelectionIds() || [];
@@ -187,6 +187,85 @@ export default class TableSorterVisual implements IVisual {
             this.selectionManager.applySelectionFilter();
         }, 0);
     }, 100);
+
+    /**
+     * Converts the data from power bi to a data we can use
+     * @param view The dataview to load
+     * @param selectedIds The list of selected ids
+     * @param settings The color settings to use when converting the dataView
+     */
+    private static converter(view: DataView, selectedIds: any, settings?: IColorSettings, createSelectionIdBuilder?: () => ISelectionIdBuilder) {
+        const data: ITableSorterVisualRow[] = [];
+        let cols: string[];
+        let rankingInfo: IRankingInfo;
+        if (view && view.table) {
+            const table = view.table;
+            const baseRi = calculateRankingInfo(view);
+            if (baseRi) {
+                rankingInfo = <any>baseRi;
+                rankingInfo.colors = calculateRankColors(baseRi.values, settings);
+            }
+            const dateCols = table.columns.map((n, i) => ({ idx: i, col: n })).filter(n => n.col.type.dateTime).map(n => {
+                return {
+                    idx: n.idx,
+                    col: n.col,
+                    calculator: dateTimeFormatCalculator(),
+                };
+            });
+            cols = table.columns.filter(n => !!n)/*.filter(n => !n.roles["Confidence"])*/.map(n => n.displayName);
+            table.rows.forEach((row, rowIndex) => {
+                let identity: ISelectionId;
+                const builder = createSelectionIdBuilder && createSelectionIdBuilder();
+                if (builder) {
+                    const categoryColumn = {
+                        source: table.columns[0],
+                        values: <any>null,
+                        identity: [table.identity[rowIndex]],
+                    };
+                    identity =
+                        builder
+                            .withCategory(<any>categoryColumn, 0)
+                            .createSelectionId();
+                } else {
+                    identity = <any>{
+                        getKey: () => `TableSorter_${rowIndex}`,
+                    };
+                }
+
+                // The below is busted > 100
+                // let identity = SelectionId.createWithId(this.dataViewTable.identity[rowIndex]);
+                const result: ITableSorterVisualRow = {
+                    id: identity.getKey(),
+                    identity,
+                    equals: (b) => (<ITableSorterVisualRow>b).identity.equals(identity),
+                    selected: !!find(selectedIds, (id: ISelectionId) => id.equals(identity)),
+                };
+
+                // Copy over column data
+                row.forEach((colInRow, i) => result[table.columns[i].displayName] = colInRow);
+
+                dateCols.forEach(c => {
+                    c.calculator.addToCalculation(result[c.col.displayName]);
+                });
+
+                data.push(result);
+            });
+
+            dateCols.forEach(n => {
+                const formatter = formatting.valueFormatter.create({
+                    format: n.col.format || n.calculator.getFormat(),
+                });
+                data.forEach(result => {
+                    result[n.col.displayName] = formatter.format(result[n.col.displayName]);
+                });
+            });
+        }
+        return {
+            data,
+            cols,
+            rankingInfo,
+        };
+    }
 
     /**
      * The constructor for the visual
@@ -226,7 +305,7 @@ export default class TableSorterVisual implements IVisual {
         this.numberFormatter = formatting.valueFormatter.create({
             value: 0,
             format: "0",
-            precision: 3
+            precision: 3,
         });
         this.selectionManager = this.host["createSelectionManager"]();
         this.tableSorter = new TableSorter(this.element.find(".lineup"), undefined, this.userInteractionDebounce);
@@ -251,7 +330,7 @@ export default class TableSorterVisual implements IVisual {
      * Setter for dimensions
      */
     private _dimensions: { width: number; height: number }; // tslint:disable-line
-    public set dimensions (value: { width: number; height: number }) {
+    public set dimensions(value: { width: number; height: number }) {
         this._dimensions = value;
         if (this.tableSorter) {
             this.tableSorter.dimensions = value;
@@ -263,86 +342,6 @@ export default class TableSorterVisual implements IVisual {
      */
     public get dimensions() {
         return this._dimensions;
-    }
-
-    /**
-     * Converts the data from power bi to a data we can use
-     * @param view The dataview to load
-     * @param selectedIds The list of selected ids
-     * @param settings The color settings to use when converting the dataView
-     */
-    private static converter(view: DataView, selectedIds: any, settings?: IColorSettings, createSelectionIdBuilder?: () => ISelectionIdBuilder) {
-        let data: ITableSorterVisualRow[] = [];
-        let cols: string[];
-        let rankingInfo: IRankingInfo;
-        if (view && view.table) {
-            let table = view.table;
-            let baseRi = calculateRankingInfo(view);
-            if (baseRi) {
-                rankingInfo = <any>baseRi;
-                rankingInfo.colors = calculateRankColors(baseRi.values, settings);
-            }
-            const dateCols = table.columns.map((n, i) => ({ idx: i, col: n })).filter(n => n.col.type.dateTime).map(n => {
-                return {
-                    idx: n.idx,
-                    col: n.col,
-                    calculator: dateTimeFormatCalculator(),
-                };
-            });
-            cols = table.columns.filter(n => !!n)/*.filter(n => !n.roles["Confidence"])*/.map(n => n.displayName);
-            table.rows.forEach((row, rowIndex) => {
-                let identity: ISelectionId;
-                let newId: any;
-                const builder = createSelectionIdBuilder && createSelectionIdBuilder();
-                if (builder) {
-                    const categoryColumn = {
-                        source: table.columns[0],
-                        values: <any>null,
-                        identity: [table.identity[rowIndex]]
-                    };
-                    identity =
-                        builder
-                            .withCategory(<any>categoryColumn, 0)
-                            .createSelectionId();
-                } else {
-                    identity = <any>{
-                        getKey: () => `TableSorter_${rowIndex}`,
-                    };
-                }
-
-                // The below is busted > 100
-                // let identity = SelectionId.createWithId(this.dataViewTable.identity[rowIndex]);
-                let result: ITableSorterVisualRow = {
-                    id: identity.getKey(),
-                    identity: identity,
-                    equals: (b) => (<ITableSorterVisualRow>b).identity.equals(newId),
-                    selected: !!find(selectedIds, (id: ISelectionId) => id.equals(newId)),
-                };
-
-                // Copy over column data
-                row.forEach((colInRow, i) => result[table.columns[i].displayName] = colInRow);
-
-                dateCols.forEach(c => {
-                    c.calculator.addToCalculation(result[c.col.displayName]);
-                });
-
-                data.push(result);
-            });
-
-            dateCols.forEach(n => {
-                const formatter = formatting.valueFormatter.create({
-                    format: n.col.format || n.calculator.getFormat(),
-                });
-                data.forEach(result => {
-                    result[n.col.displayName] = formatter.format(result[n.col.displayName]);
-                });
-            });
-        }
-        return {
-            data,
-            cols,
-            rankingInfo,
-        };
     }
 
     /**
@@ -458,13 +457,13 @@ export default class TableSorterVisual implements IVisual {
         if (this.dataViewTable) {
             const rankSettings = this.visualSettings.rankSettings;
             const oldRankSettings = oldSettings.rankSettings;
-            let newData = TableSorterVisual.converter(
+            const newData = TableSorterVisual.converter(
                 this.dataView,
                 this.selectionManager.getSelectionIds(),
                 rankSettings,
                 () => this.host.createSelectionIdBuilder());
 
-            let config = buildConfig(
+            const config = buildConfig(
                 this.dataView,
                 newData.data,
                 rankSettings,
@@ -473,13 +472,13 @@ export default class TableSorterVisual implements IVisual {
                 // Otherwise, this can just be true if we are loading from a refresh
                 oldRankSettings.reverseBars !== rankSettings.reverseBars && updateType === UpdateType.Settings,
                 rankSettings.reverseBars);
-            let selectedRows = newData.data.filter(n => n.selected);
+            const selectedRows = newData.data.filter(n => n.selected);
 
             this.tableSorter.configuration = config;
             this._data = newData;
             if (this.loadResolver) {
                 log("Resolving additional data");
-                let resolver = this.loadResolver;
+                const resolver = this.loadResolver;
                 delete this.loadResolver;
                 resolver(newData.data);
             } else {
@@ -501,7 +500,7 @@ export default class TableSorterVisual implements IVisual {
     private loadSettingsFromPowerBI(oldState: TSSettings, newState: TSSettings) {
         if (this.dataView) {
             // Make sure we have the default values
-            let updatedSettings: ITableSorterSettings =
+            const updatedSettings: ITableSorterSettings =
                 $.extend(true,
                     {},
                     this.tableSorter.settings,
@@ -554,12 +553,12 @@ export default class TableSorterVisual implements IVisual {
     private cellFormatter(selection: d3.Selection<ICellFormatterObject>) {
         const getColumnColor = (d: ICellFormatterObject) => {
             if (this._data && this._data.rankingInfo) {
-                const { values, column, colors } = this._data.rankingInfo;
+                const { values, column, colors: rankColors } = this._data.rankingInfo;
                 const cellColName = d.column && d.column.column && d.column.column.column;
                 const rankColName = column.displayName;
 
                 // If this is  the column we are ranking, then color it
-                return cellColName === rankColName ? colors[d.row[rankColName]] : undefined;
+                return cellColName === rankColName ? rankColors[d.row[rankColName]] : undefined;
             }
         };
         const rankHistogram = this.visualSettings.rankSettings.histogram;
@@ -616,8 +615,7 @@ function updateRankingColumns(rankingInfo: IRankingInfo, data: ITableSorterRow[]
             const itemRank = result[rankingInfo.column.displayName];
 
             // Go through each bucket in the entire dataset
-            for (let i = 0; i < ranks.length; i++) {
-                const rank = ranks[i];
+            for (const rank of ranks) {
                 const positionInBucket = runningRankTotal[rank] = runningRankTotal[rank] || 0;
                 const propName = `GENERATED_RANK_LEVEL_${rank}`;
                 let value = 0;
@@ -644,7 +642,7 @@ function hasColorSettingsChanged(state: TSSettings, newState: TSSettings) {
         const newSettings = get(newState, v => v.rankSettings, {});
         const oldGradient = get(state, v => v.rankSettings.rankGradients, {});
         const newGradient = get(newState, v => v.rankSettings.rankGradients, {});
-        let changed =
+        const changed =
             oldSettings.reverseBars !== newSettings.reverseBars ||
             oldSettings.colorMode !== newSettings.colorMode ||
             oldGradient.endColor !== newGradient.endColor ||

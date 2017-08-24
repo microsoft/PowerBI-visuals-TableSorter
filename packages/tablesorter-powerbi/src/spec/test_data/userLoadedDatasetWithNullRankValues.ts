@@ -335,4 +335,4 @@ export default function userLoadedDatasetWithNullRankValues() {
         options: clonedOptions,
         dataViews: clonedOptions.dataViews,
     };
-};
+}
