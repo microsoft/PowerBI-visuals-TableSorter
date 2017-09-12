@@ -171,24 +171,6 @@ export default class TableSorterVisual implements IVisual {
     }, this.userInteractionDebounce);
 
     /**
-     * A debounced version of the selection changed event listener
-     * @param rows The rows that are selected
-     */
-    private onSelectionChanged = debounce((rows?: ITableSorterVisualRow[]) => {
-        const { multiSelect } = this.tableSorter.settings.selection;
-        setTimeout(() => {
-            const ids = (rows || []).map(n => n.identity);
-            const currentlySelIds = this.selectionManager.getSelectionIds() || [];
-            const toSelect = ids.filter(n => !currentlySelIds.some(m => m["getKey"]() === n.getKey())) as powerbi.extensibility.ISelectionId[];
-            const toDeselect = currentlySelIds.filter(n => !ids.some(m => m.getKey() === n["getKey"]())) as powerbi.extensibility.ISelectionId[];
-            toSelect.concat(toDeselect).forEach(n => {
-                this.selectionManager.select(n, true);
-            });
-            this.selectionManager.applySelectionFilter();
-        }, 0);
-    }, 100);
-
-    /**
      * Converts the data from power bi to a data we can use
      * @param view The dataview to load
      * @param selectedIds The list of selected ids
@@ -426,6 +408,29 @@ export default class TableSorterVisual implements IVisual {
             }
             this.destroyed = true;
         }
+    }
+
+    /**
+     * A debounced version of the selection changed event listener
+     * @param rows The rows that are selected
+     */
+    private onSelectionChanged(rows?: ITableSorterVisualRow[]) {
+        const { multiSelect } = this.tableSorter.settings.selection;
+        const ids = (rows || []).map(n => n.identity);
+        const selectors = ids.map(n => n.getSelector());
+        const selectIds = () => {
+            if (ids.length > 0) {
+                this.selectionManager.select(ids);
+            } else {
+                this.selectionManager.clear();
+            }
+        };
+
+        selectIds();
+        this.selectionManager.applySelectionFilter();
+
+        // TODO: Necessary, because otherwise the selection manager does not actually send the selection to other visuals.
+        selectIds();
     }
 
     /**
