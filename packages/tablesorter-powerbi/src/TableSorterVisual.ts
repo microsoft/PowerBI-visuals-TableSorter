@@ -426,10 +426,17 @@ export default class TableSorterVisual implements IVisual {
             }
         };
 
-        selectIds();
+        // This avoids an extra host.onSelect call, which causes visuals to repaint
+        if (this.selectionManager["selectedIds"]) {
+            this.selectionManager["selectedIds"] = ids;
+        } else {
+            selectIds();
+        }
+
+        // Since we have selection within the selectionManager, apply the filter
         this.selectionManager.applySelectionFilter();
 
-        // TODO: Necessary, because otherwise the selection manager does not actually send the selection to other visuals.
+        // calls host.onSelect
         selectIds();
     }
 

@@ -23,6 +23,14 @@
 @import "../../node_modules/@essex/visual-styling/lib/scss/variables";
 @import "../../node_modules/@essex/tablesorter/src/css/Base";
 
+.visual-sandbox {
+    :local(.className) {
+        .fa-stack {
+            vertical-align: baseline;
+        }
+    }
+}
+
 :local(.className) {
     /* reset the button, because of PBI */
     button {
