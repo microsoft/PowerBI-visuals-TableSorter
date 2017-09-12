@@ -29,7 +29,6 @@ import {
 } from "@essex/tablesorter";
 import { listDiff } from "@essex/visual-utils";
 import * as d3 from "d3";
-import ldget = require("lodash/utility/property");
 const merge = require("lodash/object/merge"); // tslint:disable-line
 const naturalSort = require("javascript-natural-sort"); // tslint:disable-line
 
@@ -455,18 +454,19 @@ export function calculateRankColors(ranks: number[], colorSettings?: IColorSetti
     colorSettings = colorSettings || {};
     let gradientScale: d3.scale.Linear<any, any>;
     if (colorSettings.colorMode === ColorMode.Gradient) {
-        const gradientInfo = ldget(colorSettings, "rankGradients", {});
-        const finalMin = ldget(gradientInfo, "startValue", min);
-        const finalMax = ldget(gradientInfo, "endValue", max);
-        const finalStartColor = ldget(gradientInfo, "startColor", "#bac2ff");
-        const finalEndColor = ldget(gradientInfo, "endColor", "#0229bf");
+        const gradientInfo = colorSettings.rankGradients || {};
+        const finalMin = gradientInfo.startValue || min;
+        const finalMax = gradientInfo.endValue || max;
+        const finalStartColor = gradientInfo.startColor || "#bac2ff";
+        const finalEndColor = gradientInfo.endColor || "#0229bf";
         gradientScale = d3.scale.linear()
             .domain([finalMin, finalMax])
             .interpolate(d3.interpolateRgb as any)
             .range([finalStartColor, finalEndColor] as any);
     }
+    const rankInstanceColors = colorSettings.rankInstanceColors || {};
     return (ranks || []).reduce((a, b) => {
-        a[b] = gradientScale ? gradientScale(b) : ldget(colorSettings, `rankInstanceColors["${b}"]`, "#cccccc");
+        a[b] = gradientScale ? gradientScale(b) : (rankInstanceColors[b] || "#cccccc");
         return a;
     }, {});
 }
