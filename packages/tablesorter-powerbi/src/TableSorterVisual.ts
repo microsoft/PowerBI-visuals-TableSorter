@@ -529,7 +529,7 @@ export default class TableSorterVisual implements IVisual {
                 this.numberFormatter = formatting.valueFormatter.create({
                     value: newState.presentation.labelDisplayUnits || 0,
                     format: "0",
-                    precision: 3 || undefined,
+                    precision: newState.presentation.labelPrecision || 3,
                 });
             }
 
