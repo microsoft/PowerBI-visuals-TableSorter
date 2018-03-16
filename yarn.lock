@@ -2,12 +2,12 @@
 # yarn lockfile v1
 
 
-"@essex/visual-settings@^1.0.0":
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/@essex/visual-settings/-/visual-settings-1.0.0.tgz#2df9473654c4494f15f3841068bd52089145486a"
+"@essex/visual-settings@^2.0.1":
+  version "2.0.1"
+  resolved "https://registry.yarnpkg.com/@essex/visual-settings/-/visual-settings-2.0.1.tgz#48daaadac8725372516cf69a1e7b80d4c9a75a03"
   dependencies:
-    "@essex/visual-styling" "^1.0.0"
-    "@essex/visual-utils" "^1.0.0"
+    "@essex/visual-styling" "^2.0.0"
+    "@essex/visual-utils" "^2.0.1"
     font-awesome "^4.6.1"
     json-stringify-safe "^5.0.1"
     lodash "3.6.0"
@@ -15,28 +15,26 @@
     lodash.get "^4.4.2"
     lodash.merge "^4.6.0"
     lodash.set "^4.3.2"
-    powerbi-visuals-tools "^1.7.0"
 
-"@essex/visual-styling@^1.0.0":
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/@essex/visual-styling/-/visual-styling-1.0.0.tgz#5858c0e1dba278f07dbcf5b9a6f43849b8024d2d"
+"@essex/visual-styling@^2.0.0":
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/@essex/visual-styling/-/visual-styling-2.0.0.tgz#6cc1368ea36a1c21e14b9dc4e7fffddff909f2a7"
   dependencies:
     font-awesome "^4.6.1"
 
-"@essex/visual-testing-tools@^1.0.0":
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/@essex/visual-testing-tools/-/visual-testing-tools-1.0.0.tgz#4b43a33406de2279af217169d722603855b1ba0b"
+"@essex/visual-testing-tools@^2.0.1":
+  version "2.0.1"
+  resolved "https://registry.yarnpkg.com/@essex/visual-testing-tools/-/visual-testing-tools-2.0.1.tgz#30ceb38ddb4c56878de3695db8176a682d816522"
   dependencies:
     font-awesome "^4.6.1"
-    jquery "^2.2.3"
+    jquery "^3.1.1"
     lodash "3.6.0"
-    powerbi-visuals-tools "^1.7.2"
 
-"@essex/visual-utils@^1.0.0":
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/@essex/visual-utils/-/visual-utils-1.0.0.tgz#3eb27c4d600a02a71c3e1779c0799e390a8ac87b"
+"@essex/visual-utils@^2.0.1":
+  version "2.0.1"
+  resolved "https://registry.yarnpkg.com/@essex/visual-utils/-/visual-utils-2.0.1.tgz#6cf103863a989ffa702682e9065a253ad98470a0"
   dependencies:
-    "@essex/visual-styling" "^1.0.0"
+    "@essex/visual-styling" "^2.0.0"
     debug "^2.2.0"
     font-awesome "^4.6.1"
     lodash "3.6.0"
@@ -4027,9 +4025,13 @@ javascript-natural-sort@^0.7.1:
   version "0.7.1"
   resolved "https://registry.yarnpkg.com/javascript-natural-sort/-/javascript-natural-sort-0.7.1.tgz#f9e2303d4507f6d74355a73664d1440fb5a0ef59"
 
-jquery@^2.2.0, jquery@^2.2.3:
+jquery@^2.2.0:
   version "2.2.4"
   resolved "https://registry.yarnpkg.com/jquery/-/jquery-2.2.4.tgz#2c89d6889b5eac522a7eea32c14521559c6cbf02"
+
+jquery@^3.1.1:
+  version "3.3.1"
+  resolved "https://registry.yarnpkg.com/jquery/-/jquery-3.3.1.tgz#958ce29e81c9790f31be7792df5d4d95fc57fbca"
 
 js-base64@^2.1.8, js-base64@^2.1.9:
   version "2.1.9"
