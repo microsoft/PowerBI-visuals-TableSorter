@@ -18,7 +18,7 @@
   "dependencies": {
     "d3": "3.5.12",
     "es6-promise": "^3.0.2",
-    "jquery": "^2.2.0",
+    "jquery": "^3.1.1",
     "lodash": "3.6.0"
   }
 }
