@@ -12,6 +12,5 @@ Table Sorter lets you create stacked table columns to explore how different comb
 * Install [node.js 6+](https://nodejs.org)
 * Install [yarn](https://yarnpkg.com/lang/en/docs/install)
 * Run `yarn` in the project directory, which will install all the dependencies
-* Run `yarn test` which will lint, test, and compile the `tablesorter`, `tablesorter-react` and `tablesorter-powerbi` packages.
+* Run `yarn test` which will lint, test, and compile the `tablesorter` and `tablesorter-powerbi` packages.
     * Compiling `tablesorter-powerbi` will also create a `.pbiviz` file in the `packages/tablesorter-powerbi/dist` directory, which can be imported directly in [Power BI](https://app.powerbi.com/)
-* Alternatively run `yarn test:powerbi`, which will do the same as `yarn test` but will exclude `tablesorter-react`.
