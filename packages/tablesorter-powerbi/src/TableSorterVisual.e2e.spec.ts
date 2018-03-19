@@ -63,7 +63,7 @@ describe("TableSorterVisual.e2e", () => {
             presentation: {
                 animation: false,
             },
-        });
+        }, null, 3);
         parentEle.append(options.element);
         instances.push(instance);
         return {

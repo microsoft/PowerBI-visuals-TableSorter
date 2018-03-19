@@ -45,7 +45,7 @@ describe("TableSorterVisual", () => {
             presentation: {
                 animation: false,
             },
-        });
+        }, null, 3);
         parentEle.append(options.element);
 
         return {

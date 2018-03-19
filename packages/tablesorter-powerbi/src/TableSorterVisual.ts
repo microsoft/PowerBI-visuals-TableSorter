@@ -260,7 +260,8 @@ export default class TableSorterVisual implements IVisual {
     public constructor(
         options: VisualConstructorOptions,
         initialSettings?: ITableSorterSettings,
-        private userInteractionDebounce = 100) { // tslint:disable-line
+        private userInteractionDebounce = 100,
+        private defaultPrecision = 0) { // tslint:disable-line
         this.host = options.host;
         this.initialSettings = merge({
             presentation: {
@@ -287,7 +288,7 @@ export default class TableSorterVisual implements IVisual {
         this.numberFormatter = formatting.valueFormatter.create({
             value: 0,
             format: "0",
-            precision: 3,
+            precision: this.defaultPrecision,
         });
         this.selectionManager = this.host["createSelectionManager"]();
         this.tableSorter = new TableSorter(this.element.find(".lineup"), undefined, this.userInteractionDebounce);
@@ -529,7 +530,7 @@ export default class TableSorterVisual implements IVisual {
                 this.numberFormatter = formatting.valueFormatter.create({
                     value: newState.presentation.labelDisplayUnits || 0,
                     format: "0",
-                    precision: newState.presentation.labelPrecision || 3,
+                    precision: newState.presentation.labelPrecision || this.defaultPrecision,
                 });
             }
 
