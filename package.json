@@ -8,6 +8,9 @@
   "workspaces": [
     "packages/*"
   ],
+  "dependencies": {
+    "tslint": "^5.6.0"
+  },
   "devDependencies": {
     "@types/chai": "^3.4.34",
     "@types/d3": "^3.x",
@@ -68,7 +71,6 @@
     "tar.gz": "^1.0.5",
     "ts-loader": "^2.3.2",
     "ts-node": "0.5.5",
-    "tslint": "^5.6.0",
     "typedoc": "^0.8.0",
     "typescript": "2.3",
     "underscore": "1.8.3",
