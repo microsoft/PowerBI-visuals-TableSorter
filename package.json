@@ -1,6 +1,6 @@
 {
   "scripts": {
-    "lint": "node ./node_modules/tslint/lib/tslint-cli.js \"packages/*/src/**/*[!.d,.spec].{ts,tsx}\"",
+    "lint": "tslint \"packages/*/src/**/*[!.d,.spec].{ts,tsx}\"",
     "test": "npm run lint && lerna run test --stream",
     "start": "lerna run test --stream --scope @essex/tablesorter && lerna run start --scope @essex/tablesorter-powerbi --stream"
   },
