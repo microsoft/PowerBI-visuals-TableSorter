@@ -13,3 +13,4 @@ Table Sorter lets you create stacked table columns to explore how different comb
 * Run `yarn` in the project directory, which will install all the dependencies
 * Run `yarn test` which will lint, test, and compile the `tablesorter` and `tablesorter-powerbi` packages.
     * Compiling `tablesorter-powerbi` will also create a `.pbiviz` file in the `packages/tablesorter-powerbi/dist` directory, which can be imported directly in [Power BI](https://app.powerbi.com/)
+
