@@ -12,8 +12,8 @@ before_install:
   - sudo apt-get install gcc-5 g++-5
   - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-5 80 --slave /usr/bin/g++ g++ /usr/bin/g++-5
   - sudo update-alternatives --set gcc /usr/bin/gcc-5
-# cache:
-#   yarn: true
+cache:
+  yarn: true
 script: NODE_ENV=production yarn test
 after_success:
   - pip install --user azure-cli
