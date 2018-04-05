@@ -72,7 +72,7 @@
                 },
                 "version": {
                     "displayName": "Version",
-                    "description": "The version of Attribute Slicer",
+                    "description": "The version of Table Sorter",
                     "type": {
                         "text": {}
                     }
