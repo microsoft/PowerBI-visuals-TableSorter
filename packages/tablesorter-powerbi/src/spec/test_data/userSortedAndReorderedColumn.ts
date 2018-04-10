@@ -716,7 +716,7 @@ const cloneDeep = require("lodash/lang/cloneDeep"); // tslint:disable-line
 
 export default function userSortedAndFilteredRankColumn() {
     "use strict";
-    const clonedOptions = <powerbi.VisualUpdateOptions><any>cloneDeep(data);
+    const clonedOptions = <powerbi.extensibility.visual.VisualUpdateOptions><any>cloneDeep(data);
 
     // Make sure to disable animations
     merge(clonedOptions.dataViews[0].metadata, {
@@ -732,17 +732,17 @@ export default function userSortedAndFilteredRankColumn() {
         expected: {
             columns: ["Product Base Margin", "Customer Name"],
             rows: [
-                ["0.590", "Aaron Bergman"],
-                ["0.560", "Aaron Bergman"],
-                ["0.540", "Aaron Bergman"],
-                ["0.450", "Aaron Hawkins"],
-                ["0.380", "Aaron Bergman"],
-                ["0.380", "Aaron Hawkins"],
-                ["0.370", "Aaron Bergman"],
-                ["0.370", "Aaron Hawkins"],
-                ["0.360", "Aaron Bergman"],
-                ["0.360", "Aaron Hawkins"],
+                ["0.5900", "Aaron Bergman"],
+                ["0.5600", "Aaron Bergman"],
+                ["0.5400", "Aaron Bergman"],
+                ["0.4500", "Aaron Hawkins"],
+                ["0.3800", "Aaron Bergman"],
+                ["0.3800", "Aaron Hawkins"],
+                ["0.3700", "Aaron Bergman"],
+                ["0.3700", "Aaron Hawkins"],
+                ["0.3600", "Aaron Bergman"],
+                ["0.3600", "Aaron Hawkins"],
             ],
         },
     };
-};
+}

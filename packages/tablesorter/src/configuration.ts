@@ -78,7 +78,7 @@ export function createConfigurationFromData(data: ITableSorterRow[]): ITableSort
 
     function createLineUpColumn(colName: string): ITableSorterColumn {
         const result: ITableSorterColumn = { column: colName, type: "string" };
-        let { allNumeric, minMax } = analyzeColumn(colName);
+        const { allNumeric, minMax } = analyzeColumn(colName);
 
         if (allNumeric) {
             result.type = "number";
@@ -87,7 +87,7 @@ export function createConfigurationFromData(data: ITableSorterRow[]): ITableSort
 
         // If is a string, try to see if it is a category
         if (result.type === "string") {
-            let sset = d3.set(data.map((row) => row[colName]));
+            const sset = d3.set(data.map((row) => row[colName]));
             if (sset.size() <= Math.max(20, data.length * 0.2)) { // at most 20 percent unique values
                 result.type = "categorical";
                 result.categories = sset.values().sort();
@@ -108,8 +108,8 @@ export function createConfigurationFromData(data: ITableSorterRow[]): ITableSort
  */
 export function haveColumnsChanged(oldCfg: ITableSorterConfiguration, newCfg: ITableSorterConfiguration) {
     "use strict";
-    let oldCols = oldCfg && oldCfg.columns;
-    let newCols = oldCfg && oldCfg.columns;
+    const oldCols = oldCfg && oldCfg.columns;
+    const newCols = oldCfg && oldCfg.columns;
     if (!oldCols && !newCols) { // Both are undefined, return false
         return false;
     } else if (!oldCols || !newCols) { // One is undefined but not the other, return true
@@ -129,8 +129,8 @@ export function haveColumnsChanged(oldCfg: ITableSorterConfiguration, newCfg: IT
 export function hasLayoutChanged(oldCfg: ITableSorterConfiguration, newCfg: ITableSorterConfiguration) {
     "use strict";
     const rankColumnFilter = (col: any) => col && col.type !== "rank"; // Filter out the rank column
-    let oldLayout = (oldCfg && oldCfg.layout && oldCfg.layout.primary || []).filter(rankColumnFilter);
-    let newLayout = (newCfg && newCfg.layout && newCfg.layout.primary || []).filter(rankColumnFilter);
+    const oldLayout = (oldCfg && oldCfg.layout && oldCfg.layout.primary || []).filter(rankColumnFilter);
+    const newLayout = (newCfg && newCfg.layout && newCfg.layout.primary || []).filter(rankColumnFilter);
     return !isEqual(oldLayout, newLayout);
 }
 

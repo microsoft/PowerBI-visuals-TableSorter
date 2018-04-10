@@ -27,9 +27,8 @@ import {
     IColorSettings,
     ColorMode,
 } from "@essex/tablesorter";
-import { listDiff } from "@essex/pbi-base";
+import { listDiff } from "@essex/visual-utils";
 import * as d3 from "d3";
-import ldget = require("lodash/utility/property");
 const merge = require("lodash/object/merge"); // tslint:disable-line
 const naturalSort = require("javascript-natural-sort"); // tslint:disable-line
 
@@ -67,9 +66,9 @@ export default function(
         // Attempt to load the existing table sorter config from powerbi
         let config: ITableSorterConfiguration;
         if (dataView.metadata && dataView.metadata.objects && dataView.metadata.objects["layout"]) {
-            let configStr = dataView.metadata.objects["layout"]["layout"];
+            const configStr = dataView.metadata.objects["layout"]["layout"];
             if (configStr) {
-                config = JSON.parse(configStr);
+                config = JSON.parse(configStr as string);
             }
         }
 
@@ -218,19 +217,17 @@ function processConfigWithRankResult(config: ITableSorterConfiguration, rankResu
  */
 export function processExistingConfig(existingConfig: ITableSorterConfiguration, newColumns: ITableSorterColumn[]) {
     "use strict";
-    let newColNames = newColumns.map(c => c.column);
-    let oldConfig = merge({}, existingConfig);
+    const newColNames = newColumns.map(c => c.column);
+    const oldConfig = merge({}, existingConfig);
     const oldCols = existingConfig.columns || [];
     const sortedColumn = existingConfig.sort && existingConfig.sort.column;
 
     // Filter out any columns that don't exist anymore
-    existingConfig.columns = oldCols.filter(c =>
-        newColNames.indexOf(c.column) >= 0
-    );
+    existingConfig.columns = oldCols.filter(c => newColNames.indexOf(c.column) >= 0);
 
     // Override the domain, with the newest data
     oldCols.forEach(oldCol => {
-        let newCol = newColumns.filter(m => m.column === oldCol.column)[0];
+        const newCol = newColumns.filter(m => m.column === oldCol.column)[0];
         if (newCol) {
             if (newCol.domain) {
                 // Reset the domain, cause we now have a new set of data
@@ -254,7 +251,8 @@ export function processExistingConfig(existingConfig: ITableSorterConfiguration,
 
     // If we have a layout
     if (existingConfig.layout && existingConfig.layout.primary) {
-        existingConfig.layout.primary = syncLayoutColumns(existingConfig.layout.primary, existingConfig.columns, oldConfig.columns);
+        existingConfig.layout.primary =
+            syncLayoutColumns(existingConfig.layout.primary, existingConfig.columns, oldConfig.columns);
     }
 
     removeMissingColumns(existingConfig, newColumns);
@@ -326,19 +324,22 @@ function removeMissingColumns(config: ITableSorterConfiguration, columns: ITable
  * Synchronizes the layout columns with the actual set of columns to ensure that it only has real columns,
  * and the filters are bounded appropriately
  */
-export function syncLayoutColumns(layoutCols: ITableSorterLayoutColumn[], newCols: ITableSorterColumn[], oldCols: ITableSorterColumn[]) {
+export function syncLayoutColumns(
+    layoutCols: ITableSorterLayoutColumn[],
+    newCols: ITableSorterColumn[],
+    oldCols: ITableSorterColumn[]) {
     "use strict";
     newCols = newCols || [];
     oldCols = oldCols || [];
     layoutCols = layoutCols || [];
-    let columnFilter = (c: ITableSorterLayoutColumn) => {
+    const columnFilter = (c: ITableSorterLayoutColumn) => {
         // If this column exists in the new sets of columns, pass the filter
         const newCol = newCols.filter(m => m.column === c.column)[0];
-        let result = !!newCol;
+        const result = !!newCol;
         if (newCol) {
 
             // Bound the filted domain to the actual domain (in case they set a bad filter)
-            let oldCol = oldCols.filter(m => m.column === c.column)[0];
+            const oldCol = oldCols.filter(m => m.column === c.column)[0];
             if (c.domain) {
                 // It is filtered if the "filter" domain is different than the actual domain
                 const isFiltered =
@@ -389,7 +390,7 @@ function isValidDomain(domain: number[]) {
 /**
  * Calculates the domain of the given column
  */
-export function calcDomain (data: any[], name: string) {
+export function calcDomain(data: any[], name: string) {
     "use strict";
     let min: number;
     let max: number;
@@ -405,7 +406,7 @@ export function calcDomain (data: any[], name: string) {
         }
     });
     return [min || 0, max || 0];
-};
+}
 
 /**
  * Calculates all of the ranking values from the given dataview
@@ -453,18 +454,19 @@ export function calculateRankColors(ranks: number[], colorSettings?: IColorSetti
     colorSettings = colorSettings || {};
     let gradientScale: d3.scale.Linear<any, any>;
     if (colorSettings.colorMode === ColorMode.Gradient) {
-        const gradientInfo = ldget(colorSettings, "rankGradients", {});
-        const finalMin = ldget(gradientInfo, "startValue", min);
-        const finalMax = ldget(gradientInfo, "endValue", max);
-        const finalStartColor = ldget(gradientInfo, "startColor", "#bac2ff");
-        const finalEndColor = ldget(gradientInfo, "endColor", "#0229bf");
+        const gradientInfo = colorSettings.rankGradients || {};
+        const finalMin = gradientInfo.startValue || min;
+        const finalMax = gradientInfo.endValue || max;
+        const finalStartColor = gradientInfo.startColor || "#bac2ff";
+        const finalEndColor = gradientInfo.endColor || "#0229bf";
         gradientScale = d3.scale.linear()
             .domain([finalMin, finalMax])
             .interpolate(d3.interpolateRgb as any)
             .range([finalStartColor, finalEndColor] as any);
     }
+    const rankInstanceColors = colorSettings.rankInstanceColors || {};
     return (ranks || []).reduce((a, b) => {
-        a[b] = gradientScale ? gradientScale(b) : ldget(colorSettings, `rankInstanceColors["${b}"]`, "#cccccc");
+        a[b] = gradientScale ? gradientScale(b) : (rankInstanceColors[b] || "#cccccc");
         return a;
     }, {});
 }

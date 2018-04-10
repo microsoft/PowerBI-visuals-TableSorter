@@ -25,10 +25,14 @@
 import {
      HasSettings,
      settings,
-} from "@essex/pbi-base";
+     textSetting as text,
+} from "@essex/visual-settings";
 import { default as RankSettings, hasRankInfo } from "./rank";
 import PresentationSettings from "./presentation";
 import SelectionSettings from "./selection";
+
+// Webpack defines this
+declare var BUILD_VERSION: string;
 
 /**
  * Represents the TableSorterVisual settings
@@ -59,4 +63,16 @@ export default class TableSorterVisualSettings extends HasSettings {
         category: "Selection",
     })
     public selection: SelectionSettings;
+
+    /**
+     * Shows the version of Table Sorter
+     */
+    @text({
+        persist: false,
+        category: "General",
+        displayName: "Version",
+        description: "The version of Table Sorter",
+        compose: () => BUILD_VERSION,
+    })
+    public version?: string;
 }

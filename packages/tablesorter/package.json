@@ -7,16 +7,18 @@
   "typings": "dist/index.d.ts",
   "scripts": {
     "clean": "rimraf dist",
-    "lint": "tslint \"src/**/*[!.d].{ts,tsx}\"",
     "copy:css": "copyfiles -u 1 \"src/**/*.scss\" dist/",
     "karma:tdd": "karma start --tdd",
     "karma:once": "karma start",
-    "docs": "typedoc --out docs --ignoreCompilerErrors ./ --externalPattern \"**/node_modules/**/*.*\" --exclude \"**/src/**/*.spec.ts\"",
-    "test": "npm run clean && tsc && npm-run-all copy:css lint karma:once docs"
+    "docs": "typedoc --out docs --exclude **/src/**/*.spec.ts",
+    "test": "npm run clean && tsc && npm-run-all copy:css karma:once docs"
   },
   "author": "Microsoft",
   "license": "MIT",
   "dependencies": {
-    "phantomjs-prebuilt": "2.1.7"
+    "d3": "3.5.12",
+    "es6-promise": "^3.0.2",
+    "jquery": "^3.1.1",
+    "lodash": "3.6.0"
   }
 }

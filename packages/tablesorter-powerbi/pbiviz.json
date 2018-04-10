@@ -4,7 +4,7 @@
     "displayName": "Table Sorter",
     "guid": "TableSorter1450434005853",
     "visualClassName": "TableSorterVisual",
-    "description": "This visual is currently in beta testing and is undergoing active development. Table Sorter lets you create stacked table columns to explore how different combinations and weightings of numerical column values result in different rank orderings of table records. Column headings show the distribution of column values and support rapid re-sorting of table rows (which may also be filtered by linked visuals). Table Sorter is built on LineUp (http://caleydo.github.io/tools/lineup/).",
+    "description": "This visual is experimental and not actively being developed, only major issues will be addressed. Table Sorter lets you create stacked table columns to explore how different combinations and weightings of numerical column values result in different rank orderings of table records. Column headings show the distribution of column values and support rapid re-sorting of table rows (which may also be filtered by linked visuals). Table Sorter is built on LineUp (http://caleydo.github.io/tools/lineup/).",
     "supportUrl": "",
     "githubUrl": "https://github.com/Microsoft/PowerBI-visuals-TableSorter"
   },
@@ -12,7 +12,7 @@
     "name": "Microsoft (experimental)",
     "email": "msrvizsupport@microsoft.com"
   },
-  "apiVersion": "",
+  "apiVersion": "1.7.0",
   "assets": {
     "icon":"src/assets/icon.svg",
     "screenshot": "src/assets/screenshot.png",

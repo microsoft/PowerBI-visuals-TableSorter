@@ -64,7 +64,7 @@ export class JSONDataProvider implements IDataProvider {
      * @param filter The filter being applied
      */
     private static checkNumberFilter(data: { [key: string]: number }, filter: { column: string; value: INumericalFilter }) {
-        let value = data[filter.column];
+        const value = data[filter.column];
         return (value === null || value === undefined) ? false : value >= filter.value.domain[0] && value <= filter.value.domain[1]; // tslint:disable-line
     }
 
@@ -74,7 +74,7 @@ export class JSONDataProvider implements IDataProvider {
      * @param filter The filter being applied
      */
     private static checkExplicitFilter(data: { [key: string]: number }, filter: { column: string; value: IExplicitFilter}) {
-        let value = data[filter.column] || 0;
+        const value = data[filter.column] || 0;
         return (filter.value.values || []).indexOf(value) >= 0;
     }
 
@@ -105,7 +105,7 @@ export class JSONDataProvider implements IDataProvider {
         return new Promise<IQueryResult>((resolve, reject) => {
             this.initialQuery = false;
             let newData: any[];
-            let replace = this.offset === 0;
+            const replace = this.offset === 0;
             try {
                 this.filteredData = this.getFilteredData(options);
                 newData = this.filteredData.slice(this.offset, this.offset + this.count);
@@ -118,11 +118,11 @@ export class JSONDataProvider implements IDataProvider {
             setTimeout(() => {
                 resolve({
                     results: newData,
-                    replace: replace,
+                    replace,
                 });
             }, 0);
         });
-    };
+    }
 
     /**
      * Called when the data is about to be sorted
@@ -153,16 +153,16 @@ export class JSONDataProvider implements IDataProvider {
      */
     public generateHistogram(column: ITableSorterColumn, options: IQueryOptions): PromiseLike<number[]> {
         return new Promise<number[]>((resolve) => {
-            let final = this.filteredData; // this.getFilteredData(options);
-            let values: number[] = final.map(n => n[column.column]);
-            let max = d3.max(values);
-            let min = d3.min(values);
+            const final = this.filteredData; // this.getFilteredData(options);
+            const values: number[] = final.map(n => n[column.column]);
+            const max = d3.max(values);
+            const min = d3.min(values);
 
-            let histgenerator = d3.layout.histogram();
+            const histgenerator = d3.layout.histogram();
             (<any>histgenerator).range([min, max]);
 
-            let histValues = histgenerator(values).map((bin) => bin.y);
-            let maxHist = d3.max(histValues);
+            const histValues = histgenerator(values).map((bin) => bin.y);
+            const maxHist = d3.max(histValues);
 
             // Make the values a percentage
             resolve(histValues.map(n => maxHist === 0 || n === 0 || ldIsNaN(n) || ldIsNaN(maxHist) ? 0 : n / maxHist));
@@ -211,9 +211,9 @@ export class JSONDataProvider implements IDataProvider {
 
         // If we are handling sort, and there is a sort applied to tablesorter
         if (this.handleSort && options.sort && options.sort.length) {
-            let sortItem = options.sort[0];
+            const sortItem = options.sort[0];
             const basicSort = (aValue: any, bValue: any, asc: boolean) => {
-                let dir = asc ? 1 : -1;
+                const dir = asc ? 1 : -1;
                 /* tslint:disable */
                 if (aValue == bValue) {
                 /* tslint:enable */
@@ -226,14 +226,14 @@ export class JSONDataProvider implements IDataProvider {
                 item: any,
                 sortToCheck: ITableSorterSort,
                 minMax: { [col: string]: { min: number, max: number }}) => {
-                let columns = sortToCheck.stack.columns;
+                const columns = sortToCheck.stack.columns;
                 if (columns) {
-                    let sortVal = columns.reduce((a, v) => {
+                    const sortVal = columns.reduce((a, v) => {
                         /**
                          * This calculates the percent that this guy is of the max value
                          */
-                        let min = minMax[v.column].min || 0;
-                        let max = minMax[v.column].max || min;
+                        const min = minMax[v.column].min || 0;
+                        const max = minMax[v.column].max || min;
                         let value = item[v.column];
 
                         // We only need to do the actual weighting with items that have values
@@ -259,8 +259,8 @@ export class JSONDataProvider implements IDataProvider {
                  maxValues = sortItem.stack.columns.reduce((a, b) => {
                     const [min, max] = this.domains[b.column];
                     a[b.column] = {
-                        max: max,
-                        min: min,
+                        max,
+                        min,
                     };
                     return a;
                 }, <any>{});

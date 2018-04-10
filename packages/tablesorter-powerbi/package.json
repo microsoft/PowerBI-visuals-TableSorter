@@ -12,19 +12,27 @@
     "tdd": "npm-run-all --parallel dev test:tdd",
     "dev": "node bin/startDev",
     "package": "node bin/packageVisual",
-    "test": "npm run compile && karma start --color | node bin/filterErrors && node bin/packageVisual",
-    "test:tdd": "npm run compile && karma start --color --tdd | node bin/filterErrors",
-    "lint": "tslint src/**/*.ts",
-    "clean": "rm -rf node_modules .tmp dist",
-    "postinstall": "linklocal",
-    "docs": "typedoc --out docs --ignoreCompilerErrors ./ --externalPattern \"**/node_modules/**/*.*\" --exclude \"**/src/**/*.spec.ts\""
+    "test": "npm run compile && karma start --color && node bin/packageVisual",
+    "test:tdd": "npm run compile && karma start --color --tdd",
+    "docs": "typedoc --out docs --exclude **/src/**/*.spec.ts"
   },
   "author": "Microsoft",
   "license": "MIT",
   "dependencies": {
-    "@essex/tablesorter": "^1.0.1"
-  },
-  "devDependencies": {
-    "phantomjs-prebuilt": "^2.1.7"
+    "@essex/tablesorter": "*",
+    "@essex/visual-settings": "^2.0.1",
+    "@essex/visual-styling": "^2.0.0",
+    "@essex/visual-testing-tools": "^2.0.1",
+    "@essex/visual-utils": "^2.0.1",
+    "d3": "3.5.12",
+    "es6-promise": "^3.0.2",
+    "globalize": "0.1.0-a2",
+    "jquery": "^3.1.1",
+    "lodash": "3.6.0",
+    "powerbi-models": "^0.11.3",
+    "powerbi-visuals-utils-dataviewutils": "^1.2.0",
+    "powerbi-visuals-utils-formattingutils": "^3.0.0",
+    "powerbi-visuals-utils-svgutils": "^1.1.0",
+    "powerbi-visuals-utils-typeutils": "^1.1.0"
   }
 }

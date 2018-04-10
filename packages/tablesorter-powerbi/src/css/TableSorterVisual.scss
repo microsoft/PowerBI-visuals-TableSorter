@@ -19,9 +19,17 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-@import "../../node_modules/@essex/pbi-base/css/main";
-@import "../../node_modules/@essex/pbi-base/css/variables";
+@import "../../node_modules/@essex/visual-styling/lib/scss/main";
+@import "../../node_modules/@essex/visual-styling/lib/scss/variables";
 @import "../../node_modules/@essex/tablesorter/src/css/Base";
+
+.visual-sandbox {
+    :local(.className) {
+        .fa-stack {
+            vertical-align: baseline;
+        }
+    }
+}
 
 :local(.className) {
     /* reset the button, because of PBI */

@@ -383,7 +383,7 @@ const cloneDeep = require("lodash/lang/cloneDeep"); // tslint:disable-line
 
 export default function userRemovesAColumnFromPBIThatWasSorted() {
     "use strict";
-    const clonedOptions = <powerbi.VisualUpdateOptions><any>cloneDeep(data);
+    const clonedOptions = <powerbi.extensibility.visual.VisualUpdateOptions><any>cloneDeep(data);
 
     // Make sure to disable animations
     merge(clonedOptions.dataViews[0].metadata, {
@@ -412,4 +412,4 @@ export default function userRemovesAColumnFromPBIThatWasSorted() {
             ],
         },
     };
-};
+}

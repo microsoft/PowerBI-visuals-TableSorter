@@ -69,6 +69,13 @@
                             ]
                         }
                     }
+                },
+                "version": {
+                    "displayName": "Version",
+                    "description": "The version of Table Sorter",
+                    "type": {
+                        "text": {}
+                    }
                 }
             }
         },

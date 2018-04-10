@@ -19,12 +19,12 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-import "@essex/pbi-base/dist/spec/visualHelpers";
+import "@essex/visual-testing-tools";
 import userLoadedDatasetWithNullRankValues from "./spec/test_data/userLoadedDatasetWithNullRankValues";
 import userLoadedDatasetWithANonNumericRankColumn from "./spec/test_data/userLoadedDatasetWithANonNumericRankColumn";
 import { syncLayoutColumns, calcDomain, processExistingConfig, calculateRankingInfo } from "./ConfigBuilder";
 import { expect } from "chai";
-import {  ITableSorterLayoutColumn, ITableSorterConfiguration } from "@essex/tablesorter";
+import { ITableSorterLayoutColumn, ITableSorterConfiguration } from "@essex/tablesorter";
 describe("ConfigBuilder", () => {
     describe("processExistingConfig", () => {
         it("should not crash if a column has been removed", () => {

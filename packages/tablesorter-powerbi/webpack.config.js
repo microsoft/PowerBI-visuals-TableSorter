@@ -22,13 +22,19 @@
 const path = require('path');
 const webpack = require('webpack');
 const fs = require("fs");
+const package = JSON.parse(fs.readFileSync("./package.json").toString());
 const ENTRY = './src/TableSorterVisual.ts';
 const regex = path.normalize(ENTRY).replace(/\\/g, '\\\\').replace(/\./g, '\\.');
+const isDev = process.env.NODE_ENV !== "production"
 
 const config = module.exports = {
     entry: ENTRY,
     resolve: {
-        extensions: ['', '.webpack.js', '.web.js', '.ts', '.js', '.json']
+        extensions: ['', '.webpack.js', '.web.js', '.ts', '.js', '.json'],
+        fallback: path.join(__dirname, "node_modules"),
+    },
+    resolveLoader: {
+        fallback: path.join(__dirname, "node_modules"),
     },
     module: {
         loaders: [
@@ -47,23 +53,23 @@ const config = module.exports = {
             {
                 test: /\.ts$/,
                 loader: 'ts-loader',
+            },
+            {
+                test: /lodash\.js/,
+                loader: 'imports-loader?define=>false'
             }
         ],
     },
-    externals: {
-        jquery: "jQuery",
-        d3: "d3",
-        underscore: "_",
-        "lodash": "_",
-        "powerbi-visuals/lib/powerbi-visuals": "powerbi"
-    },
     plugins: [
         new webpack.optimize.OccurenceOrderPlugin(),
+        new webpack.NormalModuleReplacementPlugin(/powerbi-visuals-tools/, 'node-noop'),
+        new webpack.NormalModuleReplacementPlugin(/powerbi-visuals-utils-.*index\.d/, 'node-noop'),
         new webpack.ProvidePlugin({
             'Promise': 'exports?global.Promise!es6-promise'
         }),
         new webpack.DefinePlugin({
-            'process.env.DEBUG': "\"" + (process.env.DEBUG || "") + "\""
+            'process.env.DEBUG': "\"" + (process.env.DEBUG || "") + "\"",
+            "BUILD_VERSION":  JSON.stringify(package.version + (isDev ? "+dev" : "+" + process.env.TRAVIS_BUILD_NUMBER))
         })
     ],
 };
