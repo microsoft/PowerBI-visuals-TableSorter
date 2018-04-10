@@ -16,6 +16,7 @@ cache:
   yarn: true
 script: NODE_ENV=production yarn test
 after_success:
+  - pip install --user --upgrade requests
   - pip install --user azure-cli
   - export PATH=$PATH:~/.local/bin
   - PACKAGE_VERSION=$(node -p -e "require('./packages/tablesorter-powerbi/package.json').version")
