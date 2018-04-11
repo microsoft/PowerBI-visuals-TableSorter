@@ -19,8 +19,9 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-import "powerbi-visuals-tools/templates/visuals/.api/v1.7.0/PowerBI-visuals";
-import { formatting } from "../powerbi-visuals-utils";
+import "powerbi-visuals-tools/templates/visuals/.api/v1.11.0/PowerBI-visuals";
+import { formatting, filter, dataview } from "../powerbi-visuals-utils";
+import { ITableSorterVisualRow, IRankingInfo } from "./interfaces";
 import {
     logger,
     UpdateType,
@@ -30,21 +31,17 @@ import {
 import colors from "@essex/visual-styling";
 import * as $ from "jquery";
 import * as d3 from "d3";
-import { dateTimeFormatCalculator } from "./Utils";
 import {
     TableSorter,
     ITableSorterRow,
     ITableSorterSettings,
-    ITableSorterSort,
-    ITableSorterFilter,
-    INumericalFilter,
     ICellFormatterObject,
-    IColorSettings,
     DEFAULT_TABLESORTER_SETTINGS,
 } from "@essex/tablesorter";
+import converter from "./dataConversion";
 import { Promise } from "es6-promise";
 import MyDataProvider from "./TableSorterVisual.dataProvider";
-import { default as buildConfig, calculateRankingInfo, calculateRankColors, LOWER_NUMBER_HIGHER_VALUE } from "./ConfigBuilder";
+import { default as buildConfig, LOWER_NUMBER_HIGHER_VALUE } from "./ConfigBuilder";
 
 import IVisual = powerbi.extensibility.visual.IVisual;
 import DataViewTable = powerbi.DataViewTable;
@@ -54,8 +51,6 @@ import VisualConstructorOptions = powerbi.extensibility.visual.VisualConstructor
 import VisualObjectInstance = powerbi.VisualObjectInstance;
 import EnumerateVisualObjectInstancesOptions = powerbi.EnumerateVisualObjectInstancesOptions;
 import DataView = powerbi.DataView;
-import ISelectionId = powerbi.visuals.ISelectionId;
-import ISelectionIdBuilder = powerbi.visuals.ISelectionIdBuilder;
 import TSSettings from "./settings";
 
 /* tslint:disable */
@@ -171,85 +166,6 @@ export default class TableSorterVisual implements IVisual {
     }, this.userInteractionDebounce);
 
     /**
-     * Converts the data from power bi to a data we can use
-     * @param view The dataview to load
-     * @param selectedIds The list of selected ids
-     * @param settings The color settings to use when converting the dataView
-     */
-    private static converter(view: DataView, selectedIds: any, settings?: IColorSettings, createSelectionIdBuilder?: () => ISelectionIdBuilder) {
-        const data: ITableSorterVisualRow[] = [];
-        let cols: string[];
-        let rankingInfo: IRankingInfo;
-        if (view && view.table) {
-            const table = view.table;
-            const baseRi = calculateRankingInfo(view);
-            if (baseRi) {
-                rankingInfo = <any>baseRi;
-                rankingInfo.colors = calculateRankColors(baseRi.values, settings);
-            }
-            const dateCols = table.columns.map((n, i) => ({ idx: i, col: n })).filter(n => n.col.type.dateTime).map(n => {
-                return {
-                    idx: n.idx,
-                    col: n.col,
-                    calculator: dateTimeFormatCalculator(),
-                };
-            });
-            cols = table.columns.filter(n => !!n)/*.filter(n => !n.roles["Confidence"])*/.map(n => n.displayName);
-            table.rows.forEach((row, rowIndex) => {
-                let identity: ISelectionId;
-                const builder = createSelectionIdBuilder && createSelectionIdBuilder();
-                if (builder) {
-                    const categoryColumn = {
-                        source: table.columns[0],
-                        values: <any>null,
-                        identity: [table.identity[rowIndex]],
-                    };
-                    identity =
-                        builder
-                            .withCategory(<any>categoryColumn, 0)
-                            .createSelectionId();
-                } else {
-                    identity = <any>{
-                        getKey: () => `TableSorter_${rowIndex}`,
-                    };
-                }
-
-                // The below is busted > 100
-                // let identity = SelectionId.createWithId(this.dataViewTable.identity[rowIndex]);
-                const result: ITableSorterVisualRow = {
-                    id: identity.getKey(),
-                    identity,
-                    equals: (b) => (<ITableSorterVisualRow>b).identity.equals(identity),
-                    selected: !!find(selectedIds, (id: ISelectionId) => id.equals(identity)),
-                };
-
-                // Copy over column data
-                row.forEach((colInRow, i) => result[table.columns[i].displayName] = colInRow);
-
-                dateCols.forEach(c => {
-                    c.calculator.addToCalculation(result[c.col.displayName]);
-                });
-
-                data.push(result);
-            });
-
-            dateCols.forEach(n => {
-                const formatter = formatting.valueFormatter.create({
-                    format: n.col.format || n.calculator.getFormat(),
-                });
-                data.forEach(result => {
-                    result[n.col.displayName] = formatter.format(result[n.col.displayName]);
-                });
-            });
-        }
-        return {
-            data,
-            cols,
-            rankingInfo,
-        };
-    }
-
-    /**
      * The constructor for the visual
      * @param options The constructor options
      * @param initialSettings The initial set of settings to use
@@ -290,7 +206,7 @@ export default class TableSorterVisual implements IVisual {
             format: "0",
             precision: this.defaultPrecision,
         });
-        this.selectionManager = this.host["createSelectionManager"]();
+        this.selectionManager = this.host.createSelectionManager();
         this.tableSorter = new TableSorter(this.element.find(".lineup"), undefined, this.userInteractionDebounce);
         this.tableSorter.settings = this.initialSettings;
         this.listeners = [
@@ -412,6 +328,22 @@ export default class TableSorterVisual implements IVisual {
     }
 
     /**
+     * Restores the selection from PowerBI
+     */
+    private restoreSelection() {
+        const objects = get(this.dataView, (d) => d.metadata.objects);
+        const filterProperty = { objectName: "general", propertyName: "filter" };
+        const objFilter = dataview.DataViewObjects.getValue(objects, filterProperty);
+        const selection = filter.FilterManager.restoreSelectionIds(objFilter as any);
+        this.setSelectionOnSelectionManager(selection);
+
+        // Restore the selection to tablesorter if necessary
+        const idMap = (selection || []).reduce((acc, cur) => { acc[cur.getKey()] = 1; return acc; }, {});
+        const rows = ((this._data ? this._data.data : undefined) || []).filter(n => !!idMap[n.id]);
+        this.tableSorter.selection = rows;
+    }
+
+    /**
      * A debounced version of the selection changed event listener
      * @param rows The rows that are selected
      */
@@ -419,26 +351,38 @@ export default class TableSorterVisual implements IVisual {
         const { multiSelect } = this.tableSorter.settings.selection;
         const ids = (rows || []).map(n => n.identity);
         const selectors = ids.map(n => n.getSelector());
-        const selectIds = () => {
-            if (ids.length > 0) {
-                this.selectionManager.select(ids);
-            } else {
-                this.selectionManager.clear();
-            }
-        };
 
-        // This avoids an extra host.onSelect call, which causes visuals to repaint
-        if (this.selectionManager["selectedIds"]) {
-            this.selectionManager["selectedIds"] = ids;
-        } else {
-            selectIds();
-        }
+        this.setSelectionOnSelectionManager(ids);
 
         // Since we have selection within the selectionManager, apply the filter
         this.selectionManager.applySelectionFilter();
 
         // calls host.onSelect
-        selectIds();
+        this.setSelectionOnSelectionManager(ids, true);
+    }
+
+    /**
+     * Sets the selected ids on the selection manager
+     * @param ids The ids to select
+     * @param forceManual If true, selection will be performed through selectionManager.select method
+     */
+    private setSelectionOnSelectionManager(ids: powerbi.visuals.ISelectionId[], forceManual = false) {
+        const selectIds = () => {
+            if (ids.length > 0 && this.selectionManager.select) {
+                this.selectionManager.select(ids);
+            } else if (this.selectionManager.clear) {
+                this.selectionManager.clear();
+            }
+        };
+
+        // This avoids an extra host.onSelect call, which causes visuals to repaint
+        if (!forceManual && this.selectionManager["setSelectionIds"]) {
+            this.selectionManager["setSelectionIds"](ids);
+        } else if (!forceManual && this.selectionManager["selectedIds"]) {
+            this.selectionManager["selectedIds"] = ids;
+        } else {
+            selectIds();
+        }
     }
 
     /**
@@ -470,10 +414,10 @@ export default class TableSorterVisual implements IVisual {
         if (this.dataViewTable) {
             const rankSettings = this.visualSettings.rankSettings;
             const oldRankSettings = oldSettings.rankSettings;
-            const newData = TableSorterVisual.converter(
+            const newData = converter(
                 this.dataView,
                 this.selectionManager.getSelectionIds(),
-                rankSettings,
+                rankSettings as any,
                 () => this.host.createSelectionIdBuilder());
 
             const config = buildConfig(
@@ -548,6 +492,8 @@ export default class TableSorterVisual implements IVisual {
             }
 
             this.tableSorter.settings = updatedSettings;
+
+            this.restoreSelection();
         }
     }
 
@@ -673,27 +619,4 @@ function hasColorSettingsChanged(state: TSSettings, newState: TSSettings) {
         return changed;
     }
     return true;
-}
-
-
-/**
- * A simple interface to describe the data requirements for the table sorter visual row
- */
-interface ITableSorterVisualRow extends ITableSorterRow {
-
-    /**
-     * The unique identity for this row
-     */
-    identity: ISelectionId;
-}
-
-/**
- * A simple interface to describe the ranking info calculated from a dataView
- */
-interface IRankingInfo {
-    column: powerbi.DataViewMetadataColumn;
-    values: any[];
-    colors: {
-        [rank: string]: string;
-    };
 }
