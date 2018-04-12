@@ -35,8 +35,5 @@
     "powerbi-visuals-utils-interactivityutils": "^3.2.0",
     "powerbi-visuals-utils-svgutils": "^1.1.0",
     "powerbi-visuals-utils-typeutils": "^1.1.0"
-  },
-  "devDependencies": {
-    "powerbi-visuals-tools": "^1.11.3"
   }
 }

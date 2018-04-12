@@ -55,7 +55,7 @@
     "node-zip": "^1.1.1",
     "npm-run-all": "^1.7.0",
     "phantomjs-prebuilt": "^2.1.7",
-    "powerbi-visuals-tools": "^1.7.2",
+    "powerbi-visuals-tools": "^1.11.3",
     "raw-loader": "0.5.1",
     "repeat-string": "^1.5.2",
     "rimraf": "^2.5.2",
