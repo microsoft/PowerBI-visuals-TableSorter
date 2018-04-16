@@ -7,7 +7,7 @@
     "declaration": true,
     "noImplicitAny": true,
     "suppressImplicitAnyIndexErrors": true,
-    "outDir": "dist"
+    "outDir": "lib"
   },
   "compileOnSave": false,
   "exclude": [
