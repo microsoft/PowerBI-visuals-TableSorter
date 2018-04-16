@@ -35,8 +35,8 @@ import { Utils as SpecUtils } from "@essex/visual-testing-tools";
 import { default as TableSorterVisual  } from "./TableSorterVisual";
 import { ITableSorterConfiguration  } from "@essex/tablesorter";
 import { Promise } from "es6-promise";
-import { getHeaderNames, performSort, getHeaders } from "@essex/tablesorter/dist/spec/utils";
-import { expectHeadersInCorrectOrder, expectRowsMatch } from "@essex/tablesorter/dist/spec/expectations";
+import { getHeaderNames, performSort, getHeaders } from "@essex/tablesorter/lib/spec/utils";
+import { expectHeadersInCorrectOrder, expectRowsMatch } from "@essex/tablesorter/lib/spec/expectations";
 import { expect } from "chai";
 /**
  * This is the delay to wait before resolving our updateComplete promises after the table sorter has finished rendering
