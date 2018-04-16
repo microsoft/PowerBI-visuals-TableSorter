@@ -177,7 +177,7 @@ export default class TableSorterVisual implements IVisual {
         options: VisualConstructorOptions,
         initialSettings?: ITableSorterSettings,
         private userInteractionDebounce = 100,
-        private defaultPrecision = 0) { // tslint:disable-line
+        private defaultPrecision = undefined) { // tslint:disable-line
         this.host = options.host;
         this.initialSettings = merge({
             presentation: {

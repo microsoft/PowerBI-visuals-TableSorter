@@ -6407,7 +6407,7 @@ powerbi-visuals-tools@^1.11.3:
     uglify-js "2.6.2"
     uuid "3.0.0"
 
-powerbi-visuals-tools@^1.7.0, powerbi-visuals-tools@^1.7.2:
+powerbi-visuals-tools@^1.7.0:
   version "1.7.2"
   resolved "https://registry.yarnpkg.com/powerbi-visuals-tools/-/powerbi-visuals-tools-1.7.2.tgz#d5108e084be7477266506ce9829a15debc7476a5"
   dependencies:
